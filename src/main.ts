@@ -379,12 +379,12 @@ class DefenseScene extends Phaser.Scene {
       const button = this.add.container(x, y);
       const bg = this.add.rectangle(0, 0, 170, 62, 0x071426, 0.92)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x334155, 1);
-      const icon = this.add.circle(-57, 0, 19, definition.color, available ? 0.2 : 0.06).setStrokeStyle(2, available ? definition.color : 0x334155);
-      const iconText = this.add.text(-55, -2, definition.icon, {
-        fontFamily: "Arial",
-        fontSize: "19px",
-        color: available ? `#${definition.color.toString(16).padStart(6, "0")}` : "#475569",
-      }).setOrigin(0.5);
+      const icon = this.add.circle(-57, 0, 23, 0x14210f, available ? 0.95 : 0.45)
+        .setStrokeStyle(2, available ? definition.color : 0x334155, 0.8);
+      const plantPreview = this.createPlantVisual(kind, definition.color)
+        .setPosition(-57, 3)
+        .setScale(0.67)
+        .setAlpha(available ? 1 : 0.25);
       const title = this.add.text(-26, -17, definition.name.toUpperCase(), {
         fontFamily: "Arial",
         fontSize: "13px",
@@ -398,7 +398,7 @@ class DefenseScene extends Phaser.Scene {
         fontSize: "9px",
         color: "#64748b",
       });
-      button.add([bg, icon, iconText, title, target]);
+      button.add([bg, icon, plantPreview, title, target]);
       button.setSize(170, 62).setInteractive({ useHandCursor: true });
       button.on("pointerdown", () => this.selectTower(kind));
       this.towerButtons.set(kind, button);
