@@ -80,13 +80,13 @@ type LevelDefinition = {
 };
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
-  harpoon: { name: "Dionée", icon: "D", color: 0x4ade80, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
-  flak: { name: "Sarracénie", icon: "S", color: 0xf97316, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
-  pulse: { name: "Drosera", icon: "R", color: 0xf472b6, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 1 },
-  cryo: { name: "Népenthès", icon: "N", color: 0x67e8f9, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 2 },
-  tesla: { name: "Orchidée arc", icon: "O", color: 0xfacc15, target: "all", cost: 45, damage: 12, range: 190, fireDelay: 280, effect: "standard", unlockLevel: 3 },
-  railgun: { name: "Épineuse", icon: "E", color: 0xa3e635, target: "all", cost: 70, damage: 55, range: 310, fireDelay: 1600, effect: "standard", unlockLevel: 4 },
-  nova: { name: "Rafflesia", icon: "F", color: 0xef4444, target: "all", cost: 100, damage: 28, range: 230, fireDelay: 1250, effect: "splash", unlockLevel: 5 },
+  harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
+  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
+  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 1 },
+  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 2 },
+  tesla: { name: "Orchidée arc", icon: "O", color: 0x9f894b, target: "all", cost: 45, damage: 12, range: 190, fireDelay: 280, effect: "standard", unlockLevel: 3 },
+  railgun: { name: "Épineuse", icon: "E", color: 0x718448, target: "all", cost: 70, damage: 55, range: 310, fireDelay: 1600, effect: "standard", unlockLevel: 4 },
+  nova: { name: "Rafflesia", icon: "F", color: 0x873d3b, target: "all", cost: 100, damage: 28, range: 230, fireDelay: 1250, effect: "splash", unlockLevel: 5 },
 };
 
 const MAX_TOWER_LEVEL = 5;
@@ -816,7 +816,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private spawnEnemy(kind: EnemyKind, isBoss = false): void {
-    const color = isBoss ? 0xdc2626 : kind === "air" ? 0xfb7185 : 0x22d3ee;
+    const color = isBoss ? 0x6f211d : kind === "air" ? 0x625747 : 0x3f5d59;
     const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
     const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
@@ -827,25 +827,40 @@ class DefenseScene extends Phaser.Scene {
     const exitY = this.isTopWave() ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.55 : 1;
-    const shadow = this.add.ellipse(0, 17, 58 * scale, 13 * scale, 0x020617, 0.45);
+    const shadow = this.add.ellipse(0, 17, 58 * scale, 12 * scale, 0x010403, 0.62);
     const insectParts: Phaser.GameObjects.GameObject[] = [shadow];
     if (kind === "air") {
-      const leftWing = this.add.ellipse(-15 * scale, -5 * scale, 30 * scale, 20 * scale, isBoss ? 0xfca5a5 : 0xfde68a, 0.65).setRotation(-0.4);
-      const rightWing = this.add.ellipse(15 * scale, -5 * scale, 30 * scale, 20 * scale, isBoss ? 0xfca5a5 : 0xfde68a, 0.65).setRotation(0.4);
-      const body = this.add.ellipse(0, 2, 16 * scale, 38 * scale, color, 0.95).setStrokeStyle(2, 0x451a03, 0.8);
-      const head = this.add.circle(0, -15 * scale, 7 * scale, 0x3f2d18);
-      insectParts.push(leftWing, rightWing, body, head);
+      const leftWing = this.add.triangle(-15 * scale, -3 * scale, -3, 7, -31, -2, -8, -19, 0x8a9487, 0.28)
+        .setStrokeStyle(1, 0x303832, 0.7);
+      const rightWing = this.add.triangle(15 * scale, -3 * scale, 3, 7, 31, -2, 8, -19, 0x8a9487, 0.28)
+        .setStrokeStyle(1, 0x303832, 0.7);
+      const abdomen = this.add.ellipse(0, 5 * scale, 14 * scale, 39 * scale, color).setStrokeStyle(2, 0x171612, 0.95);
+      const abdomenRidge = this.add.rectangle(0, 7 * scale, 3 * scale, 31 * scale, 0x171612, 0.8);
+      const thorax = this.add.ellipse(0, -10 * scale, 18 * scale, 20 * scale, 0x26251f).setStrokeStyle(2, 0x11110e);
+      const head = this.add.triangle(0, -23 * scale, -8, 7, 0, -8, 8, 7, 0x171713);
+      const leftAntenna = this.add.line(0, 0, -4 * scale, -27 * scale, -13 * scale, -36 * scale, 0x12130f).setLineWidth(2);
+      const rightAntenna = this.add.line(0, 0, 4 * scale, -27 * scale, 13 * scale, -36 * scale, 0x12130f).setLineWidth(2);
+      const leftVein = this.add.line(0, 0, -7 * scale, -6 * scale, -28 * scale, -4 * scale, 0x303832, 0.55).setLineWidth(1);
+      const rightVein = this.add.line(0, 0, 7 * scale, -6 * scale, 28 * scale, -4 * scale, 0x303832, 0.55).setLineWidth(1);
+      insectParts.push(leftWing, rightWing, leftVein, rightVein, abdomen, abdomenRidge, thorax, head, leftAntenna, rightAntenna);
+      this.tweens.add({ targets: leftWing, angle: -7, yoyo: true, repeat: -1, duration: 85 });
+      this.tweens.add({ targets: rightWing, angle: 7, yoyo: true, repeat: -1, duration: 85 });
     } else {
-      for (let leg = -1; leg <= 1; leg += 1) {
-        insectParts.push(this.add.line(0, 0, -18 * scale, leg * 8 * scale, -32 * scale, leg * 13 * scale, 0x1c1917, 0.9).setLineWidth(3));
-        insectParts.push(this.add.line(0, 0, 18 * scale, leg * 8 * scale, 32 * scale, leg * 13 * scale, 0x1c1917, 0.9).setLineWidth(3));
+      for (let leg = -2; leg <= 2; leg += 1) {
+        const offsetY = leg * 6 * scale;
+        insectParts.push(this.add.line(0, 0, -12 * scale, offsetY, -31 * scale, offsetY + leg * 3, 0x11120f, 0.95).setLineWidth(3));
+        insectParts.push(this.add.line(0, 0, 12 * scale, offsetY, 31 * scale, offsetY + leg * 3, 0x11120f, 0.95).setLineWidth(3));
       }
-      const shell = this.add.ellipse(0, 0, 48 * scale, 32 * scale, color, 0.95).setStrokeStyle(isBoss ? 3 : 2, 0x1c1917, 0.85);
-      const stripe = this.add.rectangle(0, 0, 3 * scale, 28 * scale, 0x1c1917, 0.65);
-      const head = this.add.circle(20 * scale, 0, 9 * scale, 0x292524);
-      insectParts.push(shell, stripe, head);
+      const abdomen = this.add.ellipse(-7 * scale, 0, 39 * scale, 28 * scale, color).setStrokeStyle(isBoss ? 3 : 2, 0x151612, 0.95);
+      const shellLeft = this.add.arc(-10 * scale, 0, 17 * scale, 95, 265, false, 0x344b47).setStrokeStyle(1, 0x171916);
+      const shellRight = this.add.arc(-4 * scale, 0, 17 * scale, -85, 85, false, 0x2d413e).setStrokeStyle(1, 0x171916);
+      const thorax = this.add.ellipse(14 * scale, 0, 21 * scale, 25 * scale, 0x242620).setStrokeStyle(2, 0x11120f);
+      const head = this.add.triangle(27 * scale, 0, -8, -9, 11, 0, -8, 9, 0x171815);
+      const upperMandible = this.add.triangle(39 * scale, -5 * scale, -8, -3, 7, 0, -7, 6, 0x090a08).setRotation(-0.25);
+      const lowerMandible = this.add.triangle(39 * scale, 5 * scale, -8, 3, 7, 0, -7, -6, 0x090a08).setRotation(0.25);
+      insectParts.push(abdomen, shellLeft, shellRight, thorax, head, upperMandible, lowerMandible);
     }
-    const eye = this.add.circle(kind === "air" ? 3 * scale : 23 * scale, -3 * scale, isBoss ? 4 : 2.5, 0xffffff);
+    const eye = this.add.circle(kind === "air" ? 3 * scale : 29 * scale, -3 * scale, isBoss ? 3 : 1.5, 0x991b1b, 0.8);
     insectParts.push(eye);
     const healthBarWidth = isBoss ? 82 : 48;
     const healthY = isBoss ? -45 : -28;
@@ -1277,7 +1292,7 @@ class DefenseScene extends Phaser.Scene {
     onClick: () => void,
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x5eead4, 0.65);
+    const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x71867a, 0.65);
     const text = this.add.text(0, 0, label, {
       fontFamily: "Arial",
       fontSize: "15px",
