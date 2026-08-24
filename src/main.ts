@@ -186,10 +186,105 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x163a2b, 0x164e45, 0x155e75, 0x0f4c5c, 1);
+    background.fillGradientStyle(0x071713, 0x0b2422, 0x102c32, 0x081b22, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
+    this.createMarshAtmosphere();
+
     this.createGates();
+  }
+
+  private createMarshAtmosphere(): void {
+    const terrain = this.add.graphics();
+    terrain.fillStyle(0x06110e, 0.46);
+    terrain.fillEllipse(470, 245, 390, 180);
+    terrain.fillEllipse(925, 500, 520, 230);
+    terrain.fillStyle(0x12343b, 0.52);
+    terrain.fillEllipse(730, 360, 610, 300);
+    terrain.fillStyle(0x1b4143, 0.22);
+    terrain.fillEllipse(660, 330, 450, 170);
+    terrain.fillEllipse(1030, 235, 310, 130);
+
+    const waterSheen = this.add.graphics();
+    waterSheen.lineStyle(2, 0x6b8f88, 0.12);
+    [
+      { x: 420, y: 225, width: 180 },
+      { x: 690, y: 410, width: 250 },
+      { x: 980, y: 295, width: 190 },
+      { x: 865, y: 555, width: 280 },
+    ].forEach(({ x, y, width }) => {
+      waterSheen.strokeEllipse(x, y, width, 22);
+      waterSheen.strokeEllipse(x + 28, y + 17, width * 0.62, 13);
+    });
+
+    const roots = this.add.graphics();
+    roots.lineStyle(7, 0x080b09, 0.7);
+    roots.beginPath();
+    roots.moveTo(210, 630);
+    roots.lineTo(300, 580);
+    roots.lineTo(350, 605);
+    roots.lineTo(430, 555);
+    roots.strokePath();
+    roots.beginPath();
+    roots.moveTo(1260, 155);
+    roots.lineTo(1175, 205);
+    roots.lineTo(1115, 180);
+    roots.lineTo(1040, 225);
+    roots.strokePath();
+    roots.lineStyle(3, 0x283528, 0.55);
+    roots.beginPath();
+    roots.moveTo(300, 580);
+    roots.lineTo(278, 532);
+    roots.moveTo(350, 605);
+    roots.lineTo(382, 645);
+    roots.moveTo(1175, 205);
+    roots.lineTo(1190, 148);
+    roots.moveTo(1115, 180);
+    roots.lineTo(1082, 137);
+    roots.strokePath();
+
+    const reedClusters = [
+      { x: 255, y: 530 },
+      { x: 445, y: 165 },
+      { x: 1010, y: 595 },
+      { x: 1195, y: 470 },
+    ];
+    reedClusters.forEach(({ x, y }, clusterIndex) => {
+      for (let reed = 0; reed < 5; reed += 1) {
+        const offset = (reed - 2) * 8;
+        const height = 30 + ((reed + clusterIndex) % 3) * 11;
+        const stem = this.add.line(0, 0, x + offset, y, x + offset + (reed % 2 === 0 ? -5 : 5), y - height, 0x42533b, 0.7)
+          .setOrigin(0, 0)
+          .setLineWidth(2);
+        const seed = this.add.ellipse(x + offset + (reed % 2 === 0 ? -5 : 5), y - height, 5, 13, 0x171a13, 0.8);
+        this.tweens.add({ targets: [stem, seed], angle: reed % 2 === 0 ? 1.2 : -1.2, yoyo: true, repeat: -1, duration: 1900 + reed * 170 });
+      }
+    });
+
+    [
+      { x: 375, y: 330, scale: 1 },
+      { x: 805, y: 215, scale: 0.75 },
+      { x: 1080, y: 470, scale: 1.15 },
+    ].forEach(({ x, y, scale }, index) => {
+      const mist = this.add.ellipse(x, y, 240 * scale, 42 * scale, 0xa7c4bc, 0.035);
+      this.tweens.add({
+        targets: mist,
+        x: x + (index % 2 === 0 ? 55 : -55),
+        alpha: 0.085,
+        yoyo: true,
+        repeat: -1,
+        duration: 6500 + index * 900,
+      });
+    });
+
+    [
+      { x: 520, y: 575 },
+      { x: 770, y: 175 },
+      { x: 1125, y: 365 },
+    ].forEach(({ x, y }, index) => {
+      const spore = this.add.circle(x, y, 2, 0x9fbf8f, 0.25);
+      this.tweens.add({ targets: spore, y: y - 28, alpha: 0, yoyo: true, repeat: -1, duration: 2400 + index * 500 });
+    });
   }
 
   private createGates(): void {
