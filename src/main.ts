@@ -181,11 +181,12 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x292719, 0x302d1c, 0x373120, 0x252417, 1);
+    background.fillGradientStyle(0x163a2b, 0x164e45, 0x155e75, 0x0f4c5c, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x031008, 0.74);
     this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x84cc16, 0.5);
+    this.createGates();
     this.createBase();
 
   }
@@ -205,9 +206,45 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(x, y + 78, "CŒUR VÉGÉTAL", this.labelStyle(0xa3e635)).setOrigin(0.5);
   }
 
+  private createGates(): void {
+    const entryX = GRID_X + ENTRY_COL * CELL;
+    this.createPlantGate(entryX, 114, "ENTRÉE NORD", false);
+    this.createPlantGate(entryX, 674, "ENTRÉE SUD", true);
+    this.createPlantGate(GRID_X + EXIT_COL * CELL + 30, GRID_Y + EXIT_ROW * CELL, "SORTIE", false, true);
+  }
+
+  private createPlantGate(x: number, y: number, label: string, flipped: boolean, compact = false): void {
+    const gate = this.add.container(x, y);
+    const width = compact ? 42 : 72;
+    const height = compact ? 58 : 42;
+    const opening = this.add.rectangle(0, 0, width, height, 0x100e08, 0.96)
+      .setStrokeStyle(3, 0x713f12, 1)
+      .setRounded(8);
+    const inner = this.add.rectangle(0, compact ? 2 : 4, width - 16, height - 12, 0x0b1208, 1)
+      .setStrokeStyle(2, 0x84cc16, 0.65)
+      .setRounded(6);
+    const leftVine = this.add.ellipse(-width / 2 + 3, 0, 10, height + 12, 0x3f6212).setStrokeStyle(2, 0x65a30d);
+    const rightVine = this.add.ellipse(width / 2 - 3, 0, 10, height + 12, 0x3f6212).setStrokeStyle(2, 0x65a30d);
+    const leafLeft = this.add.ellipse(-width / 2 - 5, -8, 18, 9, 0x65a30d).setRotation(-0.45);
+    const leafRight = this.add.ellipse(width / 2 + 5, 8, 18, 9, 0x65a30d).setRotation(0.45);
+    gate.add([opening, inner, leftVine, rightVine, leafLeft, leafRight]);
+    if (flipped) gate.setRotation(Math.PI);
+
+    const labelY = compact ? y + 48 : flipped ? y - 39 : y - 39;
+    this.add.text(x, labelY, label, {
+      fontFamily: "Arial",
+      fontSize: compact ? "9px" : "10px",
+      color: "#d9f99d",
+      fontStyle: "bold",
+      letterSpacing: 1.2,
+      backgroundColor: "#252417",
+      padding: { x: 6, y: 3 },
+    }).setOrigin(0.5);
+  }
+
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 48, WIDTH - 40, 72, 0x020617, 0.76)
-      .setStrokeStyle(1, 0x334155, 0.8);
+    this.add.rectangle(WIDTH / 2, 48, WIDTH - 40, 72, 0x052e2b, 0.84)
+      .setStrokeStyle(1, 0x2dd4bf, 0.55);
 
     this.add.text(46, 25, "CHELIE //", {
       fontFamily: "Arial",
@@ -219,11 +256,11 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(46, 50, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
       fontSize: "10px",
-      color: "#64748b",
+      color: "#99f6e4",
       letterSpacing: 2,
     });
 
-    this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#94a3b8"));
+    this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#99f6e4"));
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
     this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
     this.energyText = this.add.text(790, 35, "PIÈCES 100", this.hudStyle("#facc15"));
@@ -236,10 +273,10 @@ class DefenseScene extends Phaser.Scene {
     this.statusText = this.add.text(WIDTH / 2, 93, "", {
       fontFamily: "Arial",
       fontSize: "15px",
-      color: "#cbd5e1",
+      color: "#ecfccb",
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0284c7, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
     this.autoWaveText = this.add.text(WIDTH - 178, 76, "", {
       fontFamily: "Arial",
       fontSize: "10px",
@@ -279,7 +316,7 @@ class DefenseScene extends Phaser.Scene {
       const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : `${level.waves} VAGUES`;
 
       if (available) {
-        const button = this.makeButton(x, y, 210, 78, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x7c3aed : 0x1e3a5f, () => {
+        const button = this.makeButton(x, y, 210, 78, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x4d7c0f : 0x0f766e, () => {
           this.scene.restart({ levelIndex: index });
         });
         button.setDepth(32);
@@ -377,10 +414,10 @@ class DefenseScene extends Phaser.Scene {
       const available = this.levelIndex >= definition.unlockLevel;
       const y = startY + index * 76;
       const button = this.add.container(x, y);
-      const bg = this.add.rectangle(0, 0, 170, 62, 0x071426, 0.92)
-        .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x334155, 1);
+      const bg = this.add.rectangle(0, 0, 170, 62, 0x052e2b, 0.94)
+        .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const icon = this.add.circle(-57, 0, 23, 0x14210f, available ? 0.95 : 0.45)
-        .setStrokeStyle(2, available ? definition.color : 0x334155, 0.8);
+        .setStrokeStyle(2, available ? definition.color : 0x28665e, 0.8);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(-57, 3)
         .setScale(0.67)
@@ -425,7 +462,7 @@ class DefenseScene extends Phaser.Scene {
     this.selectedTower = kind;
     this.towerButtons.forEach((button, buttonKind) => {
       const bg = button.getAt(0) as Phaser.GameObjects.Rectangle;
-      bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x334155, 1);
+      bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
     });
     this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : 30 / 60 / 100 / 160 pièces`);
   }
@@ -905,14 +942,14 @@ class DefenseScene extends Phaser.Scene {
     this.nextWaveAt = 0;
     this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
-    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x020617, 0.78);
+    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x022c2b, 0.82);
     const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "LE JARDIN A DÉPÉRI", {
       fontFamily: "Arial",
       fontSize: "42px",
       color: "#fb7185",
       fontStyle: "bold",
     }).setOrigin(0.5);
-    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0284c7, () => this.scene.restart({ levelIndex: this.levelIndex }));
+    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0f766e, () => this.scene.restart({ levelIndex: this.levelIndex }));
     const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.scene.restart());
     overlay.setDepth(20);
     title.setDepth(21);
@@ -944,7 +981,7 @@ class DefenseScene extends Phaser.Scene {
     onClick: () => void,
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x7dd3fc, 0.65);
+    const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x5eead4, 0.65);
     const text = this.add.text(0, 0, label, {
       fontFamily: "Arial",
       fontSize: "15px",
