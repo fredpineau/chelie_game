@@ -20,8 +20,11 @@ type Enemy = {
   maxHp: number;
   speed: number;
   healthBar: Phaser.GameObjects.Rectangle;
+  healthBarWidth: number;
   path: Phaser.Math.Vector2[];
   pathIndex: number;
+  isBoss: boolean;
+  coreDamage: number;
 };
 
 type Tower = {
@@ -58,11 +61,11 @@ const TOWERS: Record<TowerKind, TowerDefinition> = {
 };
 
 const LEVELS: LevelDefinition[] = [
-  { name: "Premier contact", code: "SECTEUR 01", waves: 5, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
-  { name: "Courants hostiles", code: "SECTEUR 02", waves: 7, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
-  { name: "Ciel fracturé", code: "SECTEUR 03", waves: 9, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
-  { name: "Zone abyssale", code: "SECTEUR 04", waves: 12, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
-  { name: "Dernier rempart", code: "SECTEUR 05", waves: 15, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
+  { name: "Premier contact", code: "SECTEUR 01", waves: 10, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
+  { name: "Courants hostiles", code: "SECTEUR 02", waves: 15, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
+  { name: "Ciel fracturé", code: "SECTEUR 03", waves: 20, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
+  { name: "Zone abyssale", code: "SECTEUR 04", waves: 25, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
+  { name: "Dernier rempart", code: "SECTEUR 05", waves: 30, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
   { name: "Protocole infini", code: "MODE ∞", waves: null, healthMultiplier: 1.75, speedMultiplier: 1.25, swarmBonus: 5 },
 ];
 
@@ -447,7 +450,7 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = true;
     this.nextSpawnAt = 0;
     this.setStartButtonEnabled(false);
-    this.updateHud(`Vague ${this.wave} en approche`);
+    this.updateHud(this.isBossWave() ? `ALERTE — boss détecté dans la vague ${this.wave}` : `Vague ${this.wave} en approche`);
   }
 
   private spawnWaveEnemies(time: number): void {
@@ -455,39 +458,53 @@ class DefenseScene extends Phaser.Scene {
 
     const kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
     const y = Phaser.Math.Between(150, HEIGHT - 55);
-    this.spawnEnemy(kind, y);
+    const isBoss = this.isBossWave() && this.spawnedThisWave === 0;
+    this.spawnEnemy(kind, y, isBoss);
     this.spawnedThisWave += 1;
     this.nextSpawnAt = time + Math.max(400, 1150 - this.wave * 45 - this.levelIndex * 35);
   }
 
-  private spawnEnemy(kind: EnemyKind, y: number): void {
-    const color = kind === "air" ? 0xfb7185 : 0x22d3ee;
+  private spawnEnemy(kind: EnemyKind, y: number, isBoss = false): void {
+    const color = isBoss ? 0xdc2626 : kind === "air" ? 0xfb7185 : 0x22d3ee;
     const spawnY = kind === "sea" ? GRID_Y + ENTRY_ROW * CELL : y;
     const container = this.add.container(GRID_X, spawnY);
-    const shadow = this.add.ellipse(0, 15, 54, 14, 0x020617, 0.35);
+    const scale = isBoss ? 1.55 : 1;
+    const shadow = this.add.ellipse(0, 15, 54 * scale, 14 * scale, 0x020617, 0.45);
     const creature = kind === "air"
-      ? this.add.triangle(0, 0, -25, 12, 0, -18, 25, 12, color, 0.95)
-      : this.add.ellipse(0, 0, 54, 30, color, 0.9);
-    creature.setStrokeStyle(2, 0xffffff, 0.35);
-    const eye = this.add.circle(12, -4, 3, 0xffffff);
-    const healthBg = this.add.rectangle(0, -28, 48, 5, 0x020617, 0.8);
-    const healthBar = this.add.rectangle(-24, -28, 48, 5, color).setOrigin(0, 0.5);
-    container.add([shadow, creature, eye, healthBg, healthBar]);
+      ? this.add.triangle(0, 0, -25 * scale, 12 * scale, 0, -18 * scale, 25 * scale, 12 * scale, color, 0.95)
+      : this.add.ellipse(0, 0, 54 * scale, 30 * scale, color, 0.92);
+    creature.setStrokeStyle(isBoss ? 3 : 2, isBoss ? 0xfca5a5 : 0xffffff, isBoss ? 0.9 : 0.35);
+    const eye = this.add.circle(12 * scale, -4 * scale, isBoss ? 5 : 3, 0xffffff);
+    const healthBarWidth = isBoss ? 82 : 48;
+    const healthY = isBoss ? -45 : -28;
+    const healthBg = this.add.rectangle(0, healthY, healthBarWidth, isBoss ? 8 : 5, 0x020617, 0.9);
+    const healthBar = this.add.rectangle(-healthBarWidth / 2, healthY, healthBarWidth, isBoss ? 8 : 5, color).setOrigin(0, 0.5);
+    const bossLabel = isBoss ? this.add.text(0, healthY - 15, "BOSS", {
+      fontFamily: "Arial",
+      fontSize: "10px",
+      color: "#fecaca",
+      fontStyle: "bold",
+      letterSpacing: 2,
+    }).setOrigin(0.5) : null;
+    container.add(bossLabel ? [shadow, creature, eye, healthBg, healthBar, bossLabel] : [shadow, creature, eye, healthBg, healthBar]);
 
     const level = LEVELS[this.levelIndex];
-    const hp = Math.round((48 + this.wave * 12) * level.healthMultiplier);
+    const hp = Math.round((48 + this.wave * 12) * level.healthMultiplier * (isBoss ? 8 : 1));
     this.enemies.push({
       body: container,
       kind,
       hp,
       maxHp: hp,
-      speed: (38 + this.wave * 2.5) * level.speedMultiplier,
+      speed: (38 + this.wave * 2.5) * level.speedMultiplier * (isBoss ? 0.62 : 1),
       healthBar,
+      healthBarWidth,
       path: kind === "sea" ? this.calculatePath(
         { col: 0, row: ENTRY_ROW },
         { col: GRID_COLS - 1, row: ENTRY_ROW },
       ) ?? [] : [],
       pathIndex: 1,
+      isBoss,
+      coreDamage: isBoss ? 5 : 1,
     });
   }
 
@@ -505,7 +522,7 @@ class DefenseScene extends Phaser.Scene {
       if (enemy.body.x >= baseX) {
         enemy.body.destroy();
         this.enemies.splice(index, 1);
-        this.baseHp = Math.max(0, this.baseHp - 1);
+        this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
         this.cameras.main.shake(180, 0.005);
         this.updateHud(this.baseHp > 0 ? "Le noyau est touché !" : "Défaite — intégrité critique");
         if (this.baseHp === 0) this.gameOver();
@@ -532,7 +549,7 @@ class DefenseScene extends Phaser.Scene {
           projectile.destroy();
           if (!target.body.active) return;
           target.hp -= tower.damage;
-          target.healthBar.width = 48 * Math.max(0, target.hp / target.maxHp);
+          target.healthBar.width = target.healthBarWidth * Math.max(0, target.hp / target.maxHp);
           this.createImpact(target.body.x, target.body.y, definition.color);
           if (target.hp <= 0) this.destroyEnemy(target);
         },
@@ -553,7 +570,13 @@ class DefenseScene extends Phaser.Scene {
     if (index === -1) return;
     enemy.body.destroy();
     this.enemies.splice(index, 1);
-    this.updateHud(`${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
+    this.updateHud(enemy.isBoss
+      ? `Boss ${enemy.kind === "air" ? "aérien" : "marin"} neutralisé`
+      : `${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
+  }
+
+  private isBossWave(): boolean {
+    return this.wave > 0 && this.wave % 5 === 0;
   }
 
   private createImpact(x: number, y: number, color: number): void {
