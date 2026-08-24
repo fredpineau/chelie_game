@@ -357,27 +357,44 @@ class DefenseScene extends Phaser.Scene {
     });
   }
 
-  private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
-    const gate = this.add.container(x, y);
-    const body = this.add.ellipse(0, 0, 102, 76, 0x17251d, 0.98).setStrokeStyle(3, 0x3f6212, 0.8);
-    const innerRim = this.add.ellipse(0, 3, 78, 55, 0x243629, 1).setStrokeStyle(2, 0x1c1917, 0.9);
-    const rift = this.add.ellipse(0, 5, 53, 43, 0x030706, 1).setStrokeStyle(2, 0x365314, 0.75);
-    gate.add([body, innerRim, rift]);
+  private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
+    const flower = this.add.container(x, y).setRotation(rotation);
+    const shadow = this.add.circle(0, 3, 44, 0x17313a, 0.25);
+    flower.add(shadow);
 
-    for (let thorn = -3; thorn <= 3; thorn += 1) {
-      const thornX = thorn * 13;
-      const height = thorn % 2 === 0 ? 12 : 8;
-      gate.add(this.add.triangle(thornX, -27, -4, 0, 4, 0, 0, -height, 0x596b2d).setRotation(Math.PI));
-      gate.add(this.add.triangle(thornX, 33, -4, 0, 4, 0, 0, height, 0x33451f));
+    const petals: Phaser.GameObjects.Ellipse[] = [];
+    for (let petal = 0; petal < 8; petal += 1) {
+      const angle = (Math.PI * 2 * petal) / 8;
+      const distance = petal % 2 === 0 ? 29 : 27;
+      const shape = this.add.ellipse(
+        Math.cos(angle) * distance,
+        Math.sin(angle) * distance,
+        25,
+        petal % 2 === 0 ? 53 : 47,
+        petal % 2 === 0 ? 0x86b7c6 : 0x729eaf,
+        0.88,
+      ).setRotation(angle + Math.PI / 2).setStrokeStyle(2, 0x456f80, 0.75);
+      const vein = this.add.line(
+        0,
+        0,
+        Math.cos(angle) * 13,
+        Math.sin(angle) * 13,
+        Math.cos(angle) * 47,
+        Math.sin(angle) * 47,
+        0xc2dce2,
+        0.3,
+      ).setLineWidth(1);
+      petals.push(shape);
+      flower.add([shape, vein]);
     }
-    for (let root = -1; root <= 1; root += 1) {
-      gate.add(this.add.line(0, 0, -45, root * 18, -67, root * 28, 0x293a24, 0.95).setLineWidth(5));
-      gate.add(this.add.line(0, 0, 45, root * 18, 67, root * 28, 0x293a24, 0.95).setLineWidth(5));
-    }
-    gate.setRotation(rotation);
 
-    this.tweens.add({ targets: rift, scaleX: 0.78, alpha: 0.72, yoyo: true, repeat: -1, duration: 1450 });
+    const rim = this.add.circle(0, 0, 29, 0x547f90, 0.96).setStrokeStyle(3, 0xa7ccd4, 0.75);
+    const opening = this.add.circle(0, 0, 21, 0x102d39, 1).setStrokeStyle(2, 0x315d70, 0.9);
+    const depth = this.add.circle(0, 0, 11, 0x071a23, 0.95);
+    flower.add([rim, opening, depth]);
 
+    this.tweens.add({ targets: petals, scaleY: 1.045, alpha: 0.76, yoyo: true, repeat: -1, duration: 1900 });
+    this.tweens.add({ targets: depth, scale: 1.18, alpha: 0.65, yoyo: true, repeat: -1, duration: 1300 });
   }
 
   private createHud(): void {
