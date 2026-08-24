@@ -229,9 +229,47 @@ class DefenseScene extends Phaser.Scene {
 
   private createGates(): void {
     this.createCreatureGate(GRID_X + TOP_ENTRY_COL * CELL, GRID_Y - 24, "ENTRÉE 1", 0, false);
-    this.createCreatureGate(GRID_X - 24, GRID_Y + BOTTOM_ENTRY_ROW * CELL, "ENTRÉE 2", Math.PI / 2, false);
-    this.createCreatureGate(GRID_X + TOP_EXIT_COL * CELL + 24, GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2, true);
-    this.createCreatureGate(GRID_X + BOTTOM_EXIT_COL * CELL, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI, true);
+    this.createCreatureGate(GRID_X + 40, GRID_Y + BOTTOM_ENTRY_ROW * CELL, "ENTRÉE 2", -Math.PI / 2, false);
+    this.createExitQueen(GRID_X + TOP_EXIT_COL * CELL + 24, GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2);
+    this.createExitQueen(GRID_X + BOTTOM_EXIT_COL * CELL, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI);
+  }
+
+  private createExitQueen(x: number, y: number, label: string, rotation: number): void {
+    const queen = this.add.container(x, y).setRotation(rotation);
+    const glow = this.add.circle(0, 0, 47, 0xef4444, 0.14);
+    const abdomen = this.add.ellipse(0, 12, 50, 66, 0x4a1d17).setStrokeStyle(4, 0xb45309);
+    const stripeOne = this.add.rectangle(0, 2, 43, 5, 0x120d09, 0.8);
+    const stripeTwo = this.add.rectangle(0, 19, 46, 5, 0x120d09, 0.8);
+    const thorax = this.add.ellipse(0, -24, 41, 38, 0x29211b).setStrokeStyle(3, 0x78716c);
+    const head = this.add.circle(0, -48, 19, 0x17130f).setStrokeStyle(3, 0x92400e);
+    const leftEye = this.add.circle(-7, -52, 5, 0xef4444).setStrokeStyle(1, 0xfecaca);
+    const rightEye = this.add.circle(7, -52, 5, 0xef4444).setStrokeStyle(1, 0xfecaca);
+    const leftMandible = this.add.triangle(-9, -61, -18, -5, -2, -1, -14, 15, 0x080706).setRotation(0.25);
+    const rightMandible = this.add.triangle(9, -61, 18, -5, 2, -1, 14, 15, 0x080706).setRotation(-0.25);
+    queen.add([glow]);
+    for (let leg = -1; leg <= 1; leg += 1) {
+      const offsetY = leg * 13;
+      queen.add(this.add.line(0, 0, -18, offsetY, -43, offsetY - 10, 0x17130f).setLineWidth(5));
+      queen.add(this.add.line(0, 0, 18, offsetY, 43, offsetY - 10, 0x17130f).setLineWidth(5));
+    }
+    queen.add([abdomen, stripeOne, stripeTwo, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
+
+    this.tweens.add({ targets: glow, alpha: 0.3, scale: 1.12, yoyo: true, repeat: -1, duration: 760 });
+    this.tweens.add({ targets: abdomen, scaleX: 1.07, scaleY: 1.04, yoyo: true, repeat: -1, duration: 920 });
+    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.35, yoyo: true, repeat: -1, duration: 390 });
+
+    const verticalQueen = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
+    const labelX = verticalQueen ? x + (rotation > 0 ? -58 : 58) : x;
+    const labelY = verticalQueen ? y : y + 56;
+    this.add.text(labelX, labelY, `${label} · REINE`, {
+      fontFamily: "Arial",
+      fontSize: "11px",
+      color: "#fecaca",
+      fontStyle: "bold",
+      letterSpacing: 1.2,
+      backgroundColor: "#052e2b",
+      padding: { x: 8, y: 4 },
+    }).setOrigin(0.5);
   }
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
