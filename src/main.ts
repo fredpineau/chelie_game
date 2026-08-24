@@ -276,8 +276,8 @@ class DefenseScene extends Phaser.Scene {
       color: "#ecfccb",
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
-    this.autoWaveText = this.add.text(WIDTH - 178, 76, "", {
+    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 68, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
+    this.autoWaveText = this.add.text(WIDTH - 88, HEIGHT - 38, "", {
       fontFamily: "Arial",
       fontSize: "10px",
       color: "#bef264",
@@ -313,7 +313,7 @@ class DefenseScene extends Phaser.Scene {
       const x = 400 + col * 240;
       const y = 285 + row * 120;
       const available = index <= unlocked;
-      const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : `${level.waves} VAGUES`;
+      const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : "MENACE CROISSANTE";
 
       if (available) {
         const button = this.makeButton(x, y, 210, 78, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x4d7c0f : 0x0f766e, () => {
@@ -963,8 +963,7 @@ class DefenseScene extends Phaser.Scene {
   private updateHud(message: string): void {
     this.hpText?.setText(`VIES ${this.baseHp} / 20`);
     this.energyText?.setText(`PIÈCES ${this.energy}`);
-    const level = LEVELS[this.levelIndex];
-    this.waveText?.setText(level.waves === null ? `VAGUE ${this.wave} / ∞` : `VAGUE ${this.wave} / ${level.waves}`);
+    this.waveText?.setText(`VAGUE ${this.wave}`);
     this.statusText?.setText(message);
   }
 
