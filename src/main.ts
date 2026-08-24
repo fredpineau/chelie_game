@@ -3,7 +3,12 @@ import "./style.css";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
-const HORIZON = 360;
+const CELL = 52;
+const GRID_X = 230;
+const GRID_Y = 142;
+const GRID_COLS = 17;
+const GRID_ROWS = 10;
+const ENTRY_ROW = 5;
 
 type EnemyKind = "air" | "sea";
 type TowerKind = "harpoon" | "flak" | "pulse";
@@ -16,6 +21,8 @@ type Enemy = {
   speed: number;
   reward: number;
   healthBar: Phaser.GameObjects.Rectangle;
+  path: Phaser.Math.Vector2[];
+  pathIndex: number;
 };
 
 type Tower = {
@@ -25,6 +32,8 @@ type Tower = {
   damage: number;
   fireDelay: number;
   lastShot: number;
+  col: number;
+  row: number;
 };
 
 type TowerDefinition = {
@@ -67,8 +76,8 @@ class DefenseScene extends Phaser.Scene {
     this.drawWorld();
     this.createHud();
     this.createTowerPalette();
-    this.createSlots();
-    this.updateHud("Choisissez une tour, puis un emplacement");
+    this.createPlacementZone();
+    this.updateHud("Placez les tours pour créer un labyrinthe sans fermer le passage");
   }
 
   update(time: number, delta: number): void {
@@ -88,16 +97,14 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x071426, 0x0b1b35, 0x173a58, 0x0b243b, 1);
-    background.fillRect(0, 0, WIDTH, HORIZON);
-    background.fillGradientStyle(0x063b55, 0x0b4f6c, 0x032b45, 0x021d33, 1);
-    background.fillRect(0, HORIZON, WIDTH, HEIGHT - HORIZON);
+    background.fillGradientStyle(0x071426, 0x0b2942, 0x07516b, 0x032b45, 1);
+    background.fillRect(0, 0, WIDTH, HEIGHT);
 
     for (let i = 0; i < 7; i += 1) {
       this.add.circle(100 + i * 190, 95 + (i % 3) * 70, 2, 0xffffff, 0.25);
     }
 
-    for (let y = HORIZON + 36; y < HEIGHT; y += 52) {
+    for (let y = 130; y < HEIGHT; y += 58) {
       const wave = this.add.graphics();
       wave.lineStyle(2, 0x67e8f9, 0.09);
       wave.beginPath();
@@ -108,17 +115,28 @@ class DefenseScene extends Phaser.Scene {
       wave.strokePath();
     }
 
-    this.add.rectangle(WIDTH - 88, HORIZON, 176, HEIGHT, 0x030712, 0.42);
-    this.add.rectangle(WIDTH - 92, HORIZON, 3, HEIGHT, 0x38bdf8, 0.4);
+    const grid = this.add.graphics();
+    grid.lineStyle(1, 0x7dd3fc, 0.1);
+    for (let col = 0; col <= GRID_COLS; col += 1) {
+      grid.lineBetween(GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2, GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2 + GRID_ROWS * CELL);
+    }
+    for (let row = 0; row <= GRID_ROWS; row += 1) {
+      grid.lineBetween(GRID_X - CELL / 2, GRID_Y - CELL / 2 + row * CELL, GRID_X - CELL / 2 + GRID_COLS * CELL, GRID_Y - CELL / 2 + row * CELL);
+    }
+
+    this.add.circle(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, 18, 0x22d3ee, 0.2).setStrokeStyle(2, 0x22d3ee);
+    this.add.text(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, "IN", { fontFamily: "Arial", fontSize: "11px", color: "#67e8f9", fontStyle: "bold" }).setOrigin(0.5);
+
+    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x030712, 0.42);
+    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x38bdf8, 0.4);
     this.createBase();
 
-    this.add.text(30, 108, "SECTEUR AÉRIEN", this.labelStyle(0x93c5fd));
-    this.add.text(30, HORIZON + 22, "SECTEUR MARIN", this.labelStyle(0x67e8f9));
+    this.add.text(224, 108, "ZONE DE DÉFENSE UNIFIÉE", this.labelStyle(0x93c5fd));
   }
 
   private createBase(): void {
     const x = WIDTH - 92;
-    const y = HORIZON;
+    const y = HEIGHT / 2;
     const glow = this.add.circle(x, y, 62, 0x38bdf8, 0.12);
     this.tweens.add({ targets: glow, alpha: 0.28, scale: 1.12, yoyo: true, repeat: -1, duration: 1200 });
     this.add.circle(x, y, 43, 0x071426).setStrokeStyle(3, 0x38bdf8, 0.8);
@@ -187,25 +205,15 @@ class DefenseScene extends Phaser.Scene {
     });
   }
 
-  private createSlots(): void {
-    const slots = [
-      { x: 350, y: 205, zone: "air" as EnemyKind },
-      { x: 585, y: 270, zone: "air" as EnemyKind },
-      { x: 835, y: 185, zone: "air" as EnemyKind },
-      { x: 380, y: 505, zone: "sea" as EnemyKind },
-      { x: 635, y: 585, zone: "sea" as EnemyKind },
-      { x: 875, y: 490, zone: "sea" as EnemyKind },
-    ];
-
-    slots.forEach(({ x, y, zone }) => {
-      const slot = this.add.container(x, y);
-      const ring = this.add.circle(0, 0, 34, 0x0f172a, 0.7).setStrokeStyle(2, 0x64748b, 0.65);
-      const plus = this.add.text(0, -2, "+", { fontFamily: "Arial", fontSize: "28px", color: "#94a3b8" }).setOrigin(0.5);
-      slot.add([ring, plus]);
-      slot.setSize(72, 72).setInteractive({ useHandCursor: true });
-      slot.on("pointerover", () => ring.setStrokeStyle(2, 0x7dd3fc, 1));
-      slot.on("pointerout", () => ring.setStrokeStyle(2, 0x64748b, 0.65));
-      slot.on("pointerdown", () => this.placeTower(slot, zone));
+  private createPlacementZone(): void {
+    const zone = this.add.zone(
+      GRID_X + ((GRID_COLS - 1) * CELL) / 2,
+      GRID_Y + ((GRID_ROWS - 1) * CELL) / 2,
+      GRID_COLS * CELL,
+      GRID_ROWS * CELL,
+    ).setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      this.placeTower(pointer.worldX, pointer.worldY);
     });
   }
 
@@ -219,37 +227,50 @@ class DefenseScene extends Phaser.Scene {
     this.updateHud(`${TOWERS[kind].name} sélectionné — cible les ${target}`);
   }
 
-  private placeTower(slot: Phaser.GameObjects.Container, zone: EnemyKind): void {
-    if (!slot.input?.enabled) return;
+  private placeTower(x: number, y: number): void {
     const definition = TOWERS[this.selectedTower];
+    const col = Phaser.Math.Clamp(Math.round((x - GRID_X) / CELL), 0, GRID_COLS - 1);
+    const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
+    const towerX = GRID_X + col * CELL;
+    const towerY = GRID_Y + row * CELL;
 
-    if (definition.target !== "all" && definition.target !== zone) {
-      this.updateHud(`${definition.name} incompatible avec ce secteur`);
-      this.cameras.main.shake(120, 0.002);
+    if ((col === 0 && row === ENTRY_ROW) || (col === GRID_COLS - 1 && row === ENTRY_ROW)) {
+      this.updateHud("L’entrée et la sortie doivent rester libres");
       return;
     }
     if (this.credits < definition.cost) {
       this.updateHud("Crédits insuffisants");
       return;
     }
+    if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
+      this.updateHud("Cet emplacement est déjà occupé");
+      return;
+    }
+    if (!this.calculatePath({ col: 0, row: ENTRY_ROW }, { col: GRID_COLS - 1, row: ENTRY_ROW }, { col, row })) {
+      this.updateHud("Il faut toujours laisser un chemin jusqu’au cœur");
+      this.cameras.main.shake(120, 0.002);
+      return;
+    }
 
     this.credits -= definition.cost;
-    slot.disableInteractive();
-    slot.removeAll(true);
+    const towerBody = this.add.container(towerX, towerY);
 
     const base = this.add.circle(0, 8, 28, 0x071426).setStrokeStyle(3, definition.color, 0.8);
     const turret = this.add.rectangle(0, -3, 17, 34, definition.color, 0.92).setRounded(6);
     const core = this.add.circle(0, -7, 8, 0xffffff, 0.85);
-    slot.add([base, turret, core]);
+    towerBody.add([base, turret, core]);
 
     this.towers.push({
-      body: slot,
+      body: towerBody,
       kind: this.selectedTower,
       range: this.selectedTower === "pulse" ? 245 : 220,
       damage: this.selectedTower === "pulse" ? 16 : 22,
       fireDelay: this.selectedTower === "pulse" ? 680 : 850,
       lastShot: 0,
+      col,
+      row,
     });
+    this.recalculateSeaPaths();
     this.updateHud(`${definition.name} déployé`);
   }
 
@@ -268,9 +289,7 @@ class DefenseScene extends Phaser.Scene {
     if (!this.waveActive || this.spawnedThisWave >= this.enemiesToSpawn || time < this.nextSpawnAt) return;
 
     const kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
-    const y = kind === "air"
-      ? Phaser.Math.Between(150, HORIZON - 55)
-      : Phaser.Math.Between(HORIZON + 80, HEIGHT - 55);
+    const y = Phaser.Math.Between(150, HEIGHT - 55);
     this.spawnEnemy(kind, y);
     this.spawnedThisWave += 1;
     this.nextSpawnAt = time + Math.max(520, 1150 - this.wave * 45);
@@ -278,7 +297,8 @@ class DefenseScene extends Phaser.Scene {
 
   private spawnEnemy(kind: EnemyKind, y: number): void {
     const color = kind === "air" ? 0xfb7185 : 0x22d3ee;
-    const container = this.add.container(220, y);
+    const spawnY = kind === "sea" ? GRID_Y + ENTRY_ROW * CELL : y;
+    const container = this.add.container(GRID_X, spawnY);
     const shadow = this.add.ellipse(0, 15, 54, 14, 0x020617, 0.35);
     const creature = kind === "air"
       ? this.add.triangle(0, 0, -25, 12, 0, -18, 25, 12, color, 0.95)
@@ -298,6 +318,11 @@ class DefenseScene extends Phaser.Scene {
       speed: 38 + this.wave * 2.5,
       reward: 16 + this.wave * 2,
       healthBar,
+      path: kind === "sea" ? this.calculatePath(
+        { col: 0, row: ENTRY_ROW },
+        { col: GRID_COLS - 1, row: ENTRY_ROW },
+      ) ?? [] : [],
+      pathIndex: 1,
     });
   }
 
@@ -305,8 +330,12 @@ class DefenseScene extends Phaser.Scene {
     const baseX = WIDTH - 150;
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
-      enemy.body.x += enemy.speed * (delta / 1000);
-      enemy.body.y += Math.sin((enemy.body.x + index * 20) / 55) * 0.16;
+      if (enemy.kind === "air") {
+        enemy.body.x += enemy.speed * (delta / 1000);
+        enemy.body.y += Math.sin((enemy.body.x + index * 20) / 55) * 0.16;
+      } else {
+        this.followPath(enemy, delta);
+      }
 
       if (enemy.body.x >= baseX) {
         enemy.body.destroy();
@@ -366,6 +395,79 @@ class DefenseScene extends Phaser.Scene {
   private createImpact(x: number, y: number, color: number): void {
     const impact = this.add.circle(x, y, 8, color, 0.65);
     this.tweens.add({ targets: impact, scale: 2.4, alpha: 0, duration: 180, onComplete: () => impact.destroy() });
+  }
+
+  private followPath(enemy: Enemy, delta: number): void {
+    const target = enemy.path[enemy.pathIndex];
+    if (!target) {
+      enemy.body.x += enemy.speed * (delta / 1000);
+      return;
+    }
+
+    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);
+    const step = enemy.speed * (delta / 1000);
+    if (distance <= step) {
+      enemy.body.setPosition(target.x, target.y);
+      enemy.pathIndex += 1;
+      return;
+    }
+    enemy.body.x += ((target.x - enemy.body.x) / distance) * step;
+    enemy.body.y += ((target.y - enemy.body.y) / distance) * step;
+  }
+
+  private recalculateSeaPaths(): void {
+    this.enemies.filter((enemy) => enemy.kind === "sea").forEach((enemy) => {
+      const start = {
+        col: Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1),
+        row: Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1),
+      };
+      enemy.path = this.calculatePath(start, { col: GRID_COLS - 1, row: ENTRY_ROW }) ?? [];
+      enemy.pathIndex = 1;
+    });
+  }
+
+  private calculatePath(
+    start: { col: number; row: number },
+    end: { col: number; row: number },
+    extraBlocked?: { col: number; row: number },
+  ): Phaser.Math.Vector2[] | null {
+    const key = (col: number, row: number) => `${col},${row}`;
+    const blocked = new Set(this.towers.map((tower) => key(tower.col, tower.row)));
+    if (extraBlocked) blocked.add(key(extraBlocked.col, extraBlocked.row));
+
+    const queue = [start];
+    const visited = new Set([key(start.col, start.row)]);
+    const previous = new Map<string, { col: number; row: number }>();
+    const directions = [
+      { col: 1, row: 0 },
+      { col: 0, row: 1 },
+      { col: 0, row: -1 },
+      { col: -1, row: 0 },
+    ];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current.col === end.col && current.row === end.row) {
+        const cells = [current];
+        let cursor = current;
+        while (key(cursor.col, cursor.row) !== key(start.col, start.row)) {
+          cursor = previous.get(key(cursor.col, cursor.row))!;
+          cells.push(cursor);
+        }
+        return cells.reverse().map((cell) => new Phaser.Math.Vector2(GRID_X + cell.col * CELL, GRID_Y + cell.row * CELL));
+      }
+
+      for (const direction of directions) {
+        const next = { col: current.col + direction.col, row: current.row + direction.row };
+        const nextKey = key(next.col, next.row);
+        if (next.col < 0 || next.col >= GRID_COLS || next.row < 0 || next.row >= GRID_ROWS) continue;
+        if (blocked.has(nextKey) || visited.has(nextKey)) continue;
+        visited.add(nextKey);
+        previous.set(nextKey, current);
+        queue.push(next);
+      }
+    }
+    return null;
   }
 
   private gameOver(): void {
