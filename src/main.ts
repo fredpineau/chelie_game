@@ -554,8 +554,8 @@ class DefenseScene extends Phaser.Scene {
       this.upgradeTower(tower);
     });
     this.towers.push(tower);
-    this.recalculateSeaPaths();
-    this.updateHud(`${definition.name} niveau 1 — prochaine amélioration : 30 pièces`);
+    this.recalculateEnemyPaths();
+    this.updateHud(`${definition.name} diffuse son parfum — niveau 2 : 30 pièces`);
   }
 
   private createPlantVisual(kind: TowerKind, color: number): Phaser.GameObjects.Container {
@@ -702,10 +702,10 @@ class DefenseScene extends Phaser.Scene {
       speed: (38 + this.wave * 2.5) * level.speedMultiplier * (isBoss ? 0.62 : 1),
       healthBar,
       healthBarWidth,
-      path: kind === "sea" ? this.calculatePath(
+      path: this.calculatePath(
         { col: entryCol, row: entryRow },
         { col: EXIT_COL, row: EXIT_ROW },
-      ) ?? [] : [],
+      ) ?? [],
       pathIndex: 1,
       isBoss,
       coreDamage: 1,
@@ -720,20 +720,7 @@ class DefenseScene extends Phaser.Scene {
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
-      if (enemy.kind === "air") {
-        const dx = exitX - enemy.body.x;
-        const dy = exitY - enemy.body.y;
-        const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        const step = speed * (delta / 1000);
-        if (distance <= step) {
-          enemy.body.setPosition(exitX, exitY);
-        } else {
-          enemy.body.x += (dx / distance) * step;
-          enemy.body.y += (dy / distance) * step;
-        }
-      } else {
-        this.followPath(enemy, delta, speed);
-      }
+      this.followPath(enemy, delta, speed);
 
       if (Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, exitX, exitY) <= 4) {
         enemy.body.destroy();
@@ -908,8 +895,8 @@ class DefenseScene extends Phaser.Scene {
     enemy.body.y += ((target.y - enemy.body.y) / distance) * step;
   }
 
-  private recalculateSeaPaths(): void {
-    this.enemies.filter((enemy) => enemy.kind === "sea").forEach((enemy) => {
+  private recalculateEnemyPaths(): void {
+    this.enemies.forEach((enemy) => {
       const start = {
         col: Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1),
         row: Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1),
