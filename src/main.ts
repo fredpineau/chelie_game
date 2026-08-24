@@ -372,37 +372,34 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 48, WIDTH - 40, 72, 0x052e2b, 0.84)
-      .setStrokeStyle(1, 0x2dd4bf, 0.55);
-
-    this.add.text(46, 25, "CHELIE //", {
+    this.add.text(28, 24, "CHELIE //", {
       fontFamily: "Arial",
-      fontSize: "21px",
+      fontSize: "18px",
       color: "#f8fafc",
       fontStyle: "bold",
       letterSpacing: 4,
     });
-    this.add.text(46, 50, "CARNIVORE GARDEN", {
+    this.add.text(28, 47, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
-      fontSize: "10px",
-      color: "#99f6e4",
+      fontSize: "9px",
+      color: "#789b91",
       letterSpacing: 2,
     });
 
-    this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#99f6e4"));
-    this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
-    this.hpText = this.add.text(600, 35, "VIES 20 / 20", this.hudStyle("#fda4af"));
-    this.energyText = this.add.text(790, 35, "PIÈCES 60", this.hudStyle("#facc15"));
-    this.add.text(790, 56, "AMÉLIORATIONS : N2 30  •  N3 60  •  N4 100  •  N5 160", {
+    this.levelText = this.createHudBadge(250, "B", 0x315c54, "BIOME --", "#a7c4bc");
+    this.waveText = this.createHudBadge(490, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
+    this.hpText = this.createHudBadge(755, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
+    this.energyText = this.createHudBadge(975, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
+    this.add.text(1010, 67, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
       fontFamily: "Arial",
       fontSize: "9px",
-      color: "#a3e635",
+      color: "#829578",
       letterSpacing: 0.4,
     });
-    this.statusText = this.add.text(WIDTH / 2, 93, "", {
+    this.statusText = this.add.text(WIDTH / 2, 98, "", {
       fontFamily: "Arial",
-      fontSize: "15px",
-      color: "#ecfccb",
+      fontSize: "14px",
+      color: "#cbd8cf",
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 68, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
@@ -413,6 +410,34 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       letterSpacing: 1,
     }).setOrigin(0.5);
+  }
+
+  private createHudBadge(
+    x: number,
+    icon: string,
+    color: number,
+    initialText: string,
+    textColor: string,
+  ): Phaser.GameObjects.Text {
+    const shadow = this.add.circle(x + 2, 46, 29, 0x020706, 0.55);
+    const badge = this.add.circle(x, 43, 27, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
+    const symbol = this.add.text(x, 43, icon, {
+      fontFamily: "Arial",
+      fontSize: "17px",
+      color: textColor,
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: [badge, symbol], scale: 1.04, yoyo: true, repeat: -1, duration: 1900 + x });
+    shadow.setDepth(1);
+    badge.setDepth(2);
+    symbol.setDepth(3);
+    return this.add.text(x + 38, 43, initialText, {
+      fontFamily: "Arial",
+      fontSize: "12px",
+      color: textColor,
+      fontStyle: "bold",
+      letterSpacing: 0.8,
+    }).setOrigin(0, 0.5).setDepth(3);
   }
 
   private showLevelSelection(): void {
@@ -1193,7 +1218,7 @@ class DefenseScene extends Phaser.Scene {
   private updateHud(message: string): void {
     this.hpText?.setText(`VIES ${this.baseHp} / 20`);
     this.energyText?.setText(`PIÈCES ${this.energy}`);
-    this.waveText?.setText(`VAGUE ${this.wave}`);
+    this.waveText?.setText(this.waveActive ? "MENACE ACTIVE" : "MENACE EN ATTENTE");
     this.statusText?.setText(message);
   }
 
