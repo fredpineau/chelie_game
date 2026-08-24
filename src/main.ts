@@ -8,6 +8,8 @@ const GRID_X = 230;
 const GRID_Y = 142;
 const GRID_COLS = 20;
 const GRID_ROWS = 10;
+const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
+const MAP_CENTER_Y = GRID_Y + ((GRID_ROWS - 1) * CELL) / 2;
 const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_ENTRY_COL = 0;
 const TOP_ENTRY_ROW = 0;
@@ -37,6 +39,8 @@ type Enemy = {
   slowedUntil: number;
   exitCol: number;
   exitRow: number;
+  exitX: number;
+  exitY: number;
 };
 
 type Tower = {
@@ -109,6 +113,7 @@ class DefenseScene extends Phaser.Scene {
   private selectedTower: TowerKind = "harpoon";
   private nextSpawnAt = 0;
   private nextWaveAt = 0;
+  private nextPathRefreshAt = 0;
   private lastCountdownValue = -1;
   private levelIndex = 0;
   private levelStarted = false;
@@ -155,6 +160,10 @@ class DefenseScene extends Phaser.Scene {
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
+    if (time >= this.nextPathRefreshAt && this.enemies.length > 0) {
+      this.recalculateEnemyPaths();
+      this.nextPathRefreshAt = time + 750;
+    }
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
@@ -181,6 +190,7 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = false;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
+    this.nextPathRefreshAt = 0;
     this.lastCountdownValue = -1;
     this.selectedTower = "harpoon";
     this.towerButtons.clear();
@@ -290,10 +300,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(GRID_X + TOP_ENTRY_COL * CELL, GRID_Y - 24, "ENTRÉE 1", 0, false);
-    this.createCreatureGate(GRID_X + 40, GRID_Y + BOTTOM_ENTRY_ROW * CELL, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitQueen(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2);
-    this.createExitQueen(GRID_X + BOTTOM_EXIT_COL * CELL, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI);
+    this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", 0, false);
+    this.createCreatureGate(GRID_X + 40, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
+    this.createExitQueen(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "SORTIE 1", -Math.PI / 2);
+    this.createExitQueen(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI);
   }
 
   private createExitQueen(x: number, y: number, label: string, rotation: number): void {
@@ -809,8 +819,10 @@ class DefenseScene extends Phaser.Scene {
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
     const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
     const exitCol = this.isTopWave() ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
-    const spawnX = GRID_X + entryCol * CELL;
-    const spawnY = GRID_Y + entryRow * CELL;
+    const spawnX = this.isTopWave() ? MAP_CENTER_X : GRID_X;
+    const spawnY = this.isTopWave() ? GRID_Y : MAP_CENTER_Y;
+    const exitX = this.isTopWave() ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
+    const exitY = this.isTopWave() ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.55 : 1;
     const shadow = this.add.ellipse(0, 17, 58 * scale, 13 * scale, 0x020617, 0.45);
@@ -856,10 +868,14 @@ class DefenseScene extends Phaser.Scene {
       speed: (40 + this.wave * 2.8) * level.speedMultiplier * (isBoss ? 0.64 : 1),
       healthBar,
       healthBarWidth,
-      path: this.calculatePath(
-        { col: entryCol, row: entryRow },
-        { col: exitCol, row: exitRow },
-      ) ?? [],
+      path: [
+        new Phaser.Math.Vector2(spawnX, spawnY),
+        ...(this.calculatePath(
+          { col: entryCol, row: entryRow },
+          { col: exitCol, row: exitRow },
+        ) ?? []),
+        new Phaser.Math.Vector2(exitX, exitY),
+      ],
       pathIndex: 1,
       isBoss,
       coreDamage: 1,
@@ -867,14 +883,16 @@ class DefenseScene extends Phaser.Scene {
       slowedUntil: 0,
       exitCol,
       exitRow,
+      exitX,
+      exitY,
     });
   }
 
   private moveEnemies(time: number, delta: number): void {
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
-      const exitX = GRID_X + enemy.exitCol * CELL;
-      const exitY = GRID_Y + enemy.exitRow * CELL;
+      const exitX = enemy.exitX;
+      const exitY = enemy.exitY;
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
       this.followPath(enemy, delta, speed);
 
@@ -1141,7 +1159,11 @@ class DefenseScene extends Phaser.Scene {
     for (const start of candidates) {
       const path = this.calculatePath(start, { col: enemy.exitCol, row: enemy.exitRow });
       if (!path) continue;
-      enemy.path = [new Phaser.Math.Vector2(enemy.body.x, enemy.body.y), ...path];
+      enemy.path = [
+        new Phaser.Math.Vector2(enemy.body.x, enemy.body.y),
+        ...path,
+        new Phaser.Math.Vector2(enemy.exitX, enemy.exitY),
+      ];
       enemy.pathIndex = 1;
       return;
     }
@@ -1159,8 +1181,8 @@ class DefenseScene extends Phaser.Scene {
     const blocked = new Set(this.towers.map((tower) => key(tower.col, tower.row)));
     if (extraBlocked) blocked.add(key(extraBlocked.col, extraBlocked.row));
 
-    const queue = [start];
-    const visited = new Set([key(start.col, start.row)]);
+    const frontier = [start];
+    const costs = new Map<string, number>([[key(start.col, start.row), 0]]);
     const previous = new Map<string, { col: number; row: number }>();
     const directions = [
       { col: 1, row: 0 },
@@ -1169,8 +1191,12 @@ class DefenseScene extends Phaser.Scene {
       { col: -1, row: 0 },
     ];
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    const attractors = this.towers.map((tower) => ({ col: tower.col, row: tower.row }));
+    if (extraBlocked) attractors.push(extraBlocked);
+
+    while (frontier.length > 0) {
+      frontier.sort((a, b) => (costs.get(key(a.col, a.row)) ?? Infinity) - (costs.get(key(b.col, b.row)) ?? Infinity));
+      const current = frontier.shift()!;
       if (current.col === end.col && current.row === end.row) {
         const cells = [current];
         let cursor = current;
@@ -1185,10 +1211,21 @@ class DefenseScene extends Phaser.Scene {
         const next = { col: current.col + direction.col, row: current.row + direction.row };
         const nextKey = key(next.col, next.row);
         if (next.col < 0 || next.col >= GRID_COLS || next.row < 0 || next.row >= GRID_ROWS) continue;
-        if (blocked.has(nextKey) || visited.has(nextKey)) continue;
-        visited.add(nextKey);
+        if (blocked.has(nextKey)) continue;
+
+        let scentStrength = 0;
+        attractors.forEach((tower) => {
+          const distance = Math.abs(next.col - tower.col) + Math.abs(next.row - tower.row);
+          if (distance === 1) scentStrength += 0.34;
+          else if (distance === 2) scentStrength += 0.14;
+          else if (distance === 3) scentStrength += 0.05;
+        });
+        const movementCost = Math.max(0.38, 1 - scentStrength);
+        const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost;
+        if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
+        costs.set(nextKey, newCost);
         previous.set(nextKey, current);
-        queue.push(next);
+        if (!frontier.some((cell) => cell.col === next.col && cell.row === next.row)) frontier.push(next);
       }
     }
     return null;
