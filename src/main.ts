@@ -113,7 +113,6 @@ class DefenseScene extends Phaser.Scene {
   private selectedTower: TowerKind = "harpoon";
   private nextSpawnAt = 0;
   private nextWaveAt = 0;
-  private nextPathRefreshAt = 0;
   private lastCountdownValue = -1;
   private levelIndex = 0;
   private levelStarted = false;
@@ -160,10 +159,6 @@ class DefenseScene extends Phaser.Scene {
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
-    if (time >= this.nextPathRefreshAt && this.enemies.length > 0) {
-      this.recalculateEnemyPaths();
-      this.nextPathRefreshAt = time + 750;
-    }
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
@@ -190,7 +185,6 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = false;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
-    this.nextPathRefreshAt = 0;
     this.lastCountdownValue = -1;
     this.selectedTower = "harpoon";
     this.towerButtons.clear();
@@ -198,7 +192,7 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x071713, 0x0b2422, 0x102c32, 0x081b22, 1);
+    background.fillGradientStyle(0x183a30, 0x20514a, 0x286173, 0x194955, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
@@ -208,17 +202,17 @@ class DefenseScene extends Phaser.Scene {
 
   private createMarshAtmosphere(): void {
     const terrain = this.add.graphics();
-    terrain.fillStyle(0x06110e, 0.46);
+    terrain.fillStyle(0x172f26, 0.38);
     terrain.fillEllipse(470, 245, 390, 180);
     terrain.fillEllipse(925, 500, 520, 230);
-    terrain.fillStyle(0x12343b, 0.52);
+    terrain.fillStyle(0x2d6770, 0.46);
     terrain.fillEllipse(730, 360, 610, 300);
-    terrain.fillStyle(0x1b4143, 0.22);
+    terrain.fillStyle(0x4b8582, 0.22);
     terrain.fillEllipse(660, 330, 450, 170);
     terrain.fillEllipse(1030, 235, 310, 130);
 
     const waterSheen = this.add.graphics();
-    waterSheen.lineStyle(2, 0x6b8f88, 0.12);
+    waterSheen.lineStyle(2, 0xa7c8c2, 0.2);
     [
       { x: 420, y: 225, width: 180 },
       { x: 690, y: 410, width: 250 },
