@@ -22,8 +22,8 @@ body,
 body {
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 50% 40%, rgba(101, 163, 13, 0.2), transparent 48%),
-    linear-gradient(145deg, #020704, #0a1f10);
+    radial-gradient(circle at 50% 40%, rgba(45, 212, 191, 0.18), transparent 48%),
+    linear-gradient(145deg, #042f2e, #0c4a6e);
 }
 
 canvas {
