@@ -66,25 +66,25 @@ type LevelDefinition = {
 };
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
-  harpoon: { name: "Harpon", icon: "H", color: 0x38bdf8, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
-  flak: { name: "Flak", icon: "F", color: 0xf97316, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
-  pulse: { name: "Pulse", icon: "P", color: 0x8b5cf6, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 1 },
-  cryo: { name: "Cryo", icon: "C", color: 0x67e8f9, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 2 },
-  tesla: { name: "Tesla", icon: "T", color: 0xfacc15, target: "all", cost: 45, damage: 12, range: 190, fireDelay: 280, effect: "standard", unlockLevel: 3 },
-  railgun: { name: "Railgun", icon: "R", color: 0xe2e8f0, target: "all", cost: 70, damage: 55, range: 310, fireDelay: 1600, effect: "standard", unlockLevel: 4 },
-  nova: { name: "Nova", icon: "N", color: 0xfb7185, target: "all", cost: 100, damage: 28, range: 230, fireDelay: 1250, effect: "splash", unlockLevel: 5 },
+  harpoon: { name: "Dionée", icon: "D", color: 0x4ade80, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
+  flak: { name: "Sarracénie", icon: "S", color: 0xf97316, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
+  pulse: { name: "Drosera", icon: "R", color: 0xf472b6, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 1 },
+  cryo: { name: "Népenthès", icon: "N", color: 0x67e8f9, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 2 },
+  tesla: { name: "Orchidée arc", icon: "O", color: 0xfacc15, target: "all", cost: 45, damage: 12, range: 190, fireDelay: 280, effect: "standard", unlockLevel: 3 },
+  railgun: { name: "Épineuse", icon: "E", color: 0xa3e635, target: "all", cost: 70, damage: 55, range: 310, fireDelay: 1600, effect: "standard", unlockLevel: 4 },
+  nova: { name: "Rafflesia", icon: "F", color: 0xef4444, target: "all", cost: 100, damage: 28, range: 230, fireDelay: 1250, effect: "splash", unlockLevel: 5 },
 };
 
 const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 30, 60, 100, 160];
 
 const LEVELS: LevelDefinition[] = [
-  { name: "Premier contact", code: "SECTEUR 01", waves: 10, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
-  { name: "Courants hostiles", code: "SECTEUR 02", waves: 15, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
-  { name: "Ciel fracturé", code: "SECTEUR 03", waves: 20, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
-  { name: "Zone abyssale", code: "SECTEUR 04", waves: 25, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
-  { name: "Dernier rempart", code: "SECTEUR 05", waves: 30, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
-  { name: "Protocole infini", code: "MODE ∞", waves: null, healthMultiplier: 1.75, speedMultiplier: 1.25, swarmBonus: 5 },
+  { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
+  { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
+  { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
+  { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
+  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
+  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 1.75, speedMultiplier: 1.25, swarmBonus: 5 },
 ];
 
 class DefenseScene extends Phaser.Scene {
@@ -147,7 +147,7 @@ class DefenseScene extends Phaser.Scene {
       if (level.waves !== null && this.wave >= level.waves) {
         this.completeLevel();
       } else {
-        this.updateHud(`Vague ${this.wave} neutralisée — secteur sécurisé`);
+        this.updateHud(`Vague ${this.wave} digérée — biome protégé`);
         this.setStartButtonEnabled(true);
       }
     }
@@ -170,16 +170,17 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x080b12, 0x111827, 0x172033, 0x0b1220, 1);
+    background.fillGradientStyle(0x07120b, 0x102416, 0x173b24, 0x09170e, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
-    for (let i = 0; i < 7; i += 1) {
-      this.add.circle(100 + i * 190, 95 + (i % 3) * 70, 2, 0xffffff, 0.25);
+    for (let i = 0; i < 18; i += 1) {
+      const spore = this.add.circle(80 + (i * 137) % 1120, 95 + (i * 83) % 560, i % 4 === 0 ? 3 : 2, 0xb7f34a, 0.18);
+      this.tweens.add({ targets: spore, y: spore.y - 18, alpha: 0.04, yoyo: true, repeat: -1, duration: 1800 + i * 70 });
     }
 
     for (let y = 130; y < HEIGHT; y += 58) {
       const wave = this.add.graphics();
-      wave.lineStyle(2, 0x64748b, 0.08);
+      wave.lineStyle(2, 0x4ade80, 0.07);
       wave.beginPath();
       for (let x = 0; x <= WIDTH; x += 40) {
         const py = y + Math.sin((x + y) / 55) * 7;
@@ -189,7 +190,7 @@ class DefenseScene extends Phaser.Scene {
     }
 
     const grid = this.add.graphics();
-    grid.lineStyle(1, 0x7dd3fc, 0.1);
+    grid.lineStyle(1, 0xa3e635, 0.09);
     for (let col = 0; col <= GRID_COLS; col += 1) {
       grid.lineBetween(GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2, GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2 + GRID_ROWS * CELL);
     }
@@ -197,25 +198,29 @@ class DefenseScene extends Phaser.Scene {
       grid.lineBetween(GRID_X - CELL / 2, GRID_Y - CELL / 2 + row * CELL, GRID_X - CELL / 2 + GRID_COLS * CELL, GRID_Y - CELL / 2 + row * CELL);
     }
 
-    this.add.circle(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, 18, 0x22d3ee, 0.2).setStrokeStyle(2, 0x22d3ee);
-    this.add.text(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, "IN", { fontFamily: "Arial", fontSize: "11px", color: "#67e8f9", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.circle(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, 20, 0x713f12, 0.65).setStrokeStyle(2, 0xf59e0b, 0.65);
+    this.add.text(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, "NID", { fontFamily: "Arial", fontSize: "10px", color: "#fde68a", fontStyle: "bold" }).setOrigin(0.5);
 
-    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x02040a, 0.66);
-    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0xef4444, 0.5);
+    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x031008, 0.74);
+    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x84cc16, 0.5);
     this.createBase();
 
-    this.add.text(224, 108, "PÉRIMÈTRE DE CONFINEMENT", this.labelStyle(0x94a3b8));
+    this.add.text(224, 108, "TOURBIÈRE CARNIVORE", this.labelStyle(0xa3e635));
   }
 
   private createBase(): void {
     const x = WIDTH - 92;
     const y = HEIGHT / 2;
-    const glow = this.add.circle(x, y, 62, 0xef4444, 0.1);
+    const glow = this.add.circle(x, y, 68, 0x84cc16, 0.12);
     this.tweens.add({ targets: glow, alpha: 0.28, scale: 1.12, yoyo: true, repeat: -1, duration: 1200 });
-    this.add.circle(x, y, 43, 0x070a10).setStrokeStyle(3, 0xef4444, 0.8);
-    this.add.circle(x, y, 26, 0x991b1b, 0.28).setStrokeStyle(2, 0xf87171);
-    this.add.text(x, y - 2, "N", { fontFamily: "Arial", fontSize: "28px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
-    this.add.text(x, y + 75, "NOYAU", this.labelStyle(0xf87171)).setOrigin(0.5);
+    for (let angle = 0; angle < 360; angle += 60) {
+      const rad = Phaser.Math.DegToRad(angle);
+      this.add.ellipse(x + Math.cos(rad) * 31, y + Math.sin(rad) * 31, 28, 48, 0x65a30d, 0.85).setRotation(rad + Math.PI / 2);
+    }
+    this.add.circle(x, y, 39, 0x3f6212).setStrokeStyle(3, 0xa3e635, 0.85);
+    this.add.circle(x, y, 23, 0x881337, 0.9).setStrokeStyle(2, 0xf472b6);
+    this.add.text(x, y - 2, "♥", { fontFamily: "Arial", fontSize: "24px", color: "#fecdd3", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.text(x, y + 78, "CŒUR VÉGÉTAL", this.labelStyle(0xa3e635)).setOrigin(0.5);
   }
 
   private createHud(): void {
@@ -229,14 +234,14 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       letterSpacing: 4,
     });
-    this.add.text(46, 50, "DEFENSE PROTOCOL", {
+    this.add.text(46, 50, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
       fontSize: "10px",
       color: "#64748b",
       letterSpacing: 2,
     });
 
-    this.levelText = this.add.text(270, 35, "SECTEUR --", this.hudStyle("#94a3b8"));
+    this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#94a3b8"));
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
     this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
     this.energyText = this.add.text(790, 35, "PIÈCES 100", this.hudStyle("#facc15"));
@@ -257,14 +262,14 @@ class DefenseScene extends Phaser.Scene {
     const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 12, 820, 510, 0x090e18, 0.98)
       .setStrokeStyle(1, 0x475569, 0.9)
       .setDepth(31);
-    this.add.text(WIDTH / 2, 150, "SÉLECTION DU SECTEUR", {
+    this.add.text(WIDTH / 2, 150, "SÉLECTION DU BIOME", {
       fontFamily: "Arial",
       fontSize: "30px",
       color: "#f8fafc",
       fontStyle: "bold",
       letterSpacing: 3,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 193, "Terminez un secteur pour déverrouiller le suivant", {
+    this.add.text(WIDTH / 2, 193, "Protégez un biome pour faire éclore la plante suivante", {
       fontFamily: "Arial",
       fontSize: "14px",
       color: "#94a3b8",
@@ -325,7 +330,7 @@ class DefenseScene extends Phaser.Scene {
     this.saveUnlockedLevel(nextIndex);
 
     this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x02040a, 0.84).setDepth(30).setInteractive();
-    this.add.text(WIDTH / 2, HEIGHT / 2 - 100, "SECTEUR SÉCURISÉ", {
+    this.add.text(WIDTH / 2, HEIGHT / 2 - 100, "BIOME PROTÉGÉ", {
       fontFamily: "Arial",
       fontSize: "38px",
       color: "#4ade80",
@@ -338,11 +343,11 @@ class DefenseScene extends Phaser.Scene {
       color: "#cbd5e1",
     }).setOrigin(0.5).setDepth(31);
 
-    const nextLabel = this.levelIndex === LEVELS.length - 2 ? "DÉBLOQUER LE MODE INFINI" : "SECTEUR SUIVANT";
+    const nextLabel = this.levelIndex === LEVELS.length - 2 ? "DÉBLOQUER LA FLORAISON INFINIE" : "BIOME SUIVANT";
     this.makeButton(WIDTH / 2, HEIGHT / 2 + 35, 280, 52, nextLabel, 0x166534, () => {
       this.scene.restart({ levelIndex: nextIndex });
     }).setDepth(31);
-    this.makeButton(WIDTH / 2, HEIGHT / 2 + 105, 220, 44, "CHOIX DU SECTEUR", 0x334155, () => {
+    this.makeButton(WIDTH / 2, HEIGHT / 2 + 105, 220, 44, "CHOIX DU BIOME", 0x334155, () => {
       this.scene.restart();
     }).setDepth(31);
   }
@@ -367,7 +372,7 @@ class DefenseScene extends Phaser.Scene {
     const x = 112;
     const startY = 160;
 
-    this.add.text(x, startY - 34, "ARSENAL", this.labelStyle(0xe2e8f0)).setOrigin(0.5);
+    this.add.text(x, startY - 34, "HERBIER", this.labelStyle(0xd9f99d)).setOrigin(0.5);
 
     (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
       const definition = TOWERS[kind];
@@ -388,7 +393,7 @@ class DefenseScene extends Phaser.Scene {
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
       });
-      const targetLabel = definition.target === "sea" ? "CIBLE MARINE" : definition.target === "air" ? "CIBLE AÉRIENNE" : "CIBLE UNIVERSELLE";
+      const targetLabel = definition.target === "sea" ? "RAMPANTS" : definition.target === "air" ? "VOLANTS" : "TOUS INSECTES";
       const detail = available ? `${definition.cost} PIÈCES  •  ${targetLabel}` : `DÉBLOCAGE : ${LEVELS[definition.unlockLevel].code}`;
       const target = this.add.text(-26, 7, detail, {
         fontFamily: "Arial",
@@ -424,8 +429,8 @@ class DefenseScene extends Phaser.Scene {
       const bg = button.getAt(0) as Phaser.GameObjects.Rectangle;
       bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x334155, 1);
     });
-    const target = TOWERS[kind].target === "all" ? "toutes les unités" : `unités ${TOWERS[kind].target === "air" ? "aériennes" : "marines"}`;
-    this.updateHud(`${TOWERS[kind].name} sélectionné — cible les ${target}`);
+    const target = TOWERS[kind].target === "all" ? "tous les insectes" : `insectes ${TOWERS[kind].target === "air" ? "volants" : "rampants"}`;
+    this.updateHud(`${TOWERS[kind].name} sélectionnée — cible les ${target}`);
   }
 
   private placeTower(x: number, y: number): void {
@@ -456,9 +461,8 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const base = this.add.circle(0, 8, 28, 0x071426).setStrokeStyle(3, definition.color, 0.8);
-    const turret = this.add.rectangle(0, -3, 17, 34, definition.color, 0.92).setRounded(6);
-    const core = this.add.circle(0, -7, 8, 0xffffff, 0.85);
+    const base = this.add.circle(0, 9, 27, 0x29210f).setStrokeStyle(3, 0x4d7c0f, 0.85);
+    const plant = this.createPlantVisual(this.selectedTower, definition.color);
     const levelBadge = this.add.text(21, 21, "1", {
       fontFamily: "Arial",
       fontSize: "11px",
@@ -467,7 +471,7 @@ class DefenseScene extends Phaser.Scene {
       padding: { x: 4, y: 2 },
       fontStyle: "bold",
     }).setOrigin(0.5);
-    towerBody.add([base, turret, core, levelBadge]);
+    towerBody.add([base, plant, levelBadge]);
 
     const tower: Tower = {
       body: towerBody,
@@ -496,6 +500,52 @@ class DefenseScene extends Phaser.Scene {
     this.updateHud(`${definition.name} déployé pour ${definition.cost} pièces — touchez-la pour l’améliorer`);
   }
 
+  private createPlantVisual(kind: TowerKind, color: number): Phaser.GameObjects.Container {
+    const plant = this.add.container(0, -4);
+    const stem = this.add.rectangle(0, 8, 7, 30, 0x4d7c0f).setRounded(4);
+    const leafLeft = this.add.ellipse(-10, 13, 22, 9, 0x65a30d).setRotation(-0.45);
+    const leafRight = this.add.ellipse(10, 13, 22, 9, 0x65a30d).setRotation(0.45);
+    plant.add([stem, leafLeft, leafRight]);
+
+    if (kind === "harpoon") {
+      plant.add([
+        this.add.ellipse(-7, -8, 25, 15, color).setRotation(0.5).setStrokeStyle(2, 0x166534),
+        this.add.ellipse(7, -8, 25, 15, color).setRotation(-0.5).setStrokeStyle(2, 0x166534),
+        this.add.circle(0, -8, 5, 0x9f1239),
+      ]);
+    } else if (kind === "flak" || kind === "cryo") {
+      plant.add([
+        this.add.ellipse(0, -5, 19, 34, color, 0.95).setStrokeStyle(2, 0x14532d),
+        this.add.ellipse(0, -20, 23, 8, kind === "flak" ? 0xfb923c : 0xa5f3fc).setStrokeStyle(2, 0x14532d),
+      ]);
+    } else if (kind === "pulse") {
+      for (let angle = 0; angle < 360; angle += 45) {
+        const rad = Phaser.Math.DegToRad(angle);
+        plant.add(this.add.circle(Math.cos(rad) * 14, -7 + Math.sin(rad) * 14, 4, color).setStrokeStyle(1, 0xfbcfe8));
+      }
+      plant.add(this.add.circle(0, -7, 9, 0xbe185d));
+    } else if (kind === "tesla") {
+      for (let angle = 0; angle < 360; angle += 60) {
+        const rad = Phaser.Math.DegToRad(angle);
+        plant.add(this.add.ellipse(Math.cos(rad) * 10, -8 + Math.sin(rad) * 10, 9, 21, color).setRotation(rad));
+      }
+      plant.add(this.add.circle(0, -8, 8, 0xffffff, 0.9));
+    } else if (kind === "railgun") {
+      plant.add([
+        this.add.triangle(0, -12, -11, 12, 0, -24, 11, 12, color).setStrokeStyle(2, 0x365314),
+        this.add.triangle(-12, 0, -8, 7, -20, 1, -8, -4, 0x84cc16),
+        this.add.triangle(12, 0, 8, 7, 20, 1, 8, -4, 0x84cc16),
+      ]);
+    } else {
+      for (let angle = 0; angle < 360; angle += 72) {
+        const rad = Phaser.Math.DegToRad(angle);
+        plant.add(this.add.ellipse(Math.cos(rad) * 12, -7 + Math.sin(rad) * 12, 20, 30, color).setRotation(rad + Math.PI / 2).setStrokeStyle(2, 0x7f1d1d));
+      }
+      plant.add(this.add.circle(0, -7, 10, 0x713f12).setStrokeStyle(2, 0xfbbf24));
+    }
+    return plant;
+  }
+
   private startWave(): void {
     if (!this.levelStarted || this.waveActive || this.baseHp <= 0) return;
     const level = LEVELS[this.levelIndex];
@@ -506,7 +556,7 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = true;
     this.nextSpawnAt = 0;
     this.setStartButtonEnabled(false);
-    this.updateHud(this.isBossWave() ? `ALERTE — boss détecté dans la vague ${this.wave}` : `Vague ${this.wave} en approche`);
+    this.updateHud(this.isBossWave() ? `ALERTE — insecte alpha détecté dans la vague ${this.wave}` : `Vague ${this.wave} en approche`);
   }
 
   private spawnWaveEnemies(time: number): void {
@@ -525,24 +575,38 @@ class DefenseScene extends Phaser.Scene {
     const spawnY = kind === "sea" ? GRID_Y + ENTRY_ROW * CELL : y;
     const container = this.add.container(GRID_X, spawnY);
     const scale = isBoss ? 1.55 : 1;
-    const shadow = this.add.ellipse(0, 15, 54 * scale, 14 * scale, 0x020617, 0.45);
-    const creature = kind === "air"
-      ? this.add.triangle(0, 0, -25 * scale, 12 * scale, 0, -18 * scale, 25 * scale, 12 * scale, color, 0.95)
-      : this.add.ellipse(0, 0, 54 * scale, 30 * scale, color, 0.92);
-    creature.setStrokeStyle(isBoss ? 3 : 2, isBoss ? 0xfca5a5 : 0xffffff, isBoss ? 0.9 : 0.35);
-    const eye = this.add.circle(12 * scale, -4 * scale, isBoss ? 5 : 3, 0xffffff);
+    const shadow = this.add.ellipse(0, 17, 58 * scale, 13 * scale, 0x020617, 0.45);
+    const insectParts: Phaser.GameObjects.GameObject[] = [shadow];
+    if (kind === "air") {
+      const leftWing = this.add.ellipse(-15 * scale, -5 * scale, 30 * scale, 20 * scale, isBoss ? 0xfca5a5 : 0xfde68a, 0.65).setRotation(-0.4);
+      const rightWing = this.add.ellipse(15 * scale, -5 * scale, 30 * scale, 20 * scale, isBoss ? 0xfca5a5 : 0xfde68a, 0.65).setRotation(0.4);
+      const body = this.add.ellipse(0, 2, 16 * scale, 38 * scale, color, 0.95).setStrokeStyle(2, 0x451a03, 0.8);
+      const head = this.add.circle(0, -15 * scale, 7 * scale, 0x3f2d18);
+      insectParts.push(leftWing, rightWing, body, head);
+    } else {
+      for (let leg = -1; leg <= 1; leg += 1) {
+        insectParts.push(this.add.line(0, 0, -18 * scale, leg * 8 * scale, -32 * scale, leg * 13 * scale, 0x1c1917, 0.9).setLineWidth(3));
+        insectParts.push(this.add.line(0, 0, 18 * scale, leg * 8 * scale, 32 * scale, leg * 13 * scale, 0x1c1917, 0.9).setLineWidth(3));
+      }
+      const shell = this.add.ellipse(0, 0, 48 * scale, 32 * scale, color, 0.95).setStrokeStyle(isBoss ? 3 : 2, 0x1c1917, 0.85);
+      const stripe = this.add.rectangle(0, 0, 3 * scale, 28 * scale, 0x1c1917, 0.65);
+      const head = this.add.circle(20 * scale, 0, 9 * scale, 0x292524);
+      insectParts.push(shell, stripe, head);
+    }
+    const eye = this.add.circle(kind === "air" ? 3 * scale : 23 * scale, -3 * scale, isBoss ? 4 : 2.5, 0xffffff);
+    insectParts.push(eye);
     const healthBarWidth = isBoss ? 82 : 48;
     const healthY = isBoss ? -45 : -28;
     const healthBg = this.add.rectangle(0, healthY, healthBarWidth, isBoss ? 8 : 5, 0x020617, 0.9);
     const healthBar = this.add.rectangle(-healthBarWidth / 2, healthY, healthBarWidth, isBoss ? 8 : 5, color).setOrigin(0, 0.5);
-    const bossLabel = isBoss ? this.add.text(0, healthY - 15, "BOSS", {
+    const bossLabel = isBoss ? this.add.text(0, healthY - 15, "ALPHA", {
       fontFamily: "Arial",
       fontSize: "10px",
       color: "#fecaca",
       fontStyle: "bold",
       letterSpacing: 2,
     }).setOrigin(0.5) : null;
-    container.add(bossLabel ? [shadow, creature, eye, healthBg, healthBar, bossLabel] : [shadow, creature, eye, healthBg, healthBar]);
+    container.add(bossLabel ? [...insectParts, healthBg, healthBar, bossLabel] : [...insectParts, healthBg, healthBar]);
 
     const level = LEVELS[this.levelIndex];
     const hp = Math.round((48 + this.wave * 12) * level.healthMultiplier * (isBoss ? 8 : 1));
@@ -583,7 +647,7 @@ class DefenseScene extends Phaser.Scene {
         this.enemies.splice(index, 1);
         this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
         this.cameras.main.shake(180, 0.005);
-        this.updateHud(this.baseHp > 0 ? "Le noyau est touché !" : "Défaite — intégrité critique");
+        this.updateHud(this.baseHp > 0 ? "Le cœur végétal est attaqué !" : "Défaite — le jardin dépérit");
         if (this.baseHp === 0) this.gameOver();
       }
     }
@@ -654,8 +718,8 @@ class DefenseScene extends Phaser.Scene {
     enemy.body.destroy();
     this.enemies.splice(index, 1);
     this.updateHud(enemy.isBoss
-      ? `Boss ${enemy.kind === "air" ? "aérien" : "marin"} neutralisé`
-      : `${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
+      ? `Insecte alpha ${enemy.kind === "air" ? "volant" : "rampant"} digéré`
+      : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
   }
 
   private upgradeTower(tower: Tower): void {
@@ -680,8 +744,8 @@ class DefenseScene extends Phaser.Scene {
     tower.fireDelay = Math.max(260, Math.round(tower.fireDelay * 0.88));
     tower.levelBadge.setText(String(tower.level));
 
-    const turret = tower.body.getAt(1) as Phaser.GameObjects.Rectangle;
-    turret.setScale(1 + (tower.level - 1) * 0.08);
+    const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
+    plant.setScale(1 + (tower.level - 1) * 0.07);
     this.createUpgradePulse(tower, definition.color);
     this.updateHud(`${definition.name} niveau ${tower.level} — puissance augmentée`);
   }
@@ -801,14 +865,14 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = false;
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x020617, 0.78);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "RUPTURE DU NOYAU", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "LE JARDIN A DÉPÉRI", {
       fontFamily: "Arial",
       fontSize: "42px",
       color: "#fb7185",
       fontStyle: "bold",
     }).setOrigin(0.5);
     const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0284c7, () => this.scene.restart({ levelIndex: this.levelIndex }));
-    const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU SECTEUR", 0x334155, () => this.scene.restart());
+    const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.scene.restart());
     overlay.setDepth(20);
     title.setDepth(21);
     retry.setDepth(21);
