@@ -8,11 +8,12 @@ const GRID_X = 230;
 const GRID_Y = 142;
 const GRID_COLS = 17;
 const GRID_ROWS = 10;
-const ENTRY_COL = 8;
+const TOP_ENTRY_COL = 15;
+const BOTTOM_ENTRY_COL = 8;
 const TOP_ENTRY_ROW = 0;
 const BOTTOM_ENTRY_ROW = GRID_ROWS - 1;
-const EXIT_COL = GRID_COLS - 1;
-const EXIT_ROW = 5;
+const EXIT_COL = 0;
+const EXIT_ROW = GRID_ROWS - 1;
 
 type EnemyKind = "air" | "sea";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
@@ -194,23 +195,40 @@ class DefenseScene extends Phaser.Scene {
   private createBase(): void {
     const x = WIDTH - 92;
     const y = HEIGHT / 2;
-    const glow = this.add.circle(x, y, 68, 0x84cc16, 0.12);
-    this.tweens.add({ targets: glow, alpha: 0.28, scale: 1.12, yoyo: true, repeat: -1, duration: 1200 });
-    for (let angle = 0; angle < 360; angle += 60) {
-      const rad = Phaser.Math.DegToRad(angle);
-      this.add.ellipse(x + Math.cos(rad) * 31, y + Math.sin(rad) * 31, 28, 48, 0x65a30d, 0.85).setRotation(rad + Math.PI / 2);
+    const glow = this.add.circle(x, y, 76, 0xdc2626, 0.1);
+    this.tweens.add({ targets: glow, alpha: 0.3, scale: 1.14, yoyo: true, repeat: -1, duration: 900 });
+
+    const beast = this.add.container(x, y);
+    for (let leg = -2; leg <= 2; leg += 1) {
+      const offsetY = leg * 17;
+      beast.add(this.add.line(0, 0, -28, offsetY, -69, offsetY - 14, 0x17130f, 1).setLineWidth(7));
+      beast.add(this.add.line(0, 0, 28, offsetY, 69, offsetY - 14, 0x17130f, 1).setLineWidth(7));
+      beast.add(this.add.circle(-69, offsetY - 14, 4, 0x090806));
+      beast.add(this.add.circle(69, offsetY - 14, 4, 0x090806));
     }
-    this.add.circle(x, y, 39, 0x3f6212).setStrokeStyle(3, 0xa3e635, 0.85);
-    this.add.circle(x, y, 23, 0x881337, 0.9).setStrokeStyle(2, 0xf472b6);
-    this.add.text(x, y - 2, "♥", { fontFamily: "Arial", fontSize: "24px", color: "#fecdd3", fontStyle: "bold" }).setOrigin(0.5);
-    this.add.text(x, y + 78, "CŒUR VÉGÉTAL", this.labelStyle(0xa3e635)).setOrigin(0.5);
+
+    const abdomen = this.add.ellipse(0, 18, 76, 98, 0x3f1d18).setStrokeStyle(4, 0x713f12);
+    const stripeOne = this.add.rectangle(0, 2, 67, 5, 0x0f0d09, 0.7);
+    const stripeTwo = this.add.rectangle(0, 25, 72, 5, 0x0f0d09, 0.7);
+    const thorax = this.add.ellipse(0, -34, 58, 54, 0x29211b).setStrokeStyle(3, 0x57534e);
+    const head = this.add.circle(0, -66, 27, 0x17130f).setStrokeStyle(3, 0x713f12);
+    const leftEye = this.add.circle(-10, -70, 7, 0xef4444).setStrokeStyle(2, 0xfca5a5);
+    const rightEye = this.add.circle(10, -70, 7, 0xef4444).setStrokeStyle(2, 0xfca5a5);
+    const leftMandible = this.add.triangle(-13, -84, -27, -6, -2, -1, -21, 22, 0x0a0907).setRotation(0.25);
+    const rightMandible = this.add.triangle(13, -84, 27, -6, 2, -1, 21, 22, 0x0a0907).setRotation(-0.25);
+    beast.add([abdomen, stripeOne, stripeTwo, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
+
+    this.tweens.add({ targets: abdomen, scaleX: 1.08, scaleY: 1.04, yoyo: true, repeat: -1, duration: 1050 });
+    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.35, yoyo: true, repeat: -1, duration: 420 });
+    this.add.text(x, y + 92, "REINE DE LA TOURBIÈRE", this.labelStyle(0xfca5a5)).setOrigin(0.5);
   }
 
   private createGates(): void {
-    const entryX = GRID_X + ENTRY_COL * CELL;
-    this.createPlantGate(entryX, 114, "ENTRÉE NORD", false);
-    this.createPlantGate(entryX, 674, "ENTRÉE SUD", true);
-    this.createPlantGate(GRID_X + EXIT_COL * CELL + 30, GRID_Y + EXIT_ROW * CELL, "SORTIE", false, true);
+    const topEntryX = GRID_X + TOP_ENTRY_COL * CELL;
+    const bottomEntryX = GRID_X + BOTTOM_ENTRY_COL * CELL;
+    this.createPlantGate(topEntryX, 114, "ENTRÉE NORD", false);
+    this.createPlantGate(bottomEntryX, 674, "ENTRÉE SUD", true);
+    this.createPlantGate(GRID_X + EXIT_COL * CELL, 674, "SORTIE", true, true);
   }
 
   private createPlantGate(x: number, y: number, label: string, flipped: boolean, compact = false): void {
@@ -414,10 +432,8 @@ class DefenseScene extends Phaser.Scene {
       const available = this.levelIndex >= definition.unlockLevel;
       const y = startY + index * 76;
       const button = this.add.container(x, y);
-      const bg = this.add.rectangle(0, 0, 170, 62, 0x052e2b, 0.94)
+      const bg = this.add.circle(-57, 0, 28, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
-      const icon = this.add.circle(-57, 0, 23, 0x14210f, available ? 0.95 : 0.45)
-        .setStrokeStyle(2, available ? definition.color : 0x28665e, 0.8);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(-57, 3)
         .setScale(0.67)
@@ -435,9 +451,11 @@ class DefenseScene extends Phaser.Scene {
         fontSize: "9px",
         color: "#64748b",
       });
-      button.add([bg, icon, plantPreview, title, target]);
-      button.setSize(170, 62).setInteractive({ useHandCursor: true });
-      button.on("pointerdown", () => this.selectTower(kind));
+      button.add([bg, plantPreview, title, target]);
+      bg.setInteractive({ useHandCursor: true });
+      bg.on("pointerover", () => bg.setScale(1.08));
+      bg.on("pointerout", () => bg.setScale(1));
+      bg.on("pointerdown", () => this.selectTower(kind));
       this.towerButtons.set(kind, button);
     });
   }
@@ -461,7 +479,7 @@ class DefenseScene extends Phaser.Scene {
     }
     this.selectedTower = kind;
     this.towerButtons.forEach((button, buttonKind) => {
-      const bg = button.getAt(0) as Phaser.GameObjects.Rectangle;
+      const bg = button.getAt(0) as Phaser.GameObjects.Arc;
       bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
     });
     this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : 30 / 60 / 100 / 160 pièces`);
@@ -474,7 +492,8 @@ class DefenseScene extends Phaser.Scene {
     const towerX = GRID_X + col * CELL;
     const towerY = GRID_Y + row * CELL;
 
-    const isEntry = col === ENTRY_COL && (row === TOP_ENTRY_ROW || row === BOTTOM_ENTRY_ROW);
+    const isEntry = (col === TOP_ENTRY_COL && row === TOP_ENTRY_ROW)
+      || (col === BOTTOM_ENTRY_COL && row === BOTTOM_ENTRY_ROW);
     const isExit = col === EXIT_COL && row === EXIT_ROW;
     if (isEntry || isExit) {
       this.updateHud("L’entrée et la sortie doivent rester libres");
@@ -489,8 +508,8 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
     const exit = { col: EXIT_COL, row: EXIT_ROW };
-    const topPath = this.calculatePath({ col: ENTRY_COL, row: TOP_ENTRY_ROW }, exit, { col, row });
-    const bottomPath = this.calculatePath({ col: ENTRY_COL, row: BOTTOM_ENTRY_ROW }, exit, { col, row });
+    const topPath = this.calculatePath({ col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, exit, { col, row });
+    const bottomPath = this.calculatePath({ col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, exit, { col, row });
     if (!topPath || !bottomPath) {
       this.updateHud("Un chemin doit rester ouvert depuis le nord et le sud");
       this.cameras.main.shake(120, 0.002);
@@ -635,7 +654,8 @@ class DefenseScene extends Phaser.Scene {
   private spawnEnemy(kind: EnemyKind, isBoss = false): void {
     const color = isBoss ? 0xdc2626 : kind === "air" ? 0xfb7185 : 0x22d3ee;
     const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
-    const spawnX = GRID_X + ENTRY_COL * CELL;
+    const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
+    const spawnX = GRID_X + entryCol * CELL;
     const spawnY = GRID_Y + entryRow * CELL;
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.55 : 1;
@@ -683,7 +703,7 @@ class DefenseScene extends Phaser.Scene {
       healthBar,
       healthBarWidth,
       path: kind === "sea" ? this.calculatePath(
-        { col: ENTRY_COL, row: entryRow },
+        { col: entryCol, row: entryRow },
         { col: EXIT_COL, row: EXIT_ROW },
       ) ?? [] : [],
       pathIndex: 1,
@@ -695,23 +715,27 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private moveEnemies(time: number, delta: number): void {
-    const baseX = WIDTH - 150;
+    const exitX = GRID_X + EXIT_COL * CELL;
+    const exitY = GRID_Y + EXIT_ROW * CELL;
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
       if (enemy.kind === "air") {
-        const targetY = HEIGHT / 2;
-        const dx = baseX - enemy.body.x;
-        const dy = targetY - enemy.body.y;
+        const dx = exitX - enemy.body.x;
+        const dy = exitY - enemy.body.y;
         const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
         const step = speed * (delta / 1000);
-        enemy.body.x += (dx / distance) * step;
-        enemy.body.y += (dy / distance) * step;
+        if (distance <= step) {
+          enemy.body.setPosition(exitX, exitY);
+        } else {
+          enemy.body.x += (dx / distance) * step;
+          enemy.body.y += (dy / distance) * step;
+        }
       } else {
         this.followPath(enemy, delta, speed);
       }
 
-      if (enemy.body.x >= baseX) {
+      if (Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, exitX, exitY) <= 4) {
         enemy.body.destroy();
         this.enemies.splice(index, 1);
         this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
