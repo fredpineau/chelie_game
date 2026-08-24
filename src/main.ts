@@ -12,7 +12,7 @@ class HomeScene extends Phaser.Scene {
     this.add
       .text(width / 2, height / 2 - 30, "Bienvenue dans mon jeu", {
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
-        fontSize: "clamp(30px, 7vw, 58px)",
+        fontSize: "58px",
         color: "#ffffff",
         align: "center",
         fontStyle: "bold",
@@ -23,7 +23,7 @@ class HomeScene extends Phaser.Scene {
     this.add
       .text(width / 2, height / 2 + 55, "L’aventure commence bientôt…", {
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
-        fontSize: "clamp(16px, 3.5vw, 24px)",
+        fontSize: "24px",
         color: "#cbd5e1",
         align: "center",
       })
