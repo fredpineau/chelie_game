@@ -88,19 +88,19 @@ const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 30, 60, 100, 160];
 
 const LEVELS: LevelDefinition[] = [
-  { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
-  { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
-  { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
-  { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
-  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
-  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 1.75, speedMultiplier: 1.25, swarmBonus: 5 },
+  { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
+  { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1.4, speedMultiplier: 1.08, swarmBonus: 4 },
+  { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.7, speedMultiplier: 1.17, swarmBonus: 6 },
+  { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 2.05, speedMultiplier: 1.25, swarmBonus: 8 },
+  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.45, speedMultiplier: 1.32, swarmBonus: 10 },
+  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 2.8, speedMultiplier: 1.38, swarmBonus: 12 },
 ];
 
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private towers: Tower[] = [];
   private baseHp = 20;
-  private energy = 100;
+  private energy = 60;
   private wave = 0;
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
@@ -171,7 +171,7 @@ class DefenseScene extends Phaser.Scene {
     this.enemies = [];
     this.towers = [];
     this.baseHp = 20;
-    this.energy = 100;
+    this.energy = 60;
     this.wave = 0;
     this.enemiesToSpawn = 0;
     this.spawnedThisWave = 0;
@@ -295,7 +295,7 @@ class DefenseScene extends Phaser.Scene {
     this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#99f6e4"));
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
     this.hpText = this.add.text(600, 35, "VIES 20 / 20", this.hudStyle("#fda4af"));
-    this.energyText = this.add.text(790, 35, "PIÈCES 100", this.hudStyle("#facc15"));
+    this.energyText = this.add.text(790, 35, "PIÈCES 60", this.hudStyle("#facc15"));
     this.add.text(790, 56, "AMÉLIORATIONS : N2 30  •  N3 60  •  N4 100  •  N5 160", {
       fontFamily: "Arial",
       fontSize: "9px",
@@ -384,8 +384,9 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = true;
     this.levelText.setText(LEVELS[this.levelIndex].code);
     this.setStartButtonEnabled(true);
-    this.scheduleNextWave(15_000);
-    this.updateHud(`${LEVELS[this.levelIndex].name} — préparez votre dispositif`);
+    this.nextWaveAt = 0;
+    this.autoWaveText.setText("PREMIÈRE VAGUE : LANCEMENT MANUEL");
+    this.updateHud(`${LEVELS[this.levelIndex].name} — placez vos plantes puis appuyez sur LANCER`);
   }
 
   private completeLevel(): void {
@@ -635,7 +636,7 @@ class DefenseScene extends Phaser.Scene {
     const level = LEVELS[this.levelIndex];
     if (level.waves !== null && this.wave >= level.waves) return;
     this.wave += 1;
-    this.enemiesToSpawn = 5 + this.wave * 2 + level.swarmBonus;
+    this.enemiesToSpawn = 6 + this.wave * 3 + level.swarmBonus;
     this.spawnedThisWave = 0;
     this.waveActive = true;
     this.nextSpawnAt = 0;
@@ -643,7 +644,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastCountdownValue = -1;
     this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
-    const origin = this.isTopWave() ? "NORD" : "SUD";
+    const origin = this.isTopWave() ? "NORD" : "OUEST";
     this.updateHud(this.isBossWave()
       ? `ALERTE ${origin} — insecte alpha détecté`
       : `Vague ${this.wave} en approche par le ${origin}`);
@@ -674,7 +675,7 @@ class DefenseScene extends Phaser.Scene {
     const isBoss = this.isBossWave() && this.spawnedThisWave === 0;
     this.spawnEnemy(kind, isBoss);
     this.spawnedThisWave += 1;
-    this.nextSpawnAt = time + Math.max(400, 1150 - this.wave * 45 - this.levelIndex * 35);
+    this.nextSpawnAt = time + Math.max(300, 1050 - this.wave * 50 - this.levelIndex * 40);
   }
 
   private spawnEnemy(kind: EnemyKind, isBoss = false): void {
@@ -721,13 +722,13 @@ class DefenseScene extends Phaser.Scene {
     container.add(bossLabel ? [...insectParts, healthBg, healthBar, bossLabel] : [...insectParts, healthBg, healthBar]);
 
     const level = LEVELS[this.levelIndex];
-    const hp = Math.round((48 + this.wave * 12) * level.healthMultiplier * (isBoss ? 8 : 1));
+    const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1));
     this.enemies.push({
       body: container,
       kind,
       hp,
       maxHp: hp,
-      speed: (38 + this.wave * 2.5) * level.speedMultiplier * (isBoss ? 0.62 : 1),
+      speed: (40 + this.wave * 2.8) * level.speedMultiplier * (isBoss ? 0.64 : 1),
       healthBar,
       healthBarWidth,
       path: this.calculatePath(
