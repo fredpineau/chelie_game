@@ -1,45 +1,452 @@
 import Phaser from "phaser";
 import "./style.css";
 
-class HomeScene extends Phaser.Scene {
+const WIDTH = 1280;
+const HEIGHT = 720;
+const HORIZON = 360;
+
+type EnemyKind = "air" | "sea";
+type TowerKind = "harpoon" | "flak" | "pulse";
+
+type Enemy = {
+  body: Phaser.GameObjects.Container;
+  kind: EnemyKind;
+  hp: number;
+  maxHp: number;
+  speed: number;
+  reward: number;
+  healthBar: Phaser.GameObjects.Rectangle;
+};
+
+type Tower = {
+  body: Phaser.GameObjects.Container;
+  kind: TowerKind;
+  range: number;
+  damage: number;
+  fireDelay: number;
+  lastShot: number;
+};
+
+type TowerDefinition = {
+  name: string;
+  icon: string;
+  cost: number;
+  color: number;
+  target: "air" | "sea" | "all";
+};
+
+const TOWERS: Record<TowerKind, TowerDefinition> = {
+  harpoon: { name: "Harpon", icon: "↗", cost: 80, color: 0x22d3ee, target: "sea" },
+  flak: { name: "Flak", icon: "✦", cost: 90, color: 0xfb7185, target: "air" },
+  pulse: { name: "Pulse", icon: "◎", cost: 130, color: 0xa78bfa, target: "all" },
+};
+
+class DefenseScene extends Phaser.Scene {
+  private enemies: Enemy[] = [];
+  private towers: Tower[] = [];
+  private credits = 240;
+  private baseHp = 20;
+  private wave = 0;
+  private enemiesToSpawn = 0;
+  private spawnedThisWave = 0;
+  private waveActive = false;
+  private selectedTower: TowerKind = "harpoon";
+  private nextSpawnAt = 0;
+  private creditsText!: Phaser.GameObjects.Text;
+  private hpText!: Phaser.GameObjects.Text;
+  private waveText!: Phaser.GameObjects.Text;
+  private statusText!: Phaser.GameObjects.Text;
+  private startButton!: Phaser.GameObjects.Container;
+  private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
+
   constructor() {
-    super("home");
+    super("defense");
   }
 
   create(): void {
-    const { width, height } = this.scale;
+    this.drawWorld();
+    this.createHud();
+    this.createTowerPalette();
+    this.createSlots();
+    this.updateHud("Choisissez une tour, puis un emplacement");
+  }
 
-    this.add
-      .text(width / 2, height / 2 - 30, "Bienvenue dans mon jeu", {
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
-        fontSize: "58px",
-        color: "#ffffff",
-        align: "center",
-        fontStyle: "bold",
-        wordWrap: { width: Math.min(width - 48, 760) },
-      })
-      .setOrigin(0.5);
+  update(time: number, delta: number): void {
+    if (this.baseHp <= 0) return;
 
-    this.add
-      .text(width / 2, height / 2 + 55, "L’aventure commence bientôt…", {
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    this.spawnWaveEnemies(time);
+    this.moveEnemies(delta);
+    this.fireTowers(time);
+
+    if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
+      this.waveActive = false;
+      this.credits += 70 + this.wave * 10;
+      this.updateHud(`Vague ${this.wave} repoussée — bonus reçu`);
+      this.setStartButtonEnabled(true);
+    }
+  }
+
+  private drawWorld(): void {
+    const background = this.add.graphics();
+    background.fillGradientStyle(0x071426, 0x0b1b35, 0x173a58, 0x0b243b, 1);
+    background.fillRect(0, 0, WIDTH, HORIZON);
+    background.fillGradientStyle(0x063b55, 0x0b4f6c, 0x032b45, 0x021d33, 1);
+    background.fillRect(0, HORIZON, WIDTH, HEIGHT - HORIZON);
+
+    for (let i = 0; i < 7; i += 1) {
+      this.add.circle(100 + i * 190, 95 + (i % 3) * 70, 2, 0xffffff, 0.25);
+    }
+
+    for (let y = HORIZON + 36; y < HEIGHT; y += 52) {
+      const wave = this.add.graphics();
+      wave.lineStyle(2, 0x67e8f9, 0.09);
+      wave.beginPath();
+      for (let x = 0; x <= WIDTH; x += 40) {
+        const py = y + Math.sin((x + y) / 55) * 7;
+        x === 0 ? wave.moveTo(x, py) : wave.lineTo(x, py);
+      }
+      wave.strokePath();
+    }
+
+    this.add.rectangle(WIDTH - 88, HORIZON, 176, HEIGHT, 0x030712, 0.42);
+    this.add.rectangle(WIDTH - 92, HORIZON, 3, HEIGHT, 0x38bdf8, 0.4);
+    this.createBase();
+
+    this.add.text(30, 108, "SECTEUR AÉRIEN", this.labelStyle(0x93c5fd));
+    this.add.text(30, HORIZON + 22, "SECTEUR MARIN", this.labelStyle(0x67e8f9));
+  }
+
+  private createBase(): void {
+    const x = WIDTH - 92;
+    const y = HORIZON;
+    const glow = this.add.circle(x, y, 62, 0x38bdf8, 0.12);
+    this.tweens.add({ targets: glow, alpha: 0.28, scale: 1.12, yoyo: true, repeat: -1, duration: 1200 });
+    this.add.circle(x, y, 43, 0x071426).setStrokeStyle(3, 0x38bdf8, 0.8);
+    this.add.circle(x, y, 26, 0x0ea5e9, 0.22).setStrokeStyle(2, 0x67e8f9);
+    this.add.text(x, y - 2, "C", { fontFamily: "Arial", fontSize: "28px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.text(x, y + 75, "CŒUR", this.labelStyle(0x7dd3fc)).setOrigin(0.5);
+  }
+
+  private createHud(): void {
+    this.add.rectangle(WIDTH / 2, 48, WIDTH - 40, 72, 0x020617, 0.76)
+      .setStrokeStyle(1, 0x334155, 0.8);
+
+    this.add.text(46, 30, "CHELIE", {
+      fontFamily: "Arial",
+      fontSize: "24px",
+      color: "#f8fafc",
+      fontStyle: "bold",
+      letterSpacing: 4,
+    });
+
+    this.waveText = this.add.text(255, 35, "VAGUE 0", this.hudStyle());
+    this.hpText = this.add.text(410, 35, "CŒUR 20", this.hudStyle("#fb7185"));
+    this.creditsText = this.add.text(565, 35, "CRÉDITS 240", this.hudStyle("#facc15"));
+    this.statusText = this.add.text(WIDTH / 2, 93, "", {
+      fontFamily: "Arial",
+      fontSize: "15px",
+      color: "#cbd5e1",
+    }).setOrigin(0.5);
+
+    this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0284c7, () => this.startWave());
+  }
+
+  private createTowerPalette(): void {
+    const x = 112;
+    const startY = 185;
+
+    this.add.text(x, startY - 48, "DÉFENSES", this.labelStyle(0xe2e8f0)).setOrigin(0.5);
+
+    (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
+      const definition = TOWERS[kind];
+      const y = startY + index * 92;
+      const button = this.add.container(x, y);
+      const bg = this.add.rectangle(0, 0, 170, 72, 0x071426, 0.92)
+        .setStrokeStyle(2, kind === this.selectedTower ? definition.color : 0x334155, 1);
+      const icon = this.add.circle(-55, 0, 22, definition.color, 0.2).setStrokeStyle(2, definition.color);
+      const iconText = this.add.text(-55, -2, definition.icon, {
+        fontFamily: "Arial",
         fontSize: "24px",
-        color: "#cbd5e1",
-        align: "center",
-      })
-      .setOrigin(0.5);
+        color: `#${definition.color.toString(16).padStart(6, "0")}`,
+      }).setOrigin(0.5);
+      const title = this.add.text(-20, -18, definition.name.toUpperCase(), {
+        fontFamily: "Arial",
+        fontSize: "15px",
+        color: "#f8fafc",
+        fontStyle: "bold",
+      });
+      const cost = this.add.text(-20, 8, `${definition.cost} crédits`, {
+        fontFamily: "Arial",
+        fontSize: "13px",
+        color: "#94a3b8",
+      });
+      button.add([bg, icon, iconText, title, cost]);
+      button.setSize(170, 72).setInteractive({ useHandCursor: true });
+      button.on("pointerdown", () => this.selectTower(kind));
+      this.towerButtons.set(kind, button);
+    });
+  }
+
+  private createSlots(): void {
+    const slots = [
+      { x: 350, y: 205, zone: "air" as EnemyKind },
+      { x: 585, y: 270, zone: "air" as EnemyKind },
+      { x: 835, y: 185, zone: "air" as EnemyKind },
+      { x: 380, y: 505, zone: "sea" as EnemyKind },
+      { x: 635, y: 585, zone: "sea" as EnemyKind },
+      { x: 875, y: 490, zone: "sea" as EnemyKind },
+    ];
+
+    slots.forEach(({ x, y, zone }) => {
+      const slot = this.add.container(x, y);
+      const ring = this.add.circle(0, 0, 34, 0x0f172a, 0.7).setStrokeStyle(2, 0x64748b, 0.65);
+      const plus = this.add.text(0, -2, "+", { fontFamily: "Arial", fontSize: "28px", color: "#94a3b8" }).setOrigin(0.5);
+      slot.add([ring, plus]);
+      slot.setSize(72, 72).setInteractive({ useHandCursor: true });
+      slot.on("pointerover", () => ring.setStrokeStyle(2, 0x7dd3fc, 1));
+      slot.on("pointerout", () => ring.setStrokeStyle(2, 0x64748b, 0.65));
+      slot.on("pointerdown", () => this.placeTower(slot, zone));
+    });
+  }
+
+  private selectTower(kind: TowerKind): void {
+    this.selectedTower = kind;
+    this.towerButtons.forEach((button, buttonKind) => {
+      const bg = button.getAt(0) as Phaser.GameObjects.Rectangle;
+      bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x334155, 1);
+    });
+    const target = TOWERS[kind].target === "all" ? "toutes les unités" : `unités ${TOWERS[kind].target === "air" ? "aériennes" : "marines"}`;
+    this.updateHud(`${TOWERS[kind].name} sélectionné — cible les ${target}`);
+  }
+
+  private placeTower(slot: Phaser.GameObjects.Container, zone: EnemyKind): void {
+    if (!slot.input?.enabled) return;
+    const definition = TOWERS[this.selectedTower];
+
+    if (definition.target !== "all" && definition.target !== zone) {
+      this.updateHud(`${definition.name} incompatible avec ce secteur`);
+      this.cameras.main.shake(120, 0.002);
+      return;
+    }
+    if (this.credits < definition.cost) {
+      this.updateHud("Crédits insuffisants");
+      return;
+    }
+
+    this.credits -= definition.cost;
+    slot.disableInteractive();
+    slot.removeAll(true);
+
+    const base = this.add.circle(0, 8, 28, 0x071426).setStrokeStyle(3, definition.color, 0.8);
+    const turret = this.add.rectangle(0, -3, 17, 34, definition.color, 0.92).setRounded(6);
+    const core = this.add.circle(0, -7, 8, 0xffffff, 0.85);
+    slot.add([base, turret, core]);
+
+    this.towers.push({
+      body: slot,
+      kind: this.selectedTower,
+      range: this.selectedTower === "pulse" ? 245 : 220,
+      damage: this.selectedTower === "pulse" ? 16 : 22,
+      fireDelay: this.selectedTower === "pulse" ? 680 : 850,
+      lastShot: 0,
+    });
+    this.updateHud(`${definition.name} déployé`);
+  }
+
+  private startWave(): void {
+    if (this.waveActive || this.baseHp <= 0) return;
+    this.wave += 1;
+    this.enemiesToSpawn = 5 + this.wave * 2;
+    this.spawnedThisWave = 0;
+    this.waveActive = true;
+    this.nextSpawnAt = 0;
+    this.setStartButtonEnabled(false);
+    this.updateHud(`Vague ${this.wave} en approche`);
+  }
+
+  private spawnWaveEnemies(time: number): void {
+    if (!this.waveActive || this.spawnedThisWave >= this.enemiesToSpawn || time < this.nextSpawnAt) return;
+
+    const kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
+    const y = kind === "air"
+      ? Phaser.Math.Between(150, HORIZON - 55)
+      : Phaser.Math.Between(HORIZON + 80, HEIGHT - 55);
+    this.spawnEnemy(kind, y);
+    this.spawnedThisWave += 1;
+    this.nextSpawnAt = time + Math.max(520, 1150 - this.wave * 45);
+  }
+
+  private spawnEnemy(kind: EnemyKind, y: number): void {
+    const color = kind === "air" ? 0xfb7185 : 0x22d3ee;
+    const container = this.add.container(220, y);
+    const shadow = this.add.ellipse(0, 15, 54, 14, 0x020617, 0.35);
+    const creature = kind === "air"
+      ? this.add.triangle(0, 0, -25, 12, 0, -18, 25, 12, color, 0.95)
+      : this.add.ellipse(0, 0, 54, 30, color, 0.9);
+    creature.setStrokeStyle(2, 0xffffff, 0.35);
+    const eye = this.add.circle(12, -4, 3, 0xffffff);
+    const healthBg = this.add.rectangle(0, -28, 48, 5, 0x020617, 0.8);
+    const healthBar = this.add.rectangle(-24, -28, 48, 5, color).setOrigin(0, 0.5);
+    container.add([shadow, creature, eye, healthBg, healthBar]);
+
+    const hp = 48 + this.wave * 12;
+    this.enemies.push({
+      body: container,
+      kind,
+      hp,
+      maxHp: hp,
+      speed: 38 + this.wave * 2.5,
+      reward: 16 + this.wave * 2,
+      healthBar,
+    });
+  }
+
+  private moveEnemies(delta: number): void {
+    const baseX = WIDTH - 150;
+    for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
+      const enemy = this.enemies[index];
+      enemy.body.x += enemy.speed * (delta / 1000);
+      enemy.body.y += Math.sin((enemy.body.x + index * 20) / 55) * 0.16;
+
+      if (enemy.body.x >= baseX) {
+        enemy.body.destroy();
+        this.enemies.splice(index, 1);
+        this.baseHp = Math.max(0, this.baseHp - 1);
+        this.cameras.main.shake(180, 0.005);
+        this.updateHud(this.baseHp > 0 ? "Le cœur est touché !" : "Défaite — le cœur est tombé");
+        if (this.baseHp === 0) this.gameOver();
+      }
+    }
+  }
+
+  private fireTowers(time: number): void {
+    for (const tower of this.towers) {
+      if (time - tower.lastShot < tower.fireDelay) continue;
+      const target = this.findTarget(tower);
+      if (!target) continue;
+
+      tower.lastShot = time;
+      const definition = TOWERS[tower.kind];
+      const projectile = this.add.circle(tower.body.x, tower.body.y, 5, definition.color);
+      this.tweens.add({
+        targets: projectile,
+        x: target.body.x,
+        y: target.body.y,
+        duration: 180,
+        ease: "Quad.easeIn",
+        onComplete: () => {
+          projectile.destroy();
+          if (!target.body.active) return;
+          target.hp -= tower.damage;
+          target.healthBar.width = 48 * Math.max(0, target.hp / target.maxHp);
+          this.createImpact(target.body.x, target.body.y, definition.color);
+          if (target.hp <= 0) this.destroyEnemy(target);
+        },
+      });
+    }
+  }
+
+  private findTarget(tower: Tower): Enemy | undefined {
+    const definition = TOWERS[tower.kind];
+    return this.enemies
+      .filter((enemy) => definition.target === "all" || definition.target === enemy.kind)
+      .filter((enemy) => Phaser.Math.Distance.Between(tower.body.x, tower.body.y, enemy.body.x, enemy.body.y) <= tower.range)
+      .sort((a, b) => b.body.x - a.body.x)[0];
+  }
+
+  private destroyEnemy(enemy: Enemy): void {
+    const index = this.enemies.indexOf(enemy);
+    if (index === -1) return;
+    this.credits += enemy.reward;
+    enemy.body.destroy();
+    this.enemies.splice(index, 1);
+    this.updateHud(`${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
+  }
+
+  private createImpact(x: number, y: number, color: number): void {
+    const impact = this.add.circle(x, y, 8, color, 0.65);
+    this.tweens.add({ targets: impact, scale: 2.4, alpha: 0, duration: 180, onComplete: () => impact.destroy() });
+  }
+
+  private gameOver(): void {
+    this.waveActive = false;
+    this.setStartButtonEnabled(false);
+    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x020617, 0.78);
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 45, "LE CŒUR EST TOMBÉ", {
+      fontFamily: "Arial",
+      fontSize: "42px",
+      color: "#fb7185",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 38, 190, 48, "RECOMMENCER", 0x0284c7, () => this.scene.restart());
+    overlay.setDepth(20);
+    title.setDepth(21);
+    retry.setDepth(21);
+  }
+
+  private updateHud(message: string): void {
+    this.creditsText?.setText(`CRÉDITS ${this.credits}`);
+    this.hpText?.setText(`CŒUR ${this.baseHp}`);
+    this.waveText?.setText(`VAGUE ${this.wave}`);
+    this.statusText?.setText(message);
+  }
+
+  private setStartButtonEnabled(enabled: boolean): void {
+    this.startButton.setAlpha(enabled ? 1 : 0.45);
+    const hitArea = this.startButton.input;
+    if (hitArea) hitArea.enabled = enabled;
+  }
+
+  private makeButton(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    label: string,
+    color: number,
+    onClick: () => void,
+  ): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y);
+    const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x7dd3fc, 0.65);
+    const text = this.add.text(0, 0, label, {
+      fontFamily: "Arial",
+      fontSize: "15px",
+      color: "#ffffff",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    container.add([bg, text]);
+    container.setSize(width, height).setInteractive({ useHandCursor: true });
+    container.on("pointerover", () => bg.setFillStyle(color, 1));
+    container.on("pointerout", () => bg.setFillStyle(color, 0.9));
+    container.on("pointerdown", onClick);
+    return container;
+  }
+
+  private hudStyle(color = "#e2e8f0"): Phaser.Types.GameObjects.Text.TextStyle {
+    return { fontFamily: "Arial", fontSize: "16px", color, fontStyle: "bold" };
+  }
+
+  private labelStyle(color: number): Phaser.Types.GameObjects.Text.TextStyle {
+    return {
+      fontFamily: "Arial",
+      fontSize: "13px",
+      color: `#${color.toString(16).padStart(6, "0")}`,
+      fontStyle: "bold",
+      letterSpacing: 2,
+    };
   }
 }
 
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "app",
-  width: 1280,
-  height: 720,
-  backgroundColor: "#111827",
+  width: WIDTH,
+  height: HEIGHT,
+  backgroundColor: "#020617",
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: HomeScene,
+  render: { antialias: true, pixelArt: false },
+  scene: DefenseScene,
 });
