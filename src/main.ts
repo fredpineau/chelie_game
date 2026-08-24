@@ -22,6 +22,7 @@ const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
 type TargetPriority = "first" | "strong" | "weak";
+type ExitId = "right" | "bottom";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
 type TowerEffect = "standard" | "slow" | "splash";
 
@@ -46,6 +47,7 @@ type Enemy = {
   trait: EnemyTrait;
   armor: number;
   regeneration: number;
+  exitId: ExitId;
 };
 
 type Tower = {
@@ -132,6 +134,7 @@ class DefenseScene extends Phaser.Scene {
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
   private towerActionPanel?: Phaser.GameObjects.Container;
+  private exitTraps = new Map<ExitId, { leftJaw: Phaser.GameObjects.Container; rightJaw: Phaser.GameObjects.Container }>();
 
   constructor() {
     super("defense");
@@ -194,6 +197,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastCountdownValue = -1;
     this.selectedTower = "harpoon";
     this.towerButtons.clear();
+    this.exitTraps.clear();
   }
 
   private drawWorld(): void {
@@ -302,47 +306,55 @@ class DefenseScene extends Phaser.Scene {
   private createGates(): void {
     this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", Math.PI, false);
     this.createCreatureGate(GRID_X + 40, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitQueen(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "SORTIE 1", -Math.PI / 2);
-    this.createExitQueen(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", 0);
+    this.createExitTrap(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "right", -Math.PI / 2);
+    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "bottom", 0);
   }
 
-  private createExitQueen(x: number, y: number, label: string, rotation: number): void {
-    const queen = this.add.container(x, y).setRotation(rotation);
-    const shadow = this.add.ellipse(0, 10, 76, 96, 0x050706, 0.24);
-    const leftWing = this.add.ellipse(-23, -14, 27, 65, 0xb3c0b4, 0.2).setRotation(-0.42).setStrokeStyle(1, 0x4b554e, 0.6);
-    const rightWing = this.add.ellipse(23, -14, 27, 65, 0xb3c0b4, 0.2).setRotation(0.42).setStrokeStyle(1, 0x4b554e, 0.6);
-    const leftWingVein = this.add.line(0, 0, -12, -6, -32, -40, 0x4b554e, 0.45).setLineWidth(1);
-    const rightWingVein = this.add.line(0, 0, 12, -6, 32, -40, 0x4b554e, 0.45).setLineWidth(1);
-    const abdomen = this.add.ellipse(0, 20, 36, 67, 0x4a3520).setStrokeStyle(2, 0x1b1710, 0.95);
-    const abdomenTip = this.add.triangle(0, 56, -10, -5, 10, -5, 0, 15, 0x21180f);
-    const bandOne = this.add.rectangle(0, 4, 33, 7, 0x8a7139, 0.82).setRotation(-0.04);
-    const bandTwo = this.add.rectangle(0, 20, 35, 7, 0x806634, 0.76).setRotation(0.03);
-    const bandThree = this.add.rectangle(0, 36, 29, 6, 0x71582d, 0.7);
-    const waist = this.add.ellipse(0, -9, 13, 17, 0x171713);
-    const thorax = this.add.ellipse(0, -23, 34, 39, 0x28261e).setStrokeStyle(2, 0x13130f);
-    const thoraxHair = this.add.ellipse(0, -24, 27, 31, 0x564b35, 0.28);
-    const head = this.add.ellipse(0, -50, 28, 23, 0x211f19).setStrokeStyle(2, 0x11110e);
-    const leftEye = this.add.ellipse(-8, -52, 6, 9, 0x080908, 0.95);
-    const rightEye = this.add.ellipse(8, -52, 6, 9, 0x080908, 0.95);
-    const leftAntenna = this.add.line(0, 0, -6, -59, -18, -72, 0x11120f).setLineWidth(2);
-    const rightAntenna = this.add.line(0, 0, 6, -59, 18, -72, 0x11120f).setLineWidth(2);
-    const leftMandible = this.add.triangle(-7, -61, -7, -2, 5, 0, -5, 8, 0x0a0a08).setRotation(0.2);
-    const rightMandible = this.add.triangle(7, -61, 7, -2, -5, 0, 5, 8, 0x0a0a08).setRotation(-0.2);
-    queen.add([shadow, leftWing, rightWing, leftWingVein, rightWingVein]);
-    for (let leg = -1; leg <= 1; leg += 1) {
-      const offsetY = -25 + leg * 15;
-      const reachY = offsetY + leg * 10;
-      queen.add(this.add.line(0, 0, -13, offsetY, -29, reachY, 0x13140f).setLineWidth(3));
-      queen.add(this.add.line(0, 0, -29, reachY, -43, reachY + 12, 0x13140f).setLineWidth(2));
-      queen.add(this.add.line(0, 0, 13, offsetY, 29, reachY, 0x13140f).setLineWidth(3));
-      queen.add(this.add.line(0, 0, 29, reachY, 43, reachY + 12, 0x13140f).setLineWidth(2));
+  private createExitTrap(x: number, y: number, exitId: ExitId, rotation: number): void {
+    const trap = this.add.container(x, y).setRotation(rotation);
+    const shadow = this.add.ellipse(0, 3, 90, 76, 0x07110b, 0.32);
+    const stem = this.add.rectangle(0, 37, 13, 48, 0x31562f).setStrokeStyle(2, 0x1d3820);
+    const leftJaw = this.add.container(-17, -5).setRotation(-0.22);
+    const rightJaw = this.add.container(17, -5).setRotation(0.22);
+    const leftLobe = this.add.ellipse(0, 0, 42, 76, 0x597f48).setStrokeStyle(3, 0x28472d);
+    const rightLobe = this.add.ellipse(0, 0, 42, 76, 0x597f48).setStrokeStyle(3, 0x28472d);
+    const leftMouth = this.add.ellipse(7, -2, 26, 59, 0x733b3d, 0.92).setStrokeStyle(2, 0x431e24);
+    const rightMouth = this.add.ellipse(-7, -2, 26, 59, 0x733b3d, 0.92).setStrokeStyle(2, 0x431e24);
+    leftJaw.add([leftLobe, leftMouth]);
+    rightJaw.add([rightLobe, rightMouth]);
+    for (let tooth = -2; tooth <= 2; tooth += 1) {
+      leftJaw.add(this.add.triangle(19, tooth * 12 - 2, -4, -3, 8, 0, -4, 3, 0xd0c7a3));
+      rightJaw.add(this.add.triangle(-19, tooth * 12 - 2, 4, -3, -8, 0, 4, 3, 0xd0c7a3));
     }
-    queen.add([abdomen, abdomenTip, bandOne, bandTwo, bandThree, waist, thorax, thoraxHair, head, leftEye, rightEye, leftAntenna, rightAntenna, leftMandible, rightMandible]);
+    trap.add([shadow, stem, leftJaw, rightJaw]);
+    this.exitTraps.set(exitId, { leftJaw, rightJaw });
+    this.tweens.add({ targets: [leftLobe, rightLobe], scaleY: 1.025, yoyo: true, repeat: -1, duration: 1450 });
+  }
 
-    this.tweens.add({ targets: [leftWing, leftWingVein], angle: -3, yoyo: true, repeat: -1, duration: 180 });
-    this.tweens.add({ targets: [rightWing, rightWingVein], angle: 3, yoyo: true, repeat: -1, duration: 180 });
-    this.tweens.add({ targets: abdomen, scaleY: 1.025, yoyo: true, repeat: -1, duration: 1300 });
-
+  private snapExitTrap(exitId: ExitId): void {
+    const trap = this.exitTraps.get(exitId);
+    if (!trap) return;
+    this.tweens.killTweensOf([trap.leftJaw, trap.rightJaw]);
+    trap.leftJaw.setPosition(-17, -5).setRotation(-0.22);
+    trap.rightJaw.setPosition(17, -5).setRotation(0.22);
+    this.tweens.add({
+      targets: trap.leftJaw,
+      x: -4,
+      rotation: -0.02,
+      duration: 95,
+      hold: 120,
+      yoyo: true,
+      ease: "Cubic.easeIn",
+    });
+    this.tweens.add({
+      targets: trap.rightJaw,
+      x: 4,
+      rotation: 0.02,
+      duration: 95,
+      hold: 120,
+      yoyo: true,
+      ease: "Cubic.easeIn",
+    });
   }
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
@@ -819,6 +831,7 @@ class DefenseScene extends Phaser.Scene {
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
     const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
     const exitCol = this.isTopWave() ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
+    const exitId: ExitId = this.isTopWave() ? "right" : "bottom";
     const spawnX = this.isTopWave() ? MAP_CENTER_X : GRID_X;
     const spawnY = this.isTopWave() ? GRID_Y : MAP_CENTER_Y;
     const exitX = this.isTopWave() ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
@@ -916,6 +929,7 @@ class DefenseScene extends Phaser.Scene {
       trait,
       armor: trait === "armored" ? (isBoss ? 0.3 : 0.38) : 0,
       regeneration: trait === "regenerator" ? 0.018 : 0,
+      exitId,
     });
   }
 
@@ -941,6 +955,7 @@ class DefenseScene extends Phaser.Scene {
       this.followPath(enemy, delta, speed);
 
       if (Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, exitX, exitY) <= 4) {
+        this.snapExitTrap(enemy.exitId);
         enemy.body.destroy();
         this.enemies.splice(index, 1);
         this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
