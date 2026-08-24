@@ -19,7 +19,6 @@ type Enemy = {
   hp: number;
   maxHp: number;
   speed: number;
-  reward: number;
   healthBar: Phaser.GameObjects.Rectangle;
   path: Phaser.Math.Vector2[];
   pathIndex: number;
@@ -39,21 +38,19 @@ type Tower = {
 type TowerDefinition = {
   name: string;
   icon: string;
-  cost: number;
   color: number;
   target: "air" | "sea" | "all";
 };
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
-  harpoon: { name: "Harpon", icon: "↗", cost: 80, color: 0x22d3ee, target: "sea" },
-  flak: { name: "Flak", icon: "✦", cost: 90, color: 0xfb7185, target: "air" },
-  pulse: { name: "Pulse", icon: "◎", cost: 130, color: 0xa78bfa, target: "all" },
+  harpoon: { name: "Harpon", icon: "H", color: 0x38bdf8, target: "sea" },
+  flak: { name: "Flak", icon: "F", color: 0xf97316, target: "air" },
+  pulse: { name: "Pulse", icon: "P", color: 0x8b5cf6, target: "all" },
 };
 
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private towers: Tower[] = [];
-  private credits = 240;
   private baseHp = 20;
   private wave = 0;
   private enemiesToSpawn = 0;
@@ -61,7 +58,6 @@ class DefenseScene extends Phaser.Scene {
   private waveActive = false;
   private selectedTower: TowerKind = "harpoon";
   private nextSpawnAt = 0;
-  private creditsText!: Phaser.GameObjects.Text;
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
@@ -89,15 +85,14 @@ class DefenseScene extends Phaser.Scene {
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
-      this.credits += 70 + this.wave * 10;
-      this.updateHud(`Vague ${this.wave} repoussée — bonus reçu`);
+      this.updateHud(`Vague ${this.wave} neutralisée — secteur sécurisé`);
       this.setStartButtonEnabled(true);
     }
   }
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x071426, 0x0b2942, 0x07516b, 0x032b45, 1);
+    background.fillGradientStyle(0x080b12, 0x111827, 0x172033, 0x0b1220, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     for (let i = 0; i < 7; i += 1) {
@@ -106,7 +101,7 @@ class DefenseScene extends Phaser.Scene {
 
     for (let y = 130; y < HEIGHT; y += 58) {
       const wave = this.add.graphics();
-      wave.lineStyle(2, 0x67e8f9, 0.09);
+      wave.lineStyle(2, 0x64748b, 0.08);
       wave.beginPath();
       for (let x = 0; x <= WIDTH; x += 40) {
         const py = y + Math.sin((x + y) / 55) * 7;
@@ -127,39 +122,44 @@ class DefenseScene extends Phaser.Scene {
     this.add.circle(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, 18, 0x22d3ee, 0.2).setStrokeStyle(2, 0x22d3ee);
     this.add.text(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, "IN", { fontFamily: "Arial", fontSize: "11px", color: "#67e8f9", fontStyle: "bold" }).setOrigin(0.5);
 
-    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x030712, 0.42);
-    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x38bdf8, 0.4);
+    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x02040a, 0.66);
+    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0xef4444, 0.5);
     this.createBase();
 
-    this.add.text(224, 108, "ZONE DE DÉFENSE UNIFIÉE", this.labelStyle(0x93c5fd));
+    this.add.text(224, 108, "PÉRIMÈTRE DE CONFINEMENT 01", this.labelStyle(0x94a3b8));
   }
 
   private createBase(): void {
     const x = WIDTH - 92;
     const y = HEIGHT / 2;
-    const glow = this.add.circle(x, y, 62, 0x38bdf8, 0.12);
+    const glow = this.add.circle(x, y, 62, 0xef4444, 0.1);
     this.tweens.add({ targets: glow, alpha: 0.28, scale: 1.12, yoyo: true, repeat: -1, duration: 1200 });
-    this.add.circle(x, y, 43, 0x071426).setStrokeStyle(3, 0x38bdf8, 0.8);
-    this.add.circle(x, y, 26, 0x0ea5e9, 0.22).setStrokeStyle(2, 0x67e8f9);
-    this.add.text(x, y - 2, "C", { fontFamily: "Arial", fontSize: "28px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
-    this.add.text(x, y + 75, "CŒUR", this.labelStyle(0x7dd3fc)).setOrigin(0.5);
+    this.add.circle(x, y, 43, 0x070a10).setStrokeStyle(3, 0xef4444, 0.8);
+    this.add.circle(x, y, 26, 0x991b1b, 0.28).setStrokeStyle(2, 0xf87171);
+    this.add.text(x, y - 2, "N", { fontFamily: "Arial", fontSize: "28px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.text(x, y + 75, "NOYAU", this.labelStyle(0xf87171)).setOrigin(0.5);
   }
 
   private createHud(): void {
     this.add.rectangle(WIDTH / 2, 48, WIDTH - 40, 72, 0x020617, 0.76)
       .setStrokeStyle(1, 0x334155, 0.8);
 
-    this.add.text(46, 30, "CHELIE", {
+    this.add.text(46, 25, "CHELIE //", {
       fontFamily: "Arial",
-      fontSize: "24px",
+      fontSize: "21px",
       color: "#f8fafc",
       fontStyle: "bold",
       letterSpacing: 4,
     });
+    this.add.text(46, 50, "DEFENSE PROTOCOL", {
+      fontFamily: "Arial",
+      fontSize: "10px",
+      color: "#64748b",
+      letterSpacing: 2,
+    });
 
-    this.waveText = this.add.text(255, 35, "VAGUE 0", this.hudStyle());
-    this.hpText = this.add.text(410, 35, "CŒUR 20", this.hudStyle("#fb7185"));
-    this.creditsText = this.add.text(565, 35, "CRÉDITS 240", this.hudStyle("#facc15"));
+    this.waveText = this.add.text(300, 35, "VAGUE 0", this.hudStyle());
+    this.hpText = this.add.text(485, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
     this.statusText = this.add.text(WIDTH / 2, 93, "", {
       fontFamily: "Arial",
       fontSize: "15px",
@@ -173,7 +173,7 @@ class DefenseScene extends Phaser.Scene {
     const x = 112;
     const startY = 185;
 
-    this.add.text(x, startY - 48, "DÉFENSES", this.labelStyle(0xe2e8f0)).setOrigin(0.5);
+    this.add.text(x, startY - 48, "ARSENAL", this.labelStyle(0xe2e8f0)).setOrigin(0.5);
 
     (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
       const definition = TOWERS[kind];
@@ -193,12 +193,14 @@ class DefenseScene extends Phaser.Scene {
         color: "#f8fafc",
         fontStyle: "bold",
       });
-      const cost = this.add.text(-20, 8, `${definition.cost} crédits`, {
+      const targetLabel = definition.target === "sea" ? "CIBLE MARINE" : definition.target === "air" ? "CIBLE AÉRIENNE" : "CIBLE UNIVERSELLE";
+      const target = this.add.text(-20, 8, targetLabel, {
         fontFamily: "Arial",
-        fontSize: "13px",
-        color: "#94a3b8",
+        fontSize: "10px",
+        color: "#64748b",
+        letterSpacing: 1,
       });
-      button.add([bg, icon, iconText, title, cost]);
+      button.add([bg, icon, iconText, title, target]);
       button.setSize(170, 72).setInteractive({ useHandCursor: true });
       button.on("pointerdown", () => this.selectTower(kind));
       this.towerButtons.set(kind, button);
@@ -238,10 +240,6 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud("L’entrée et la sortie doivent rester libres");
       return;
     }
-    if (this.credits < definition.cost) {
-      this.updateHud("Crédits insuffisants");
-      return;
-    }
     if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
       this.updateHud("Cet emplacement est déjà occupé");
       return;
@@ -252,7 +250,6 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
 
-    this.credits -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
     const base = this.add.circle(0, 8, 28, 0x071426).setStrokeStyle(3, definition.color, 0.8);
@@ -316,7 +313,6 @@ class DefenseScene extends Phaser.Scene {
       hp,
       maxHp: hp,
       speed: 38 + this.wave * 2.5,
-      reward: 16 + this.wave * 2,
       healthBar,
       path: kind === "sea" ? this.calculatePath(
         { col: 0, row: ENTRY_ROW },
@@ -386,7 +382,6 @@ class DefenseScene extends Phaser.Scene {
   private destroyEnemy(enemy: Enemy): void {
     const index = this.enemies.indexOf(enemy);
     if (index === -1) return;
-    this.credits += enemy.reward;
     enemy.body.destroy();
     this.enemies.splice(index, 1);
     this.updateHud(`${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
@@ -487,8 +482,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private updateHud(message: string): void {
-    this.creditsText?.setText(`CRÉDITS ${this.credits}`);
-    this.hpText?.setText(`CŒUR ${this.baseHp}`);
+    this.hpText?.setText(`INTÉGRITÉ ${this.baseHp}`);
     this.waveText?.setText(`VAGUE ${this.wave}`);
     this.statusText?.setText(message);
   }
