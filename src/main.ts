@@ -202,7 +202,7 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x2b5948, 0x367269, 0x3d7f92, 0x2b6877, 1);
+    background.fillGradientStyle(0x8b7b5c, 0xa49470, 0x796b50, 0x91805e, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
@@ -211,13 +211,29 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createMarshAtmosphere(): void {
+    const sunX = 170;
+    const sunY = 92;
+    const sunHalo = this.add.circle(sunX, sunY, 50, 0xf6d98b, 0.1);
+    const sun = this.add.circle(sunX, sunY, 27, 0xf1cf78, 0.86).setStrokeStyle(2, 0xffe5a6, 0.55);
+    const sunRays = this.add.graphics();
+    sunRays.lineStyle(2, 0xf8dda0, 0.32);
+    for (let ray = 0; ray < 12; ray += 1) {
+      const angle = (Math.PI * 2 * ray) / 12;
+      sunRays.beginPath();
+      sunRays.moveTo(sunX + Math.cos(angle) * 36, sunY + Math.sin(angle) * 36);
+      sunRays.lineTo(sunX + Math.cos(angle) * 46, sunY + Math.sin(angle) * 46);
+      sunRays.strokePath();
+    }
+    this.tweens.add({ targets: sunHalo, scale: 1.16, alpha: 0.05, yoyo: true, repeat: -1, duration: 2800 });
+    this.tweens.add({ targets: sun, alpha: 0.72, yoyo: true, repeat: -1, duration: 2200 });
+
     const terrain = this.add.graphics();
-    terrain.fillStyle(0x355e4d, 0.34);
+    terrain.fillStyle(0x5f533f, 0.34);
     terrain.fillEllipse(470, 245, 390, 180);
     terrain.fillEllipse(925, 500, 520, 230);
-    terrain.fillStyle(0x4a8790, 0.4);
+    terrain.fillStyle(0x4f8588, 0.42);
     terrain.fillEllipse(730, 360, 610, 300);
-    terrain.fillStyle(0x77aaa0, 0.22);
+    terrain.fillStyle(0x88b0a5, 0.24);
     terrain.fillEllipse(660, 330, 450, 170);
     terrain.fillEllipse(1030, 235, 310, 130);
 
@@ -406,10 +422,12 @@ class DefenseScene extends Phaser.Scene {
     const rim = this.add.circle(0, 0, 29, 0x547f90, 0.96).setStrokeStyle(3, 0xa7ccd4, 0.75);
     const opening = this.add.circle(0, 0, 21, 0x102d39, 1).setStrokeStyle(2, 0x315d70, 0.9);
     const depth = this.add.circle(0, 0, 11, 0x071a23, 0.95);
-    flower.add([rim, opening, depth]);
+    const redCore = this.add.circle(0, 0, 7, 0x9b3038, 0.95).setStrokeStyle(2, 0x541d25, 0.9);
+    flower.add([rim, opening, depth, redCore]);
 
     this.tweens.add({ targets: petals, scaleY: 1.045, alpha: 0.76, yoyo: true, repeat: -1, duration: 1900 });
     this.tweens.add({ targets: depth, scale: 1.18, alpha: 0.65, yoyo: true, repeat: -1, duration: 1300 });
+    this.tweens.add({ targets: redCore, scale: 1.16, alpha: 0.72, yoyo: true, repeat: -1, duration: 1050 });
   }
 
   private createHud(): void {
