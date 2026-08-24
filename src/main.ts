@@ -198,7 +198,7 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x183a30, 0x20514a, 0x286173, 0x194955, 1);
+    background.fillGradientStyle(0x2b5948, 0x367269, 0x3d7f92, 0x2b6877, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
@@ -208,17 +208,17 @@ class DefenseScene extends Phaser.Scene {
 
   private createMarshAtmosphere(): void {
     const terrain = this.add.graphics();
-    terrain.fillStyle(0x172f26, 0.38);
+    terrain.fillStyle(0x355e4d, 0.34);
     terrain.fillEllipse(470, 245, 390, 180);
     terrain.fillEllipse(925, 500, 520, 230);
-    terrain.fillStyle(0x2d6770, 0.46);
+    terrain.fillStyle(0x4a8790, 0.4);
     terrain.fillEllipse(730, 360, 610, 300);
-    terrain.fillStyle(0x4b8582, 0.22);
+    terrain.fillStyle(0x77aaa0, 0.22);
     terrain.fillEllipse(660, 330, 450, 170);
     terrain.fillEllipse(1030, 235, 310, 130);
 
     const waterSheen = this.add.graphics();
-    waterSheen.lineStyle(2, 0xa7c8c2, 0.2);
+    waterSheen.lineStyle(2, 0xd1e2dc, 0.27);
     [
       { x: 420, y: 225, width: 180 },
       { x: 690, y: 410, width: 250 },
