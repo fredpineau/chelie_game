@@ -302,29 +302,40 @@ class DefenseScene extends Phaser.Scene {
 
   private createExitQueen(x: number, y: number, label: string, rotation: number): void {
     const queen = this.add.container(x, y).setRotation(rotation);
-    const glow = this.add.ellipse(0, 4, 88, 108, 0x7f1d1d, 0.1);
-    const abdomen = this.add.ellipse(0, 15, 46, 72, 0x281613).setStrokeStyle(3, 0x713f12, 0.9);
-    const carapace = this.add.triangle(0, 4, -21, 24, 0, -30, 21, 24, 0x3f211b, 0.95);
-    const ridge = this.add.rectangle(0, 13, 3, 55, 0x0c0a08, 0.9);
-    const thorax = this.add.ellipse(0, -25, 37, 40, 0x1c1917).setStrokeStyle(2, 0x57534e);
-    const head = this.add.triangle(0, -53, -18, 12, 0, -17, 18, 12, 0x11100e).setStrokeStyle(2, 0x713f12);
-    const leftEye = this.add.line(0, 0, -12, -53, -3, -50, 0xb91c1c).setLineWidth(3);
-    const rightEye = this.add.line(0, 0, 12, -53, 3, -50, 0xb91c1c).setLineWidth(3);
-    const leftMandible = this.add.triangle(-10, -63, -19, -3, -2, 0, -15, 18, 0x050504).setRotation(0.18);
-    const rightMandible = this.add.triangle(10, -63, 19, -3, 2, 0, 15, 18, 0x050504).setRotation(-0.18);
-    queen.add([glow]);
-    for (let leg = -2; leg <= 2; leg += 1) {
-      const offsetY = leg * 13;
-      queen.add(this.add.line(0, 0, -15, offsetY, -44, offsetY - 14, 0x0a0908).setLineWidth(4));
-      queen.add(this.add.line(0, 0, 15, offsetY, 44, offsetY - 14, 0x0a0908).setLineWidth(4));
-      queen.add(this.add.triangle(-45, offsetY - 14, -5, -2, 5, 0, -4, 8, 0x34251b));
-      queen.add(this.add.triangle(45, offsetY - 14, 5, -2, -5, 0, 4, 8, 0x34251b));
+    const shadow = this.add.ellipse(0, 10, 76, 96, 0x050706, 0.24);
+    const leftWing = this.add.ellipse(-23, -14, 27, 65, 0xb3c0b4, 0.2).setRotation(-0.42).setStrokeStyle(1, 0x4b554e, 0.6);
+    const rightWing = this.add.ellipse(23, -14, 27, 65, 0xb3c0b4, 0.2).setRotation(0.42).setStrokeStyle(1, 0x4b554e, 0.6);
+    const leftWingVein = this.add.line(0, 0, -12, -6, -32, -40, 0x4b554e, 0.45).setLineWidth(1);
+    const rightWingVein = this.add.line(0, 0, 12, -6, 32, -40, 0x4b554e, 0.45).setLineWidth(1);
+    const abdomen = this.add.ellipse(0, 20, 36, 67, 0x4a3520).setStrokeStyle(2, 0x1b1710, 0.95);
+    const abdomenTip = this.add.triangle(0, 56, -10, -5, 10, -5, 0, 15, 0x21180f);
+    const bandOne = this.add.rectangle(0, 4, 33, 7, 0x8a7139, 0.82).setRotation(-0.04);
+    const bandTwo = this.add.rectangle(0, 20, 35, 7, 0x806634, 0.76).setRotation(0.03);
+    const bandThree = this.add.rectangle(0, 36, 29, 6, 0x71582d, 0.7);
+    const waist = this.add.ellipse(0, -9, 13, 17, 0x171713);
+    const thorax = this.add.ellipse(0, -23, 34, 39, 0x28261e).setStrokeStyle(2, 0x13130f);
+    const thoraxHair = this.add.ellipse(0, -24, 27, 31, 0x564b35, 0.28);
+    const head = this.add.ellipse(0, -50, 28, 23, 0x211f19).setStrokeStyle(2, 0x11110e);
+    const leftEye = this.add.ellipse(-8, -52, 6, 9, 0x080908, 0.95);
+    const rightEye = this.add.ellipse(8, -52, 6, 9, 0x080908, 0.95);
+    const leftAntenna = this.add.line(0, 0, -6, -59, -18, -72, 0x11120f).setLineWidth(2);
+    const rightAntenna = this.add.line(0, 0, 6, -59, 18, -72, 0x11120f).setLineWidth(2);
+    const leftMandible = this.add.triangle(-7, -61, -7, -2, 5, 0, -5, 8, 0x0a0a08).setRotation(0.2);
+    const rightMandible = this.add.triangle(7, -61, 7, -2, -5, 0, 5, 8, 0x0a0a08).setRotation(-0.2);
+    queen.add([shadow, leftWing, rightWing, leftWingVein, rightWingVein]);
+    for (let leg = -1; leg <= 1; leg += 1) {
+      const offsetY = -25 + leg * 15;
+      const reachY = offsetY + leg * 10;
+      queen.add(this.add.line(0, 0, -13, offsetY, -29, reachY, 0x13140f).setLineWidth(3));
+      queen.add(this.add.line(0, 0, -29, reachY, -43, reachY + 12, 0x13140f).setLineWidth(2));
+      queen.add(this.add.line(0, 0, 13, offsetY, 29, reachY, 0x13140f).setLineWidth(3));
+      queen.add(this.add.line(0, 0, 29, reachY, 43, reachY + 12, 0x13140f).setLineWidth(2));
     }
-    queen.add([abdomen, carapace, ridge, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
+    queen.add([abdomen, abdomenTip, bandOne, bandTwo, bandThree, waist, thorax, thoraxHair, head, leftEye, rightEye, leftAntenna, rightAntenna, leftMandible, rightMandible]);
 
-    this.tweens.add({ targets: glow, alpha: 0.3, scale: 1.12, yoyo: true, repeat: -1, duration: 760 });
-    this.tweens.add({ targets: abdomen, scaleX: 1.07, scaleY: 1.04, yoyo: true, repeat: -1, duration: 920 });
-    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.3, yoyo: true, repeat: -1, duration: 740 });
+    this.tweens.add({ targets: [leftWing, leftWingVein], angle: -3, yoyo: true, repeat: -1, duration: 180 });
+    this.tweens.add({ targets: [rightWing, rightWingVein], angle: 3, yoyo: true, repeat: -1, duration: 180 });
+    this.tweens.add({ targets: abdomen, scaleY: 1.025, yoyo: true, repeat: -1, duration: 1300 });
 
     const verticalQueen = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
     const labelX = verticalQueen ? x - 58 : x;
@@ -332,7 +343,7 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(labelX, labelY, `${label} · REINE`, {
       fontFamily: "Arial",
       fontSize: "11px",
-      color: "#fecaca",
+      color: "#d4c7ad",
       fontStyle: "bold",
       letterSpacing: 1.2,
       backgroundColor: "#052e2b",
