@@ -262,7 +262,7 @@ class DefenseScene extends Phaser.Scene {
 
     this.levelText = this.add.text(270, 35, "BIOME --", this.hudStyle("#99f6e4"));
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
-    this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
+    this.hpText = this.add.text(600, 35, "VIES 20 / 20", this.hudStyle("#fda4af"));
     this.energyText = this.add.text(790, 35, "PIÈCES 100", this.hudStyle("#facc15"));
     this.add.text(790, 56, "AMÉLIORATIONS : N2 30  •  N3 60  •  N4 100  •  N5 160", {
       fontFamily: "Arial",
@@ -688,7 +688,7 @@ class DefenseScene extends Phaser.Scene {
       ) ?? [] : [],
       pathIndex: 1,
       isBoss,
-      coreDamage: isBoss ? 5 : 1,
+      coreDamage: 1,
       energyReward: isBoss ? 80 + this.wave * 4 : 8 + Math.ceil(this.wave / 3),
       slowedUntil: 0,
     });
@@ -716,7 +716,10 @@ class DefenseScene extends Phaser.Scene {
         this.enemies.splice(index, 1);
         this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
         this.cameras.main.shake(180, 0.005);
-        this.updateHud(this.baseHp > 0 ? "Le cœur végétal est attaqué !" : "Défaite — le jardin dépérit");
+        const escaped = 20 - this.baseHp;
+        this.updateHud(this.baseHp > 0
+          ? `Insecte échappé : ${escaped} / 20`
+          : "20 insectes se sont échappés — recommencez le biome");
         if (this.baseHp === 0) this.gameOver();
       }
     }
@@ -943,7 +946,7 @@ class DefenseScene extends Phaser.Scene {
     this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x022c2b, 0.82);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "LE JARDIN A DÉPÉRI", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "20 INSECTES SE SONT ÉCHAPPÉS", {
       fontFamily: "Arial",
       fontSize: "42px",
       color: "#fb7185",
@@ -958,7 +961,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private updateHud(message: string): void {
-    this.hpText?.setText(`INTÉGRITÉ ${this.baseHp}`);
+    this.hpText?.setText(`VIES ${this.baseHp} / 20`);
     this.energyText?.setText(`PIÈCES ${this.energy}`);
     const level = LEVELS[this.levelIndex];
     this.waveText?.setText(level.waves === null ? `VAGUE ${this.wave} / ∞` : `VAGUE ${this.wave} / ${level.waves}`);
