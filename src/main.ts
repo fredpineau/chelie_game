@@ -102,6 +102,8 @@ class DefenseScene extends Phaser.Scene {
   private waveActive = false;
   private selectedTower: TowerKind = "harpoon";
   private nextSpawnAt = 0;
+  private nextWaveAt = 0;
+  private lastCountdownValue = -1;
   private levelIndex = 0;
   private levelStarted = false;
   private requestedLevelIndex: number | null = null;
@@ -110,6 +112,7 @@ class DefenseScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text;
   private energyText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private autoWaveText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
 
@@ -141,6 +144,7 @@ class DefenseScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (!this.levelStarted || this.baseHp <= 0) return;
 
+    this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
@@ -153,6 +157,7 @@ class DefenseScene extends Phaser.Scene {
       } else {
         this.updateHud(`Vague ${this.wave} digérée — biome protégé`);
         this.setStartButtonEnabled(true);
+        this.scheduleNextWave(10_000);
       }
     }
   }
@@ -168,6 +173,8 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = false;
     this.levelStarted = false;
     this.nextSpawnAt = 0;
+    this.nextWaveAt = 0;
+    this.lastCountdownValue = -1;
     this.selectedTower = "harpoon";
     this.towerButtons.clear();
   }
@@ -233,6 +240,13 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0284c7, () => this.startWave());
+    this.autoWaveText = this.add.text(WIDTH - 178, 76, "", {
+      fontFamily: "Arial",
+      fontSize: "10px",
+      color: "#bef264",
+      fontStyle: "bold",
+      letterSpacing: 1,
+    }).setOrigin(0.5);
   }
 
   private showLevelSelection(): void {
@@ -301,11 +315,14 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = true;
     this.levelText.setText(LEVELS[this.levelIndex].code);
     this.setStartButtonEnabled(true);
+    this.scheduleNextWave(15_000);
     this.updateHud(`${LEVELS[this.levelIndex].name} — préparez votre dispositif`);
   }
 
   private completeLevel(): void {
     this.levelStarted = false;
+    this.nextWaveAt = 0;
+    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const nextIndex = Math.min(this.levelIndex + 1, LEVELS.length - 1);
     this.saveUnlockedLevel(nextIndex);
@@ -540,11 +557,32 @@ class DefenseScene extends Phaser.Scene {
     this.spawnedThisWave = 0;
     this.waveActive = true;
     this.nextSpawnAt = 0;
+    this.nextWaveAt = 0;
+    this.lastCountdownValue = -1;
+    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const origin = this.isTopWave() ? "NORD" : "SUD";
     this.updateHud(this.isBossWave()
       ? `ALERTE ${origin} — insecte alpha détecté`
       : `Vague ${this.wave} en approche par le ${origin}`);
+  }
+
+  private scheduleNextWave(delay: number): void {
+    this.nextWaveAt = this.time.now + delay;
+    this.lastCountdownValue = -1;
+    this.updateAutoWave(this.time.now);
+  }
+
+  private updateAutoWave(time: number): void {
+    if (this.waveActive || this.nextWaveAt <= 0 || !this.levelStarted) return;
+    const remaining = Math.max(0, Math.ceil((this.nextWaveAt - time) / 1000));
+    if (remaining !== this.lastCountdownValue) {
+      this.lastCountdownValue = remaining;
+      this.autoWaveText.setText(`DÉPART AUTO : ${remaining}s`);
+    }
+    if (time >= this.nextWaveAt) {
+      this.startWave();
+    }
   }
 
   private spawnWaveEnemies(time: number): void {
@@ -864,6 +902,8 @@ class DefenseScene extends Phaser.Scene {
   private gameOver(): void {
     this.waveActive = false;
     this.levelStarted = false;
+    this.nextWaveAt = 0;
+    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x020617, 0.78);
     const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "LE JARDIN A DÉPÉRI", {
