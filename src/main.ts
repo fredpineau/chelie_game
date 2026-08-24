@@ -316,15 +316,30 @@ class DefenseScene extends Phaser.Scene {
     const stem = this.add.rectangle(0, 37, 13, 48, 0x31562f).setStrokeStyle(2, 0x1d3820);
     const leftJaw = this.add.container(-17, -5).setRotation(-0.22);
     const rightJaw = this.add.container(17, -5).setRotation(0.22);
-    const leftLobe = this.add.ellipse(0, 0, 42, 76, 0x597f48).setStrokeStyle(3, 0x28472d);
-    const rightLobe = this.add.ellipse(0, 0, 42, 76, 0x597f48).setStrokeStyle(3, 0x28472d);
-    const leftMouth = this.add.ellipse(7, -2, 26, 59, 0x733b3d, 0.92).setStrokeStyle(2, 0x431e24);
-    const rightMouth = this.add.ellipse(-7, -2, 26, 59, 0x733b3d, 0.92).setStrokeStyle(2, 0x431e24);
-    leftJaw.add([leftLobe, leftMouth]);
-    rightJaw.add([rightLobe, rightMouth]);
-    for (let tooth = -2; tooth <= 2; tooth += 1) {
-      leftJaw.add(this.add.triangle(19, tooth * 12 - 2, -4, -3, 8, 0, -4, 3, 0xd0c7a3));
-      rightJaw.add(this.add.triangle(-19, tooth * 12 - 2, 4, -3, -8, 0, 4, 3, 0xd0c7a3));
+    const leftLobe = this.add.ellipse(0, 0, 43, 78, 0x638a51).setStrokeStyle(3, 0x294b31);
+    const rightLobe = this.add.ellipse(0, 0, 43, 78, 0x638a51).setStrokeStyle(3, 0x294b31);
+    const leftMouth = this.add.ellipse(7, -2, 27, 61, 0x754447, 0.9).setStrokeStyle(2, 0x4b252d);
+    const rightMouth = this.add.ellipse(-7, -2, 27, 61, 0x754447, 0.9).setStrokeStyle(2, 0x4b252d);
+    const leftMainVein = this.add.line(0, 0, -7, 30, -2, -31, 0xa1b979, 0.48).setLineWidth(2);
+    const rightMainVein = this.add.line(0, 0, 7, 30, 2, -31, 0xa1b979, 0.48).setLineWidth(2);
+    leftJaw.add([leftLobe, leftMouth, leftMainVein]);
+    rightJaw.add([rightLobe, rightMouth, rightMainVein]);
+
+    for (let cilium = -3; cilium <= 3; cilium += 1) {
+      const ciliumY = cilium * 9;
+      const tipOffset = cilium * -0.7;
+      leftJaw.add(this.add.line(0, 0, 16, ciliumY, 29, ciliumY + tipOffset, 0xc0d3a0, 0.92).setLineWidth(1.5));
+      rightJaw.add(this.add.line(0, 0, -16, ciliumY, -29, ciliumY + tipOffset, 0xc0d3a0, 0.92).setLineWidth(1.5));
+    }
+    for (let vein = -2; vein <= 2; vein += 1) {
+      const veinY = vein * 11;
+      leftJaw.add(this.add.line(0, 0, -1, veinY, 12, veinY - 4, 0xc18a88, 0.28).setLineWidth(1));
+      rightJaw.add(this.add.line(0, 0, 1, veinY, -12, veinY - 4, 0xc18a88, 0.28).setLineWidth(1));
+    }
+    for (let hair = -1; hair <= 1; hair += 1) {
+      const hairY = hair * 15;
+      leftJaw.add(this.add.line(0, 0, 9, hairY, 14, hairY - 5, 0x331a20, 0.75).setLineWidth(1));
+      rightJaw.add(this.add.line(0, 0, -9, hairY, -14, hairY - 5, 0x331a20, 0.75).setLineWidth(1));
     }
     trap.add([shadow, stem, leftJaw, rightJaw]);
     this.exitTraps.set(exitId, { leftJaw, rightJaw });
