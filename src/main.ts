@@ -20,6 +20,8 @@ const BOTTOM_EXIT_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 
 type EnemyKind = "air" | "sea";
+type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
+type TargetPriority = "first" | "strong" | "weak";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
 type TowerEffect = "standard" | "slow" | "splash";
 
@@ -41,6 +43,9 @@ type Enemy = {
   exitRow: number;
   exitX: number;
   exitY: number;
+  trait: EnemyTrait;
+  armor: number;
+  regeneration: number;
 };
 
 type Tower = {
@@ -55,6 +60,7 @@ type Tower = {
   level: number;
   levelBadge: Phaser.GameObjects.Text;
   investedCost: number;
+  priority: TargetPriority;
 };
 
 type TowerDefinition = {
@@ -337,18 +343,6 @@ class DefenseScene extends Phaser.Scene {
     this.tweens.add({ targets: [rightWing, rightWingVein], angle: 3, yoyo: true, repeat: -1, duration: 180 });
     this.tweens.add({ targets: abdomen, scaleY: 1.025, yoyo: true, repeat: -1, duration: 1300 });
 
-    const verticalQueen = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
-    const labelX = verticalQueen ? x - 58 : x;
-    const labelY = verticalQueen ? y : y + 56;
-    this.add.text(labelX, labelY, `${label} · REINE`, {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: "#d4c7ad",
-      fontStyle: "bold",
-      letterSpacing: 1.2,
-      backgroundColor: "#052e2b",
-      padding: { x: 8, y: 4 },
-    }).setOrigin(0.5);
   }
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
@@ -372,18 +366,6 @@ class DefenseScene extends Phaser.Scene {
 
     this.tweens.add({ targets: rift, scaleX: 0.78, alpha: 0.72, yoyo: true, repeat: -1, duration: 1450 });
 
-    const verticalGate = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
-    const labelX = verticalGate ? x + (rotation > 0 ? -54 : 54) : x;
-    const labelY = verticalGate ? y : rotation === Math.PI ? y + 50 : y - 50;
-    this.add.text(labelX, labelY, label, {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: isExit ? "#fecaca" : "#d9f99d",
-      fontStyle: "bold",
-      letterSpacing: 1.2,
-      backgroundColor: "#052e2b",
-      padding: { x: 8, y: 4 },
-    }).setOrigin(0.5);
   }
 
   private createHud(): void {
@@ -711,6 +693,7 @@ class DefenseScene extends Phaser.Scene {
       level: 1,
       levelBadge,
       investedCost: definition.cost,
+      priority: "first",
     };
     towerBody.setSize(CELL - 4, CELL - 4).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
@@ -813,7 +796,12 @@ class DefenseScene extends Phaser.Scene {
   private spawnWaveEnemies(time: number): void {
     if (!this.waveActive || this.spawnedThisWave >= this.enemiesToSpawn || time < this.nextSpawnAt) return;
 
-    const kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
+    let kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
+    if (this.wave >= 3 && this.spawnedThisWave % 4 === 3) {
+      const antiAir = this.towers.filter((tower) => TOWERS[tower.kind].target === "air" || TOWERS[tower.kind].target === "all").length;
+      const antiGround = this.towers.filter((tower) => TOWERS[tower.kind].target === "sea" || TOWERS[tower.kind].target === "all").length;
+      kind = antiAir > antiGround ? "sea" : "air";
+    }
     const isBoss = this.isBossWave() && this.spawnedThisWave === 0;
     this.spawnEnemy(kind, isBoss);
     this.spawnedThisWave += 1;
@@ -821,7 +809,12 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private spawnEnemy(kind: EnemyKind, isBoss = false): void {
-    const color = isBoss ? 0x6f211d : kind === "air" ? 0x625747 : 0x3f5d59;
+    const trait = this.getEnemyTrait(isBoss);
+    const color = isBoss ? 0x6f211d
+      : trait === "armored" ? 0x3c4140
+        : trait === "swift" ? 0x6b5839
+          : trait === "regenerator" ? 0x485c3d
+            : kind === "air" ? 0x625747 : 0x3f5d59;
     const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
     const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
@@ -878,16 +871,29 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       letterSpacing: 2,
     }).setOrigin(0.5) : null;
-    container.add(bossLabel ? [...insectParts, healthBg, healthBar, bossLabel] : [...insectParts, healthBg, healthBar]);
+    const traitNames: Record<EnemyTrait, string> = {
+      normal: "",
+      armored: "CARAPACE",
+      swift: "VIF",
+      regenerator: "RÉGÉN.",
+    };
+    const traitLabel = !isBoss && trait !== "normal" ? this.add.text(0, healthY - 12, traitNames[trait], {
+      fontFamily: "Arial",
+      fontSize: "8px",
+      color: trait === "armored" ? "#cbd5d1" : trait === "swift" ? "#d6c49b" : "#b7cba7",
+      letterSpacing: 1,
+    }).setOrigin(0.5) : null;
+    container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
 
     const level = LEVELS[this.levelIndex];
-    const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1));
+    const traitHealthMultiplier = trait === "swift" ? 0.78 : trait === "armored" ? 1.28 : 1;
+    const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1) * traitHealthMultiplier);
     this.enemies.push({
       body: container,
       kind,
       hp,
       maxHp: hp,
-      speed: (40 + this.wave * 2.8) * level.speedMultiplier * (isBoss ? 0.64 : 1),
+      speed: (40 + this.wave * 2.8) * level.speedMultiplier * (isBoss ? 0.64 : trait === "swift" ? 1.42 : 1),
       healthBar,
       healthBarWidth,
       path: [
@@ -907,7 +913,19 @@ class DefenseScene extends Phaser.Scene {
       exitRow,
       exitX,
       exitY,
+      trait,
+      armor: trait === "armored" ? (isBoss ? 0.3 : 0.38) : 0,
+      regeneration: trait === "regenerator" ? 0.018 : 0,
     });
+  }
+
+  private getEnemyTrait(isBoss: boolean): EnemyTrait {
+    if (isBoss) return "armored";
+    const signature = this.wave * 3 + this.spawnedThisWave;
+    if (this.wave >= 4 && signature % 9 === 0) return "regenerator";
+    if (this.wave >= 3 && signature % 6 === 0) return "swift";
+    if (this.wave >= 2 && signature % 5 === 0) return "armored";
+    return "normal";
   }
 
   private moveEnemies(time: number, delta: number): void {
@@ -916,6 +934,10 @@ class DefenseScene extends Phaser.Scene {
       const exitX = enemy.exitX;
       const exitY = enemy.exitY;
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
+      if (enemy.regeneration > 0 && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
+        enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.maxHp * enemy.regeneration * (delta / 1000));
+        enemy.healthBar.width = enemy.healthBarWidth * (enemy.hp / enemy.maxHp);
+      }
       this.followPath(enemy, delta, speed);
 
       if (Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, exitX, exitY) <= 4) {
@@ -958,10 +980,16 @@ class DefenseScene extends Phaser.Scene {
 
   private findTarget(tower: Tower): Enemy | undefined {
     const definition = TOWERS[tower.kind];
-    return this.enemies
+    const targets = this.enemies
       .filter((enemy) => definition.target === "all" || definition.target === enemy.kind)
-      .filter((enemy) => Phaser.Math.Distance.Between(tower.body.x, tower.body.y, enemy.body.x, enemy.body.y) <= tower.range)
-      .sort((a, b) => b.body.x - a.body.x)[0];
+      .filter((enemy) => Phaser.Math.Distance.Between(tower.body.x, tower.body.y, enemy.body.x, enemy.body.y) <= tower.range);
+    if (tower.priority === "strong") return targets.sort((a, b) => b.hp - a.hp)[0];
+    if (tower.priority === "weak") return targets.sort((a, b) => a.hp - b.hp)[0];
+    return targets.sort((a, b) => {
+      const remainingA = a.path.length - a.pathIndex;
+      const remainingB = b.path.length - b.pathIndex;
+      return remainingA - remainingB;
+    })[0];
   }
 
   private applyTowerHit(tower: Tower, target: Enemy, definition: TowerDefinition): void {
@@ -978,12 +1006,13 @@ class DefenseScene extends Phaser.Scene {
       victims.forEach((enemy) => this.damageEnemy(enemy, Math.round(tower.damage * 0.55), definition.color));
     }
 
-    this.damageEnemy(target, tower.damage, definition.color);
+    this.damageEnemy(target, tower.damage, definition.color, tower.kind === "railgun");
   }
 
-  private damageEnemy(enemy: Enemy, damage: number, color: number): void {
+  private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
     if (!enemy.body.active) return;
-    enemy.hp -= damage;
+    const effectiveDamage = ignoresArmor ? damage : Math.max(1, Math.round(damage * (1 - enemy.armor)));
+    enemy.hp -= effectiveDamage;
     enemy.healthBar.width = enemy.healthBarWidth * Math.max(0, enemy.hp / enemy.maxHp);
     this.createImpact(enemy.body.x, enemy.body.y, color);
     if (enemy.hp <= 0) this.destroyEnemy(enemy);
@@ -1041,12 +1070,12 @@ class DefenseScene extends Phaser.Scene {
     const refund = Math.floor(tower.investedCost / 2);
     const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
     const panelX = Phaser.Math.Clamp(tower.body.x, 330, WIDTH - 185);
-    const panelY = Phaser.Math.Clamp(tower.body.y - 88, 135, HEIGHT - 120);
+    const panelY = Phaser.Math.Clamp(tower.body.y - 104, 155, HEIGHT - 135);
     const panel = this.add.container(panelX, panelY).setDepth(18);
-    const background = this.add.rectangle(0, 0, 316, 70, 0x061713, 0.96)
+    const background = this.add.rectangle(0, 0, 316, 116, 0x061713, 0.96)
       .setStrokeStyle(1, 0x66806d, 0.8);
     const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
-    const upgradeButton = this.makeButton(-78, 0, 142, 42, upgradeLabel, 0x315c45, () => {
+    const upgradeButton = this.makeButton(-78, -24, 142, 42, upgradeLabel, 0x315c45, () => {
       if (nextUpgradeCost === null) {
         this.updateHud(`${definition.name} est déjà au niveau maximal`);
         return;
@@ -1054,10 +1083,15 @@ class DefenseScene extends Phaser.Scene {
       this.upgradeTower(tower);
       this.showTowerActions(tower);
     });
-    const deleteButton = this.makeButton(78, 0, 142, 42, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
+    const deleteButton = this.makeButton(78, -24, 142, 42, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
       this.removeTower(tower);
     });
-    panel.add([background, upgradeButton, deleteButton]);
+    const priorityNames: Record<TargetPriority, string> = { first: "PREMIER", strong: "PLUS FORT", weak: "PLUS FAIBLE" };
+    const priorityButton = this.makeButton(0, 31, 298, 34, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
+      tower.priority = tower.priority === "first" ? "strong" : tower.priority === "strong" ? "weak" : "first";
+      this.showTowerActions(tower);
+    });
+    panel.add([background, upgradeButton, deleteButton, priorityButton]);
     this.towerActionPanel = panel;
     this.updateHud(`${definition.name} niveau ${tower.level} — valeur investie : ${tower.investedCost} pièces`);
   }
