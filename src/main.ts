@@ -25,6 +25,7 @@ type Enemy = {
   pathIndex: number;
   isBoss: boolean;
   coreDamage: number;
+  energyReward: number;
 };
 
 type Tower = {
@@ -36,6 +37,8 @@ type Tower = {
   lastShot: number;
   col: number;
   row: number;
+  level: number;
+  levelBadge: Phaser.GameObjects.Text;
 };
 
 type TowerDefinition = {
@@ -60,6 +63,9 @@ const TOWERS: Record<TowerKind, TowerDefinition> = {
   pulse: { name: "Pulse", icon: "P", color: 0x8b5cf6, target: "all" },
 };
 
+const MAX_TOWER_LEVEL = 5;
+const UPGRADE_COSTS = [0, 30, 60, 100, 160];
+
 const LEVELS: LevelDefinition[] = [
   { name: "Premier contact", code: "SECTEUR 01", waves: 10, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
   { name: "Courants hostiles", code: "SECTEUR 02", waves: 15, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
@@ -73,6 +79,7 @@ class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private towers: Tower[] = [];
   private baseHp = 20;
+  private energy = 0;
   private wave = 0;
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
@@ -85,6 +92,7 @@ class DefenseScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
+  private energyText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
@@ -134,6 +142,7 @@ class DefenseScene extends Phaser.Scene {
     this.enemies = [];
     this.towers = [];
     this.baseHp = 20;
+    this.energy = 0;
     this.wave = 0;
     this.enemiesToSpawn = 0;
     this.spawnedThisWave = 0;
@@ -215,6 +224,7 @@ class DefenseScene extends Phaser.Scene {
     this.levelText = this.add.text(270, 35, "SECTEUR --", this.hudStyle("#94a3b8"));
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
     this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
+    this.energyText = this.add.text(790, 35, "ÉNERGIE 0", this.hudStyle("#facc15"));
     this.statusText = this.add.text(WIDTH / 2, 93, "", {
       fontFamily: "Arial",
       fontSize: "15px",
@@ -424,9 +434,17 @@ class DefenseScene extends Phaser.Scene {
     const base = this.add.circle(0, 8, 28, 0x071426).setStrokeStyle(3, definition.color, 0.8);
     const turret = this.add.rectangle(0, -3, 17, 34, definition.color, 0.92).setRounded(6);
     const core = this.add.circle(0, -7, 8, 0xffffff, 0.85);
-    towerBody.add([base, turret, core]);
+    const levelBadge = this.add.text(21, 21, "1", {
+      fontFamily: "Arial",
+      fontSize: "11px",
+      color: "#ffffff",
+      backgroundColor: "#0f172a",
+      padding: { x: 4, y: 2 },
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    towerBody.add([base, turret, core, levelBadge]);
 
-    this.towers.push({
+    const tower: Tower = {
       body: towerBody,
       kind: this.selectedTower,
       range: this.selectedTower === "pulse" ? 245 : 220,
@@ -435,9 +453,22 @@ class DefenseScene extends Phaser.Scene {
       lastShot: 0,
       col,
       row,
+      level: 1,
+      levelBadge,
+    };
+    towerBody.setSize(CELL - 4, CELL - 4).setInteractive({ useHandCursor: true });
+    towerBody.on("pointerdown", (
+      _pointer: Phaser.Input.Pointer,
+      _localX: number,
+      _localY: number,
+      event: Phaser.Types.Input.EventData,
+    ) => {
+      event.stopPropagation();
+      this.upgradeTower(tower);
     });
+    this.towers.push(tower);
     this.recalculateSeaPaths();
-    this.updateHud(`${definition.name} déployé`);
+    this.updateHud(`${definition.name} déployé — touchez la tour pour l’améliorer`);
   }
 
   private startWave(): void {
@@ -505,6 +536,7 @@ class DefenseScene extends Phaser.Scene {
       pathIndex: 1,
       isBoss,
       coreDamage: isBoss ? 5 : 1,
+      energyReward: isBoss ? 80 + this.wave * 4 : 8 + Math.ceil(this.wave / 3),
     });
   }
 
@@ -568,11 +600,69 @@ class DefenseScene extends Phaser.Scene {
   private destroyEnemy(enemy: Enemy): void {
     const index = this.enemies.indexOf(enemy);
     if (index === -1) return;
+    this.energy += enemy.energyReward;
+    this.showEnergyReward(enemy.body.x, enemy.body.y, enemy.energyReward, enemy.isBoss);
     enemy.body.destroy();
     this.enemies.splice(index, 1);
     this.updateHud(enemy.isBoss
       ? `Boss ${enemy.kind === "air" ? "aérien" : "marin"} neutralisé`
       : `${enemy.kind === "air" ? "Créature aérienne" : "Monstre marin"} neutralisé`);
+  }
+
+  private upgradeTower(tower: Tower): void {
+    const definition = TOWERS[tower.kind];
+    if (tower.level >= MAX_TOWER_LEVEL) {
+      this.updateHud(`${definition.name} au niveau maximal`);
+      this.createUpgradePulse(tower, 0x4ade80);
+      return;
+    }
+
+    const cost = UPGRADE_COSTS[tower.level];
+    if (this.energy < cost) {
+      this.updateHud(`Amélioration niveau ${tower.level + 1} : ${cost} énergie requise`);
+      this.createUpgradePulse(tower, 0xef4444);
+      return;
+    }
+
+    this.energy -= cost;
+    tower.level += 1;
+    tower.damage = Math.round(tower.damage * 1.35);
+    tower.range += 16;
+    tower.fireDelay = Math.max(260, Math.round(tower.fireDelay * 0.88));
+    tower.levelBadge.setText(String(tower.level));
+
+    const turret = tower.body.getAt(1) as Phaser.GameObjects.Rectangle;
+    turret.setScale(1 + (tower.level - 1) * 0.08);
+    this.createUpgradePulse(tower, definition.color);
+    this.updateHud(`${definition.name} niveau ${tower.level} — puissance augmentée`);
+  }
+
+  private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
+    const text = this.add.text(x, y - 35, `+${amount} ⚡`, {
+      fontFamily: "Arial",
+      fontSize: isBoss ? "18px" : "13px",
+      color: isBoss ? "#fde047" : "#facc15",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    this.tweens.add({
+      targets: text,
+      y: y - 70,
+      alpha: 0,
+      duration: 750,
+      ease: "Cubic.easeOut",
+      onComplete: () => text.destroy(),
+    });
+  }
+
+  private createUpgradePulse(tower: Tower, color: number): void {
+    const pulse = this.add.circle(tower.body.x, tower.body.y, 28, color, 0.12).setStrokeStyle(3, color, 0.9);
+    this.tweens.add({
+      targets: pulse,
+      scale: 2,
+      alpha: 0,
+      duration: 350,
+      onComplete: () => pulse.destroy(),
+    });
   }
 
   private isBossWave(): boolean {
@@ -678,6 +768,7 @@ class DefenseScene extends Phaser.Scene {
 
   private updateHud(message: string): void {
     this.hpText?.setText(`INTÉGRITÉ ${this.baseHp}`);
+    this.energyText?.setText(`ÉNERGIE ${this.energy}`);
     const level = LEVELS[this.levelIndex];
     this.waveText?.setText(level.waves === null ? `VAGUE ${this.wave} / ∞` : `VAGUE ${this.wave} / ${level.waves}`);
     this.statusText?.setText(message);
