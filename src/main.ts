@@ -300,7 +300,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", 0, false);
+    this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", Math.PI, false);
     this.createCreatureGate(GRID_X + 40, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
     this.createExitQueen(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "SORTIE 1", -Math.PI / 2);
     this.createExitQueen(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI);
@@ -396,20 +396,22 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 2,
     });
 
-    this.levelText = this.createHudBadge(250, "B", 0x315c54, "BIOME --", "#a7c4bc");
-    this.waveText = this.createHudBadge(490, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
-    this.hpText = this.createHudBadge(755, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
-    this.energyText = this.createHudBadge(975, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
-    this.add.text(1010, 67, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
+    this.levelText = this.createHudBadge(220, "B", 0x315c54, "BIOME --", "#a7c4bc");
+    this.waveText = this.createHudBadge(430, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
+    this.hpText = this.createHudBadge(900, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
+    this.energyText = this.createHudBadge(1100, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
+    this.add.text(940, 68, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
       fontFamily: "Arial",
       fontSize: "9px",
       color: "#829578",
       letterSpacing: 0.4,
     });
-    this.statusText = this.add.text(WIDTH / 2, 98, "", {
+    this.statusText = this.add.text(430, 98, "", {
       fontFamily: "Arial",
-      fontSize: "14px",
+      fontSize: "13px",
       color: "#cbd8cf",
+      align: "center",
+      wordWrap: { width: 570 },
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 68, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
