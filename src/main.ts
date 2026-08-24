@@ -9,11 +9,11 @@ const GRID_Y = 142;
 const GRID_COLS = 17;
 const GRID_ROWS = 10;
 const TOP_ENTRY_COL = 15;
-const BOTTOM_ENTRY_COL = 8;
+const BOTTOM_ENTRY_COL = 15;
 const TOP_ENTRY_ROW = 0;
 const BOTTOM_ENTRY_ROW = GRID_ROWS - 1;
 const EXIT_COL = 0;
-const EXIT_ROW = GRID_ROWS - 1;
+const EXIT_ROW = 5;
 
 type EnemyKind = "air" | "sea";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
@@ -226,37 +226,50 @@ class DefenseScene extends Phaser.Scene {
   private createGates(): void {
     const topEntryX = GRID_X + TOP_ENTRY_COL * CELL;
     const bottomEntryX = GRID_X + BOTTOM_ENTRY_COL * CELL;
-    this.createPlantGate(topEntryX, 114, "ENTRÉE NORD", false);
-    this.createPlantGate(bottomEntryX, 674, "ENTRÉE SUD", true);
-    this.createPlantGate(GRID_X + EXIT_COL * CELL, 674, "SORTIE", true, true);
+    this.createCreatureGate(topEntryX, 116, "NID NORD", 0, false);
+    this.createCreatureGate(bottomEntryX, 650, "NID SUD", Math.PI, false);
+    this.createCreatureGate(GRID_X - 24, GRID_Y + EXIT_ROW * CELL, "ANTRE", Math.PI / 2, true);
   }
 
-  private createPlantGate(x: number, y: number, label: string, flipped: boolean, compact = false): void {
+  private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
     const gate = this.add.container(x, y);
-    const width = compact ? 42 : 72;
-    const height = compact ? 58 : 42;
-    const opening = this.add.rectangle(0, 0, width, height, 0x100e08, 0.96)
-      .setStrokeStyle(3, 0x713f12, 1)
-      .setRounded(8);
-    const inner = this.add.rectangle(0, compact ? 2 : 4, width - 16, height - 12, 0x0b1208, 1)
-      .setStrokeStyle(2, 0x84cc16, 0.65)
-      .setRounded(6);
-    const leftVine = this.add.ellipse(-width / 2 + 3, 0, 10, height + 12, 0x3f6212).setStrokeStyle(2, 0x65a30d);
-    const rightVine = this.add.ellipse(width / 2 - 3, 0, 10, height + 12, 0x3f6212).setStrokeStyle(2, 0x65a30d);
-    const leafLeft = this.add.ellipse(-width / 2 - 5, -8, 18, 9, 0x65a30d).setRotation(-0.45);
-    const leafRight = this.add.ellipse(width / 2 + 5, 8, 18, 9, 0x65a30d).setRotation(0.45);
-    gate.add([opening, inner, leftVine, rightVine, leafLeft, leafRight]);
-    if (flipped) gate.setRotation(Math.PI);
+    const width = isExit ? 92 : 104;
+    const bodyColor = isExit ? 0x5b211d : 0x365314;
+    const body = this.add.ellipse(0, 0, width, 78, bodyColor, 0.98)
+      .setStrokeStyle(4, isExit ? 0xdc2626 : 0x84cc16, 0.85);
+    const mouth = this.add.ellipse(0, 8, width - 22, 49, 0x080706, 1)
+      .setStrokeStyle(3, 0x7f1d1d, 0.95);
+    const leftEye = this.add.circle(-25, -24, 9, isExit ? 0xef4444 : 0xfacc15).setStrokeStyle(2, 0x111827);
+    const rightEye = this.add.circle(25, -24, 9, isExit ? 0xef4444 : 0xfacc15).setStrokeStyle(2, 0x111827);
+    const leftPupil = this.add.circle(-25, -24, 3, 0x050505);
+    const rightPupil = this.add.circle(25, -24, 3, 0x050505);
+    gate.add([body, mouth, leftEye, rightEye, leftPupil, rightPupil]);
 
-    const labelY = compact ? y + 48 : flipped ? y - 39 : y - 39;
-    this.add.text(x, labelY, label, {
+    for (let tooth = -3; tooth <= 3; tooth += 1) {
+      const toothX = tooth * 10;
+      gate.add(this.add.triangle(toothX, -7, -5, -9, 5, -9, 0, 5, 0xfef3c7).setRotation(Math.PI));
+      gate.add(this.add.triangle(toothX, 24, -5, -9, 5, -9, 0, 5, 0xfef3c7));
+    }
+    gate.add([
+      this.add.ellipse(-width / 2 + 3, 8, 14, 58, 0x1a2e13).setRotation(-0.2),
+      this.add.ellipse(width / 2 - 3, 8, 14, 58, 0x1a2e13).setRotation(0.2),
+    ]);
+    gate.setRotation(rotation);
+
+    this.tweens.add({ targets: mouth, scaleY: 1.16, yoyo: true, repeat: -1, duration: isExit ? 620 : 900 });
+    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.45, yoyo: true, repeat: -1, duration: 500 });
+
+    const verticalGate = Math.abs(rotation - Math.PI / 2) < 0.01;
+    const labelX = verticalGate ? x - 54 : x;
+    const labelY = verticalGate ? y : rotation === Math.PI ? y + 50 : y - 50;
+    this.add.text(labelX, labelY, label, {
       fontFamily: "Arial",
-      fontSize: compact ? "9px" : "10px",
-      color: "#d9f99d",
+      fontSize: "11px",
+      color: isExit ? "#fecaca" : "#d9f99d",
       fontStyle: "bold",
       letterSpacing: 1.2,
-      backgroundColor: "#252417",
-      padding: { x: 6, y: 3 },
+      backgroundColor: "#052e2b",
+      padding: { x: 8, y: 4 },
     }).setOrigin(0.5);
   }
 
@@ -492,11 +505,11 @@ class DefenseScene extends Phaser.Scene {
     const towerX = GRID_X + col * CELL;
     const towerY = GRID_Y + row * CELL;
 
-    const isEntry = (col === TOP_ENTRY_COL && row === TOP_ENTRY_ROW)
-      || (col === BOTTOM_ENTRY_COL && row === BOTTOM_ENTRY_ROW);
-    const isExit = col === EXIT_COL && row === EXIT_ROW;
-    if (isEntry || isExit) {
-      this.updateHud("L’entrée et la sortie doivent rester libres");
+    const distanceToTopEntry = Math.abs(col - TOP_ENTRY_COL) + Math.abs(row - TOP_ENTRY_ROW);
+    const distanceToBottomEntry = Math.abs(col - BOTTOM_ENTRY_COL) + Math.abs(row - BOTTOM_ENTRY_ROW);
+    const distanceToExit = Math.abs(col - EXIT_COL) + Math.abs(row - EXIT_ROW);
+    if (distanceToTopEntry <= 1 || distanceToBottomEntry <= 1 || distanceToExit <= 1) {
+      this.updateHud("Zone de portail protégée — plantez un peu plus loin");
       return;
     }
     if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
