@@ -192,39 +192,6 @@ class DefenseScene extends Phaser.Scene {
     this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x031008, 0.74);
     this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x84cc16, 0.5);
     this.createGates();
-    this.createBase();
-
-  }
-
-  private createBase(): void {
-    const x = WIDTH - 92;
-    const y = HEIGHT / 2;
-    const glow = this.add.circle(x, y, 76, 0xdc2626, 0.1);
-    this.tweens.add({ targets: glow, alpha: 0.3, scale: 1.14, yoyo: true, repeat: -1, duration: 900 });
-
-    const beast = this.add.container(x, y);
-    for (let leg = -2; leg <= 2; leg += 1) {
-      const offsetY = leg * 17;
-      beast.add(this.add.line(0, 0, -28, offsetY, -69, offsetY - 14, 0x17130f, 1).setLineWidth(7));
-      beast.add(this.add.line(0, 0, 28, offsetY, 69, offsetY - 14, 0x17130f, 1).setLineWidth(7));
-      beast.add(this.add.circle(-69, offsetY - 14, 4, 0x090806));
-      beast.add(this.add.circle(69, offsetY - 14, 4, 0x090806));
-    }
-
-    const abdomen = this.add.ellipse(0, 18, 76, 98, 0x3f1d18).setStrokeStyle(4, 0x713f12);
-    const stripeOne = this.add.rectangle(0, 2, 67, 5, 0x0f0d09, 0.7);
-    const stripeTwo = this.add.rectangle(0, 25, 72, 5, 0x0f0d09, 0.7);
-    const thorax = this.add.ellipse(0, -34, 58, 54, 0x29211b).setStrokeStyle(3, 0x57534e);
-    const head = this.add.circle(0, -66, 27, 0x17130f).setStrokeStyle(3, 0x713f12);
-    const leftEye = this.add.circle(-10, -70, 7, 0xef4444).setStrokeStyle(2, 0xfca5a5);
-    const rightEye = this.add.circle(10, -70, 7, 0xef4444).setStrokeStyle(2, 0xfca5a5);
-    const leftMandible = this.add.triangle(-13, -84, -27, -6, -2, -1, -21, 22, 0x0a0907).setRotation(0.25);
-    const rightMandible = this.add.triangle(13, -84, 27, -6, 2, -1, 21, 22, 0x0a0907).setRotation(-0.25);
-    beast.add([abdomen, stripeOne, stripeTwo, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
-
-    this.tweens.add({ targets: abdomen, scaleX: 1.08, scaleY: 1.04, yoyo: true, repeat: -1, duration: 1050 });
-    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.35, yoyo: true, repeat: -1, duration: 420 });
-    this.add.text(x, y + 92, "REINE DE LA TOURBIÈRE", this.labelStyle(0xfca5a5)).setOrigin(0.5);
   }
 
   private createGates(): void {
@@ -236,27 +203,29 @@ class DefenseScene extends Phaser.Scene {
 
   private createExitQueen(x: number, y: number, label: string, rotation: number): void {
     const queen = this.add.container(x, y).setRotation(rotation);
-    const glow = this.add.circle(0, 0, 47, 0xef4444, 0.14);
-    const abdomen = this.add.ellipse(0, 12, 50, 66, 0x4a1d17).setStrokeStyle(4, 0xb45309);
-    const stripeOne = this.add.rectangle(0, 2, 43, 5, 0x120d09, 0.8);
-    const stripeTwo = this.add.rectangle(0, 19, 46, 5, 0x120d09, 0.8);
-    const thorax = this.add.ellipse(0, -24, 41, 38, 0x29211b).setStrokeStyle(3, 0x78716c);
-    const head = this.add.circle(0, -48, 19, 0x17130f).setStrokeStyle(3, 0x92400e);
-    const leftEye = this.add.circle(-7, -52, 5, 0xef4444).setStrokeStyle(1, 0xfecaca);
-    const rightEye = this.add.circle(7, -52, 5, 0xef4444).setStrokeStyle(1, 0xfecaca);
-    const leftMandible = this.add.triangle(-9, -61, -18, -5, -2, -1, -14, 15, 0x080706).setRotation(0.25);
-    const rightMandible = this.add.triangle(9, -61, 18, -5, 2, -1, 14, 15, 0x080706).setRotation(-0.25);
+    const glow = this.add.ellipse(0, 4, 88, 108, 0x7f1d1d, 0.1);
+    const abdomen = this.add.ellipse(0, 15, 46, 72, 0x281613).setStrokeStyle(3, 0x713f12, 0.9);
+    const carapace = this.add.triangle(0, 4, -21, 24, 0, -30, 21, 24, 0x3f211b, 0.95);
+    const ridge = this.add.rectangle(0, 13, 3, 55, 0x0c0a08, 0.9);
+    const thorax = this.add.ellipse(0, -25, 37, 40, 0x1c1917).setStrokeStyle(2, 0x57534e);
+    const head = this.add.triangle(0, -53, -18, 12, 0, -17, 18, 12, 0x11100e).setStrokeStyle(2, 0x713f12);
+    const leftEye = this.add.line(0, 0, -12, -53, -3, -50, 0xb91c1c).setLineWidth(3);
+    const rightEye = this.add.line(0, 0, 12, -53, 3, -50, 0xb91c1c).setLineWidth(3);
+    const leftMandible = this.add.triangle(-10, -63, -19, -3, -2, 0, -15, 18, 0x050504).setRotation(0.18);
+    const rightMandible = this.add.triangle(10, -63, 19, -3, 2, 0, 15, 18, 0x050504).setRotation(-0.18);
     queen.add([glow]);
-    for (let leg = -1; leg <= 1; leg += 1) {
+    for (let leg = -2; leg <= 2; leg += 1) {
       const offsetY = leg * 13;
-      queen.add(this.add.line(0, 0, -18, offsetY, -43, offsetY - 10, 0x17130f).setLineWidth(5));
-      queen.add(this.add.line(0, 0, 18, offsetY, 43, offsetY - 10, 0x17130f).setLineWidth(5));
+      queen.add(this.add.line(0, 0, -15, offsetY, -44, offsetY - 14, 0x0a0908).setLineWidth(4));
+      queen.add(this.add.line(0, 0, 15, offsetY, 44, offsetY - 14, 0x0a0908).setLineWidth(4));
+      queen.add(this.add.triangle(-45, offsetY - 14, -5, -2, 5, 0, -4, 8, 0x34251b));
+      queen.add(this.add.triangle(45, offsetY - 14, 5, -2, -5, 0, 4, 8, 0x34251b));
     }
-    queen.add([abdomen, stripeOne, stripeTwo, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
+    queen.add([abdomen, carapace, ridge, thorax, head, leftEye, rightEye, leftMandible, rightMandible]);
 
     this.tweens.add({ targets: glow, alpha: 0.3, scale: 1.12, yoyo: true, repeat: -1, duration: 760 });
     this.tweens.add({ targets: abdomen, scaleX: 1.07, scaleY: 1.04, yoyo: true, repeat: -1, duration: 920 });
-    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.35, yoyo: true, repeat: -1, duration: 390 });
+    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.3, yoyo: true, repeat: -1, duration: 740 });
 
     const verticalQueen = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
     const labelX = verticalQueen ? x + (rotation > 0 ? -58 : 58) : x;
@@ -274,31 +243,24 @@ class DefenseScene extends Phaser.Scene {
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
     const gate = this.add.container(x, y);
-    const width = isExit ? 92 : 104;
-    const bodyColor = isExit ? 0x5b211d : 0x365314;
-    const body = this.add.ellipse(0, 0, width, 78, bodyColor, 0.98)
-      .setStrokeStyle(4, isExit ? 0xdc2626 : 0x84cc16, 0.85);
-    const mouth = this.add.ellipse(0, 8, width - 22, 49, 0x080706, 1)
-      .setStrokeStyle(3, 0x7f1d1d, 0.95);
-    const leftEye = this.add.circle(-25, -24, 9, isExit ? 0xef4444 : 0xfacc15).setStrokeStyle(2, 0x111827);
-    const rightEye = this.add.circle(25, -24, 9, isExit ? 0xef4444 : 0xfacc15).setStrokeStyle(2, 0x111827);
-    const leftPupil = this.add.circle(-25, -24, 3, 0x050505);
-    const rightPupil = this.add.circle(25, -24, 3, 0x050505);
-    gate.add([body, mouth, leftEye, rightEye, leftPupil, rightPupil]);
+    const body = this.add.ellipse(0, 0, 102, 76, 0x17251d, 0.98).setStrokeStyle(3, 0x3f6212, 0.8);
+    const innerRim = this.add.ellipse(0, 3, 78, 55, 0x243629, 1).setStrokeStyle(2, 0x1c1917, 0.9);
+    const rift = this.add.ellipse(0, 5, 53, 43, 0x030706, 1).setStrokeStyle(2, 0x365314, 0.75);
+    gate.add([body, innerRim, rift]);
 
-    for (let tooth = -3; tooth <= 3; tooth += 1) {
-      const toothX = tooth * 10;
-      gate.add(this.add.triangle(toothX, -7, -5, -9, 5, -9, 0, 5, 0xfef3c7).setRotation(Math.PI));
-      gate.add(this.add.triangle(toothX, 24, -5, -9, 5, -9, 0, 5, 0xfef3c7));
+    for (let thorn = -3; thorn <= 3; thorn += 1) {
+      const thornX = thorn * 13;
+      const height = thorn % 2 === 0 ? 12 : 8;
+      gate.add(this.add.triangle(thornX, -27, -4, 0, 4, 0, 0, -height, 0x596b2d).setRotation(Math.PI));
+      gate.add(this.add.triangle(thornX, 33, -4, 0, 4, 0, 0, height, 0x33451f));
     }
-    gate.add([
-      this.add.ellipse(-width / 2 + 3, 8, 14, 58, 0x1a2e13).setRotation(-0.2),
-      this.add.ellipse(width / 2 - 3, 8, 14, 58, 0x1a2e13).setRotation(0.2),
-    ]);
+    for (let root = -1; root <= 1; root += 1) {
+      gate.add(this.add.line(0, 0, -45, root * 18, -67, root * 28, 0x293a24, 0.95).setLineWidth(5));
+      gate.add(this.add.line(0, 0, 45, root * 18, 67, root * 28, 0x293a24, 0.95).setLineWidth(5));
+    }
     gate.setRotation(rotation);
 
-    this.tweens.add({ targets: mouth, scaleY: 1.16, yoyo: true, repeat: -1, duration: isExit ? 620 : 900 });
-    this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.45, yoyo: true, repeat: -1, duration: 500 });
+    this.tweens.add({ targets: rift, scaleX: 0.78, alpha: 0.72, yoyo: true, repeat: -1, duration: 1450 });
 
     const verticalGate = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
     const labelX = verticalGate ? x + (rotation > 0 ? -54 : 54) : x;
@@ -556,6 +518,10 @@ class DefenseScene extends Phaser.Scene {
     }
     if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
       this.updateHud("Cet emplacement est déjà occupé");
+      return;
+    }
+    if (this.enemies.some((enemy) => Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, towerX, towerY) < CELL * 0.72)) {
+      this.updateHud("Un insecte traverse cette zone — attendez qu'il soit passé");
       return;
     }
     if (this.energy < definition.cost) {
@@ -946,7 +912,7 @@ class DefenseScene extends Phaser.Scene {
   private followPath(enemy: Enemy, delta: number, speed: number): void {
     const target = enemy.path[enemy.pathIndex];
     if (!target) {
-      enemy.body.x += speed * (delta / 1000);
+      this.recalculateEnemyPath(enemy);
       return;
     }
 
@@ -962,14 +928,54 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private recalculateEnemyPaths(): void {
-    this.enemies.forEach((enemy) => {
-      const start = {
-        col: Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1),
-        row: Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1),
-      };
-      enemy.path = this.calculatePath(start, { col: enemy.exitCol, row: enemy.exitRow }) ?? [];
-      enemy.pathIndex = 1;
+    this.enemies.forEach((enemy) => this.recalculateEnemyPath(enemy));
+  }
+
+  private recalculateEnemyPath(enemy: Enemy): void {
+    const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1);
+    const approximateRow = Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
+    const blocked = new Set(this.towers.map((tower) => `${tower.col},${tower.row}`));
+    const candidates: { col: number; row: number }[] = [];
+
+    for (let radius = 0; radius <= 2; radius += 1) {
+      for (let rowOffset = -radius; rowOffset <= radius; rowOffset += 1) {
+        for (let colOffset = -radius; colOffset <= radius; colOffset += 1) {
+          const col = approximateCol + colOffset;
+          const row = approximateRow + rowOffset;
+          if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) continue;
+          if (blocked.has(`${col},${row}`)) continue;
+          candidates.push({ col, row });
+        }
+      }
+      if (candidates.length > 0) break;
+    }
+
+    candidates.sort((a, b) => {
+      const distanceA = Phaser.Math.Distance.Squared(
+        enemy.body.x,
+        enemy.body.y,
+        GRID_X + a.col * CELL,
+        GRID_Y + a.row * CELL,
+      );
+      const distanceB = Phaser.Math.Distance.Squared(
+        enemy.body.x,
+        enemy.body.y,
+        GRID_X + b.col * CELL,
+        GRID_Y + b.row * CELL,
+      );
+      return distanceA - distanceB;
     });
+
+    for (const start of candidates) {
+      const path = this.calculatePath(start, { col: enemy.exitCol, row: enemy.exitRow });
+      if (!path) continue;
+      enemy.path = [new Phaser.Math.Vector2(enemy.body.x, enemy.body.y), ...path];
+      enemy.pathIndex = 1;
+      return;
+    }
+
+    enemy.path = [];
+    enemy.pathIndex = 0;
   }
 
   private calculatePath(
