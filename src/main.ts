@@ -8,12 +8,14 @@ const GRID_X = 230;
 const GRID_Y = 142;
 const GRID_COLS = 17;
 const GRID_ROWS = 10;
-const TOP_ENTRY_COL = 15;
-const BOTTOM_ENTRY_COL = 15;
+const TOP_ENTRY_COL = 8;
+const BOTTOM_ENTRY_COL = 0;
 const TOP_ENTRY_ROW = 0;
-const BOTTOM_ENTRY_ROW = GRID_ROWS - 1;
-const EXIT_COL = 0;
-const EXIT_ROW = 5;
+const BOTTOM_ENTRY_ROW = 5;
+const TOP_EXIT_COL = GRID_COLS - 1;
+const TOP_EXIT_ROW = 5;
+const BOTTOM_EXIT_COL = 8;
+const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 
 type EnemyKind = "air" | "sea";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
@@ -33,6 +35,8 @@ type Enemy = {
   coreDamage: number;
   energyReward: number;
   slowedUntil: number;
+  exitCol: number;
+  exitRow: number;
 };
 
 type Tower = {
@@ -224,11 +228,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    const topEntryX = GRID_X + TOP_ENTRY_COL * CELL;
-    const bottomEntryX = GRID_X + BOTTOM_ENTRY_COL * CELL;
-    this.createCreatureGate(topEntryX, 116, "ENTRÉE NORD", 0, false);
-    this.createCreatureGate(bottomEntryX, 650, "ENTRÉE SUD", Math.PI, false);
-    this.createCreatureGate(GRID_X - 24, GRID_Y + EXIT_ROW * CELL, "SORTIE", Math.PI / 2, true);
+    this.createCreatureGate(GRID_X + TOP_ENTRY_COL * CELL, GRID_Y - 24, "ENTRÉE 1", 0, false);
+    this.createCreatureGate(GRID_X - 24, GRID_Y + BOTTOM_ENTRY_ROW * CELL, "ENTRÉE 2", Math.PI / 2, false);
+    this.createCreatureGate(GRID_X + TOP_EXIT_COL * CELL + 24, GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2, true);
+    this.createCreatureGate(GRID_X + BOTTOM_EXIT_COL * CELL, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI, true);
   }
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
@@ -259,8 +262,8 @@ class DefenseScene extends Phaser.Scene {
     this.tweens.add({ targets: mouth, scaleY: 1.16, yoyo: true, repeat: -1, duration: isExit ? 620 : 900 });
     this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.45, yoyo: true, repeat: -1, duration: 500 });
 
-    const verticalGate = Math.abs(rotation - Math.PI / 2) < 0.01;
-    const labelX = verticalGate ? x - 54 : x;
+    const verticalGate = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
+    const labelX = verticalGate ? x + (rotation > 0 ? -54 : 54) : x;
     const labelY = verticalGate ? y : rotation === Math.PI ? y + 50 : y - 50;
     this.add.text(labelX, labelY, label, {
       fontFamily: "Arial",
@@ -507,8 +510,9 @@ class DefenseScene extends Phaser.Scene {
 
     const distanceToTopEntry = Math.abs(col - TOP_ENTRY_COL) + Math.abs(row - TOP_ENTRY_ROW);
     const distanceToBottomEntry = Math.abs(col - BOTTOM_ENTRY_COL) + Math.abs(row - BOTTOM_ENTRY_ROW);
-    const distanceToExit = Math.abs(col - EXIT_COL) + Math.abs(row - EXIT_ROW);
-    if (distanceToTopEntry <= 1 || distanceToBottomEntry <= 1 || distanceToExit <= 1) {
+    const distanceToTopExit = Math.abs(col - TOP_EXIT_COL) + Math.abs(row - TOP_EXIT_ROW);
+    const distanceToBottomExit = Math.abs(col - BOTTOM_EXIT_COL) + Math.abs(row - BOTTOM_EXIT_ROW);
+    if (distanceToTopEntry <= 1 || distanceToBottomEntry <= 1 || distanceToTopExit <= 1 || distanceToBottomExit <= 1) {
       this.updateHud("Zone de portail protégée — plantez un peu plus loin");
       return;
     }
@@ -520,11 +524,18 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
       return;
     }
-    const exit = { col: EXIT_COL, row: EXIT_ROW };
-    const topPath = this.calculatePath({ col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, exit, { col, row });
-    const bottomPath = this.calculatePath({ col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, exit, { col, row });
+    const topPath = this.calculatePath(
+      { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW },
+      { col: TOP_EXIT_COL, row: TOP_EXIT_ROW },
+      { col, row },
+    );
+    const bottomPath = this.calculatePath(
+      { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW },
+      { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW },
+      { col, row },
+    );
     if (!topPath || !bottomPath) {
-      this.updateHud("Un chemin doit rester ouvert depuis le nord et le sud");
+      this.updateHud("Un chemin doit rester ouvert entre chaque entrée et sa sortie");
       this.cameras.main.shake(120, 0.002);
       return;
     }
@@ -668,6 +679,8 @@ class DefenseScene extends Phaser.Scene {
     const color = isBoss ? 0xdc2626 : kind === "air" ? 0xfb7185 : 0x22d3ee;
     const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
+    const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
+    const exitCol = this.isTopWave() ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
     const spawnX = GRID_X + entryCol * CELL;
     const spawnY = GRID_Y + entryRow * CELL;
     const container = this.add.container(spawnX, spawnY);
@@ -717,21 +730,23 @@ class DefenseScene extends Phaser.Scene {
       healthBarWidth,
       path: this.calculatePath(
         { col: entryCol, row: entryRow },
-        { col: EXIT_COL, row: EXIT_ROW },
+        { col: exitCol, row: exitRow },
       ) ?? [],
       pathIndex: 1,
       isBoss,
       coreDamage: 1,
       energyReward: isBoss ? 80 + this.wave * 4 : 8 + Math.ceil(this.wave / 3),
       slowedUntil: 0,
+      exitCol,
+      exitRow,
     });
   }
 
   private moveEnemies(time: number, delta: number): void {
-    const exitX = GRID_X + EXIT_COL * CELL;
-    const exitY = GRID_Y + EXIT_ROW * CELL;
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
+      const exitX = GRID_X + enemy.exitCol * CELL;
+      const exitY = GRID_Y + enemy.exitRow * CELL;
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
       this.followPath(enemy, delta, speed);
 
@@ -914,7 +929,7 @@ class DefenseScene extends Phaser.Scene {
         col: Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1),
         row: Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1),
       };
-      enemy.path = this.calculatePath(start, { col: EXIT_COL, row: EXIT_ROW }) ?? [];
+      enemy.path = this.calculatePath(start, { col: enemy.exitCol, row: enemy.exitRow }) ?? [];
       enemy.pathIndex = 1;
     });
   }
