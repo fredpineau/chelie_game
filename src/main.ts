@@ -42,11 +42,29 @@ type TowerDefinition = {
   target: "air" | "sea" | "all";
 };
 
+type LevelDefinition = {
+  name: string;
+  code: string;
+  waves: number | null;
+  healthMultiplier: number;
+  speedMultiplier: number;
+  swarmBonus: number;
+};
+
 const TOWERS: Record<TowerKind, TowerDefinition> = {
   harpoon: { name: "Harpon", icon: "H", color: 0x38bdf8, target: "sea" },
   flak: { name: "Flak", icon: "F", color: 0xf97316, target: "air" },
   pulse: { name: "Pulse", icon: "P", color: 0x8b5cf6, target: "all" },
 };
+
+const LEVELS: LevelDefinition[] = [
+  { name: "Premier contact", code: "SECTEUR 01", waves: 5, healthMultiplier: 0.85, speedMultiplier: 0.9, swarmBonus: 0 },
+  { name: "Courants hostiles", code: "SECTEUR 02", waves: 7, healthMultiplier: 1, speedMultiplier: 1, swarmBonus: 1 },
+  { name: "Ciel fracturé", code: "SECTEUR 03", waves: 9, healthMultiplier: 1.15, speedMultiplier: 1.08, swarmBonus: 2 },
+  { name: "Zone abyssale", code: "SECTEUR 04", waves: 12, healthMultiplier: 1.35, speedMultiplier: 1.15, swarmBonus: 3 },
+  { name: "Dernier rempart", code: "SECTEUR 05", waves: 15, healthMultiplier: 1.6, speedMultiplier: 1.22, swarmBonus: 4 },
+  { name: "Protocole infini", code: "MODE ∞", waves: null, healthMultiplier: 1.75, speedMultiplier: 1.25, swarmBonus: 5 },
+];
 
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
@@ -58,8 +76,12 @@ class DefenseScene extends Phaser.Scene {
   private waveActive = false;
   private selectedTower: TowerKind = "harpoon";
   private nextSpawnAt = 0;
+  private levelIndex = 0;
+  private levelStarted = false;
+  private requestedLevelIndex: number | null = null;
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
+  private levelText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
@@ -68,16 +90,26 @@ class DefenseScene extends Phaser.Scene {
     super("defense");
   }
 
+  init(data: { levelIndex?: number }): void {
+    this.requestedLevelIndex = data.levelIndex ?? null;
+  }
+
   create(): void {
+    this.resetState();
     this.drawWorld();
     this.createHud();
     this.createTowerPalette();
     this.createPlacementZone();
-    this.updateHud("Placez les tours pour créer un labyrinthe sans fermer le passage");
+    this.setStartButtonEnabled(false);
+    if (this.requestedLevelIndex !== null) {
+      this.beginLevel(this.requestedLevelIndex);
+    } else {
+      this.showLevelSelection();
+    }
   }
 
   update(time: number, delta: number): void {
-    if (this.baseHp <= 0) return;
+    if (!this.levelStarted || this.baseHp <= 0) return;
 
     this.spawnWaveEnemies(time);
     this.moveEnemies(delta);
@@ -85,9 +117,28 @@ class DefenseScene extends Phaser.Scene {
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
-      this.updateHud(`Vague ${this.wave} neutralisée — secteur sécurisé`);
-      this.setStartButtonEnabled(true);
+      const level = LEVELS[this.levelIndex];
+      if (level.waves !== null && this.wave >= level.waves) {
+        this.completeLevel();
+      } else {
+        this.updateHud(`Vague ${this.wave} neutralisée — secteur sécurisé`);
+        this.setStartButtonEnabled(true);
+      }
     }
+  }
+
+  private resetState(): void {
+    this.enemies = [];
+    this.towers = [];
+    this.baseHp = 20;
+    this.wave = 0;
+    this.enemiesToSpawn = 0;
+    this.spawnedThisWave = 0;
+    this.waveActive = false;
+    this.levelStarted = false;
+    this.nextSpawnAt = 0;
+    this.selectedTower = "harpoon";
+    this.towerButtons.clear();
   }
 
   private drawWorld(): void {
@@ -126,7 +177,7 @@ class DefenseScene extends Phaser.Scene {
     this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0xef4444, 0.5);
     this.createBase();
 
-    this.add.text(224, 108, "PÉRIMÈTRE DE CONFINEMENT 01", this.labelStyle(0x94a3b8));
+    this.add.text(224, 108, "PÉRIMÈTRE DE CONFINEMENT", this.labelStyle(0x94a3b8));
   }
 
   private createBase(): void {
@@ -158,8 +209,9 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 2,
     });
 
-    this.waveText = this.add.text(300, 35, "VAGUE 0", this.hudStyle());
-    this.hpText = this.add.text(485, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
+    this.levelText = this.add.text(270, 35, "SECTEUR --", this.hudStyle("#94a3b8"));
+    this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
+    this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
     this.statusText = this.add.text(WIDTH / 2, 93, "", {
       fontFamily: "Arial",
       fontSize: "15px",
@@ -167,6 +219,120 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 178, 48, 150, 42, "LANCER", 0x0284c7, () => this.startWave());
+  }
+
+  private showLevelSelection(): void {
+    const unlocked = this.getUnlockedLevel();
+    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x02040a, 0.9)
+      .setDepth(30)
+      .setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 12, 820, 510, 0x090e18, 0.98)
+      .setStrokeStyle(1, 0x475569, 0.9)
+      .setDepth(31);
+    this.add.text(WIDTH / 2, 150, "SÉLECTION DU SECTEUR", {
+      fontFamily: "Arial",
+      fontSize: "30px",
+      color: "#f8fafc",
+      fontStyle: "bold",
+      letterSpacing: 3,
+    }).setOrigin(0.5).setDepth(32);
+    this.add.text(WIDTH / 2, 193, "Terminez un secteur pour déverrouiller le suivant", {
+      fontFamily: "Arial",
+      fontSize: "14px",
+      color: "#94a3b8",
+    }).setOrigin(0.5).setDepth(32);
+
+    LEVELS.forEach((level, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const x = 400 + col * 240;
+      const y = 285 + row * 120;
+      const available = index <= unlocked;
+      const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : `${level.waves} VAGUES`;
+
+      if (available) {
+        const button = this.makeButton(x, y, 210, 78, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x7c3aed : 0x1e3a5f, () => {
+          this.scene.restart({ levelIndex: index });
+        });
+        button.setDepth(32);
+        this.add.text(x, y + 52, waveLabel, {
+          fontFamily: "Arial",
+          fontSize: "10px",
+          color: "#64748b",
+          letterSpacing: 1,
+        }).setOrigin(0.5).setDepth(32);
+      } else {
+        this.add.rectangle(x, y, 210, 78, 0x111827, 0.7).setStrokeStyle(1, 0x334155).setDepth(32);
+        this.add.text(x, y - 6, "VERROUILLÉ", {
+          fontFamily: "Arial",
+          fontSize: "15px",
+          color: "#475569",
+          fontStyle: "bold",
+          letterSpacing: 2,
+        }).setOrigin(0.5).setDepth(33);
+        this.add.text(x, y + 22, level.code, {
+          fontFamily: "Arial",
+          fontSize: "11px",
+          color: "#334155",
+        }).setOrigin(0.5).setDepth(33);
+      }
+    });
+
+    overlay.on("pointerdown", () => undefined);
+    panel.setInteractive().on("pointerdown", () => undefined);
+  }
+
+  private beginLevel(index: number): void {
+    this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
+    this.levelStarted = true;
+    this.levelText.setText(LEVELS[this.levelIndex].code);
+    this.setStartButtonEnabled(true);
+    this.updateHud(`${LEVELS[this.levelIndex].name} — préparez votre dispositif`);
+  }
+
+  private completeLevel(): void {
+    this.levelStarted = false;
+    this.setStartButtonEnabled(false);
+    const nextIndex = Math.min(this.levelIndex + 1, LEVELS.length - 1);
+    this.saveUnlockedLevel(nextIndex);
+
+    this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x02040a, 0.84).setDepth(30).setInteractive();
+    this.add.text(WIDTH / 2, HEIGHT / 2 - 100, "SECTEUR SÉCURISÉ", {
+      fontFamily: "Arial",
+      fontSize: "38px",
+      color: "#4ade80",
+      fontStyle: "bold",
+      letterSpacing: 3,
+    }).setOrigin(0.5).setDepth(31);
+    this.add.text(WIDTH / 2, HEIGHT / 2 - 48, `${LEVELS[this.levelIndex].name} terminé`, {
+      fontFamily: "Arial",
+      fontSize: "17px",
+      color: "#cbd5e1",
+    }).setOrigin(0.5).setDepth(31);
+
+    const nextLabel = this.levelIndex === LEVELS.length - 2 ? "DÉBLOQUER LE MODE INFINI" : "SECTEUR SUIVANT";
+    this.makeButton(WIDTH / 2, HEIGHT / 2 + 35, 280, 52, nextLabel, 0x166534, () => {
+      this.scene.restart({ levelIndex: nextIndex });
+    }).setDepth(31);
+    this.makeButton(WIDTH / 2, HEIGHT / 2 + 105, 220, 44, "CHOIX DU SECTEUR", 0x334155, () => {
+      this.scene.restart();
+    }).setDepth(31);
+  }
+
+  private getUnlockedLevel(): number {
+    try {
+      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
+    } catch {
+      return 0;
+    }
+  }
+
+  private saveUnlockedLevel(index: number): void {
+    try {
+      localStorage.setItem("chelie-unlocked-level", String(Math.max(this.getUnlockedLevel(), index)));
+    } catch {
+      // La progression reste disponible pour la session si le stockage est désactivé.
+    }
   }
 
   private createTowerPalette(): void {
@@ -272,9 +438,11 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private startWave(): void {
-    if (this.waveActive || this.baseHp <= 0) return;
+    if (!this.levelStarted || this.waveActive || this.baseHp <= 0) return;
+    const level = LEVELS[this.levelIndex];
+    if (level.waves !== null && this.wave >= level.waves) return;
     this.wave += 1;
-    this.enemiesToSpawn = 5 + this.wave * 2;
+    this.enemiesToSpawn = 5 + this.wave * 2 + level.swarmBonus;
     this.spawnedThisWave = 0;
     this.waveActive = true;
     this.nextSpawnAt = 0;
@@ -289,7 +457,7 @@ class DefenseScene extends Phaser.Scene {
     const y = Phaser.Math.Between(150, HEIGHT - 55);
     this.spawnEnemy(kind, y);
     this.spawnedThisWave += 1;
-    this.nextSpawnAt = time + Math.max(520, 1150 - this.wave * 45);
+    this.nextSpawnAt = time + Math.max(400, 1150 - this.wave * 45 - this.levelIndex * 35);
   }
 
   private spawnEnemy(kind: EnemyKind, y: number): void {
@@ -306,13 +474,14 @@ class DefenseScene extends Phaser.Scene {
     const healthBar = this.add.rectangle(-24, -28, 48, 5, color).setOrigin(0, 0.5);
     container.add([shadow, creature, eye, healthBg, healthBar]);
 
-    const hp = 48 + this.wave * 12;
+    const level = LEVELS[this.levelIndex];
+    const hp = Math.round((48 + this.wave * 12) * level.healthMultiplier);
     this.enemies.push({
       body: container,
       kind,
       hp,
       maxHp: hp,
-      speed: 38 + this.wave * 2.5,
+      speed: (38 + this.wave * 2.5) * level.speedMultiplier,
       healthBar,
       path: kind === "sea" ? this.calculatePath(
         { col: 0, row: ENTRY_ROW },
@@ -338,7 +507,7 @@ class DefenseScene extends Phaser.Scene {
         this.enemies.splice(index, 1);
         this.baseHp = Math.max(0, this.baseHp - 1);
         this.cameras.main.shake(180, 0.005);
-        this.updateHud(this.baseHp > 0 ? "Le cœur est touché !" : "Défaite — le cœur est tombé");
+        this.updateHud(this.baseHp > 0 ? "Le noyau est touché !" : "Défaite — intégrité critique");
         if (this.baseHp === 0) this.gameOver();
       }
     }
@@ -467,23 +636,27 @@ class DefenseScene extends Phaser.Scene {
 
   private gameOver(): void {
     this.waveActive = false;
+    this.levelStarted = false;
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x020617, 0.78);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 45, "LE CŒUR EST TOMBÉ", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "RUPTURE DU NOYAU", {
       fontFamily: "Arial",
       fontSize: "42px",
       color: "#fb7185",
       fontStyle: "bold",
     }).setOrigin(0.5);
-    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 38, 190, 48, "RECOMMENCER", 0x0284c7, () => this.scene.restart());
+    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0284c7, () => this.scene.restart({ levelIndex: this.levelIndex }));
+    const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU SECTEUR", 0x334155, () => this.scene.restart());
     overlay.setDepth(20);
     title.setDepth(21);
     retry.setDepth(21);
+    menu.setDepth(21);
   }
 
   private updateHud(message: string): void {
     this.hpText?.setText(`INTÉGRITÉ ${this.baseHp}`);
-    this.waveText?.setText(`VAGUE ${this.wave}`);
+    const level = LEVELS[this.levelIndex];
+    this.waveText?.setText(level.waves === null ? `VAGUE ${this.wave} / ∞` : `VAGUE ${this.wave} / ${level.waves}`);
     this.statusText?.setText(message);
   }
 
