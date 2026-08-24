@@ -226,9 +226,9 @@ class DefenseScene extends Phaser.Scene {
   private createGates(): void {
     const topEntryX = GRID_X + TOP_ENTRY_COL * CELL;
     const bottomEntryX = GRID_X + BOTTOM_ENTRY_COL * CELL;
-    this.createCreatureGate(topEntryX, 116, "NID NORD", 0, false);
-    this.createCreatureGate(bottomEntryX, 650, "NID SUD", Math.PI, false);
-    this.createCreatureGate(GRID_X - 24, GRID_Y + EXIT_ROW * CELL, "ANTRE", Math.PI / 2, true);
+    this.createCreatureGate(topEntryX, 116, "ENTRÉE NORD", 0, false);
+    this.createCreatureGate(bottomEntryX, 650, "ENTRÉE SUD", Math.PI, false);
+    this.createCreatureGate(GRID_X - 24, GRID_Y + EXIT_ROW * CELL, "SORTIE", Math.PI / 2, true);
   }
 
   private createCreatureGate(x: number, y: number, label: string, rotation: number, isExit: boolean): void {
