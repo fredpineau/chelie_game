@@ -8,7 +8,11 @@ const GRID_X = 230;
 const GRID_Y = 142;
 const GRID_COLS = 17;
 const GRID_ROWS = 10;
-const ENTRY_ROW = 5;
+const ENTRY_COL = 8;
+const TOP_ENTRY_ROW = 0;
+const BOTTOM_ENTRY_ROW = GRID_ROWS - 1;
+const EXIT_COL = GRID_COLS - 1;
+const EXIT_ROW = 5;
 
 type EnemyKind = "air" | "sea";
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
@@ -170,42 +174,13 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x07120b, 0x102416, 0x173b24, 0x09170e, 1);
+    background.fillGradientStyle(0x292719, 0x302d1c, 0x373120, 0x252417, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
-
-    for (let i = 0; i < 18; i += 1) {
-      const spore = this.add.circle(80 + (i * 137) % 1120, 95 + (i * 83) % 560, i % 4 === 0 ? 3 : 2, 0xb7f34a, 0.18);
-      this.tweens.add({ targets: spore, y: spore.y - 18, alpha: 0.04, yoyo: true, repeat: -1, duration: 1800 + i * 70 });
-    }
-
-    for (let y = 130; y < HEIGHT; y += 58) {
-      const wave = this.add.graphics();
-      wave.lineStyle(2, 0x4ade80, 0.07);
-      wave.beginPath();
-      for (let x = 0; x <= WIDTH; x += 40) {
-        const py = y + Math.sin((x + y) / 55) * 7;
-        x === 0 ? wave.moveTo(x, py) : wave.lineTo(x, py);
-      }
-      wave.strokePath();
-    }
-
-    const grid = this.add.graphics();
-    grid.lineStyle(1, 0xa3e635, 0.09);
-    for (let col = 0; col <= GRID_COLS; col += 1) {
-      grid.lineBetween(GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2, GRID_X - CELL / 2 + col * CELL, GRID_Y - CELL / 2 + GRID_ROWS * CELL);
-    }
-    for (let row = 0; row <= GRID_ROWS; row += 1) {
-      grid.lineBetween(GRID_X - CELL / 2, GRID_Y - CELL / 2 + row * CELL, GRID_X - CELL / 2 + GRID_COLS * CELL, GRID_Y - CELL / 2 + row * CELL);
-    }
-
-    this.add.circle(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, 20, 0x713f12, 0.65).setStrokeStyle(2, 0xf59e0b, 0.65);
-    this.add.text(GRID_X - 30, GRID_Y + ENTRY_ROW * CELL, "NID", { fontFamily: "Arial", fontSize: "10px", color: "#fde68a", fontStyle: "bold" }).setOrigin(0.5);
 
     this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x031008, 0.74);
     this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x84cc16, 0.5);
     this.createBase();
 
-    this.add.text(224, 108, "TOURBIÈRE CARNIVORE", this.labelStyle(0xa3e635));
   }
 
   private createBase(): void {
@@ -245,6 +220,12 @@ class DefenseScene extends Phaser.Scene {
     this.waveText = this.add.text(440, 35, "VAGUE 0", this.hudStyle());
     this.hpText = this.add.text(600, 35, "INTÉGRITÉ 20", this.hudStyle("#f87171"));
     this.energyText = this.add.text(790, 35, "PIÈCES 100", this.hudStyle("#facc15"));
+    this.add.text(790, 56, "AMÉLIORATIONS : N2 30  •  N3 60  •  N4 100  •  N5 160", {
+      fontFamily: "Arial",
+      fontSize: "9px",
+      color: "#a3e635",
+      letterSpacing: 0.4,
+    });
     this.statusText = this.add.text(WIDTH / 2, 93, "", {
       fontFamily: "Arial",
       fontSize: "15px",
@@ -429,8 +410,7 @@ class DefenseScene extends Phaser.Scene {
       const bg = button.getAt(0) as Phaser.GameObjects.Rectangle;
       bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x334155, 1);
     });
-    const target = TOWERS[kind].target === "all" ? "tous les insectes" : `insectes ${TOWERS[kind].target === "air" ? "volants" : "rampants"}`;
-    this.updateHud(`${TOWERS[kind].name} sélectionnée — cible les ${target}`);
+    this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : 30 / 60 / 100 / 160 pièces`);
   }
 
   private placeTower(x: number, y: number): void {
@@ -440,7 +420,9 @@ class DefenseScene extends Phaser.Scene {
     const towerX = GRID_X + col * CELL;
     const towerY = GRID_Y + row * CELL;
 
-    if ((col === 0 && row === ENTRY_ROW) || (col === GRID_COLS - 1 && row === ENTRY_ROW)) {
+    const isEntry = col === ENTRY_COL && (row === TOP_ENTRY_ROW || row === BOTTOM_ENTRY_ROW);
+    const isExit = col === EXIT_COL && row === EXIT_ROW;
+    if (isEntry || isExit) {
       this.updateHud("L’entrée et la sortie doivent rester libres");
       return;
     }
@@ -452,8 +434,11 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
       return;
     }
-    if (!this.calculatePath({ col: 0, row: ENTRY_ROW }, { col: GRID_COLS - 1, row: ENTRY_ROW }, { col, row })) {
-      this.updateHud("Il faut toujours laisser un chemin jusqu’au cœur");
+    const exit = { col: EXIT_COL, row: EXIT_ROW };
+    const topPath = this.calculatePath({ col: ENTRY_COL, row: TOP_ENTRY_ROW }, exit, { col, row });
+    const bottomPath = this.calculatePath({ col: ENTRY_COL, row: BOTTOM_ENTRY_ROW }, exit, { col, row });
+    if (!topPath || !bottomPath) {
+      this.updateHud("Un chemin doit rester ouvert depuis le nord et le sud");
       this.cameras.main.shake(120, 0.002);
       return;
     }
@@ -497,7 +482,7 @@ class DefenseScene extends Phaser.Scene {
     });
     this.towers.push(tower);
     this.recalculateSeaPaths();
-    this.updateHud(`${definition.name} déployé pour ${definition.cost} pièces — touchez-la pour l’améliorer`);
+    this.updateHud(`${definition.name} niveau 1 — prochaine amélioration : 30 pièces`);
   }
 
   private createPlantVisual(kind: TowerKind, color: number): Phaser.GameObjects.Container {
@@ -556,24 +541,28 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = true;
     this.nextSpawnAt = 0;
     this.setStartButtonEnabled(false);
-    this.updateHud(this.isBossWave() ? `ALERTE — insecte alpha détecté dans la vague ${this.wave}` : `Vague ${this.wave} en approche`);
+    const origin = this.isTopWave() ? "NORD" : "SUD";
+    this.updateHud(this.isBossWave()
+      ? `ALERTE ${origin} — insecte alpha détecté`
+      : `Vague ${this.wave} en approche par le ${origin}`);
   }
 
   private spawnWaveEnemies(time: number): void {
     if (!this.waveActive || this.spawnedThisWave >= this.enemiesToSpawn || time < this.nextSpawnAt) return;
 
     const kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
-    const y = Phaser.Math.Between(150, HEIGHT - 55);
     const isBoss = this.isBossWave() && this.spawnedThisWave === 0;
-    this.spawnEnemy(kind, y, isBoss);
+    this.spawnEnemy(kind, isBoss);
     this.spawnedThisWave += 1;
     this.nextSpawnAt = time + Math.max(400, 1150 - this.wave * 45 - this.levelIndex * 35);
   }
 
-  private spawnEnemy(kind: EnemyKind, y: number, isBoss = false): void {
+  private spawnEnemy(kind: EnemyKind, isBoss = false): void {
     const color = isBoss ? 0xdc2626 : kind === "air" ? 0xfb7185 : 0x22d3ee;
-    const spawnY = kind === "sea" ? GRID_Y + ENTRY_ROW * CELL : y;
-    const container = this.add.container(GRID_X, spawnY);
+    const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
+    const spawnX = GRID_X + ENTRY_COL * CELL;
+    const spawnY = GRID_Y + entryRow * CELL;
+    const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.55 : 1;
     const shadow = this.add.ellipse(0, 17, 58 * scale, 13 * scale, 0x020617, 0.45);
     const insectParts: Phaser.GameObjects.GameObject[] = [shadow];
@@ -619,8 +608,8 @@ class DefenseScene extends Phaser.Scene {
       healthBar,
       healthBarWidth,
       path: kind === "sea" ? this.calculatePath(
-        { col: 0, row: ENTRY_ROW },
-        { col: GRID_COLS - 1, row: ENTRY_ROW },
+        { col: ENTRY_COL, row: entryRow },
+        { col: EXIT_COL, row: EXIT_ROW },
       ) ?? [] : [],
       pathIndex: 1,
       isBoss,
@@ -636,8 +625,13 @@ class DefenseScene extends Phaser.Scene {
       const enemy = this.enemies[index];
       const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
       if (enemy.kind === "air") {
-        enemy.body.x += speed * (delta / 1000);
-        enemy.body.y += Math.sin((enemy.body.x + index * 20) / 55) * 0.16;
+        const targetY = HEIGHT / 2;
+        const dx = baseX - enemy.body.x;
+        const dy = targetY - enemy.body.y;
+        const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const step = speed * (delta / 1000);
+        enemy.body.x += (dx / distance) * step;
+        enemy.body.y += (dy / distance) * step;
       } else {
         this.followPath(enemy, delta, speed);
       }
@@ -747,7 +741,10 @@ class DefenseScene extends Phaser.Scene {
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
     plant.setScale(1 + (tower.level - 1) * 0.07);
     this.createUpgradePulse(tower, definition.color);
-    this.updateHud(`${definition.name} niveau ${tower.level} — puissance augmentée`);
+    const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
+    this.updateHud(nextCost === null
+      ? `${definition.name} niveau ${tower.level} — niveau maximal atteint`
+      : `${definition.name} niveau ${tower.level} — prochain niveau : ${nextCost} pièces`);
   }
 
   private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
@@ -782,6 +779,10 @@ class DefenseScene extends Phaser.Scene {
     return this.wave > 0 && this.wave % 5 === 0;
   }
 
+  private isTopWave(): boolean {
+    return this.wave % 2 === 1;
+  }
+
   private createImpact(x: number, y: number, color: number): void {
     const impact = this.add.circle(x, y, 8, color, 0.65);
     this.tweens.add({ targets: impact, scale: 2.4, alpha: 0, duration: 180, onComplete: () => impact.destroy() });
@@ -811,7 +812,7 @@ class DefenseScene extends Phaser.Scene {
         col: Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1),
         row: Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1),
       };
-      enemy.path = this.calculatePath(start, { col: GRID_COLS - 1, row: ENTRY_ROW }) ?? [];
+      enemy.path = this.calculatePath(start, { col: EXIT_COL, row: EXIT_ROW }) ?? [];
       enemy.pathIndex = 1;
     });
   }
