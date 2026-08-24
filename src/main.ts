@@ -50,6 +50,7 @@ type Tower = {
   row: number;
   level: number;
   levelBadge: Phaser.GameObjects.Text;
+  investedCost: number;
 };
 
 type TowerDefinition = {
@@ -120,6 +121,7 @@ class DefenseScene extends Phaser.Scene {
   private autoWaveText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
+  private towerActionPanel?: Phaser.GameObjects.Container;
 
   constructor() {
     super("defense");
@@ -588,6 +590,7 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
     this.selectedTower = kind;
+    this.closeTowerActions();
     this.towerButtons.forEach((button, buttonKind) => {
       const bg = button.getAt(0) as Phaser.GameObjects.Arc;
       bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
@@ -596,6 +599,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private placeTower(x: number, y: number): void {
+    this.closeTowerActions();
     const definition = TOWERS[this.selectedTower];
     const col = Phaser.Math.Clamp(Math.round((x - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
@@ -664,6 +668,7 @@ class DefenseScene extends Phaser.Scene {
       row,
       level: 1,
       levelBadge,
+      investedCost: definition.cost,
     };
     towerBody.setSize(CELL - 4, CELL - 4).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
@@ -673,7 +678,7 @@ class DefenseScene extends Phaser.Scene {
       event: Phaser.Types.Input.EventData,
     ) => {
       event.stopPropagation();
-      this.upgradeTower(tower);
+      this.showTowerActions(tower);
     });
     this.towers.push(tower);
     this.recalculateEnemyPaths();
@@ -947,6 +952,7 @@ class DefenseScene extends Phaser.Scene {
     }
 
     this.energy -= cost;
+    tower.investedCost += cost;
     tower.level += 1;
     tower.damage = Math.round(tower.damage * 1.35);
     tower.range += 16;
@@ -960,6 +966,53 @@ class DefenseScene extends Phaser.Scene {
     this.updateHud(nextCost === null
       ? `${definition.name} niveau ${tower.level} — niveau maximal atteint`
       : `${definition.name} niveau ${tower.level} — prochain niveau : ${nextCost} pièces`);
+  }
+
+  private showTowerActions(tower: Tower): void {
+    this.closeTowerActions();
+    if (!tower.body.active || !this.towers.includes(tower)) return;
+
+    const definition = TOWERS[tower.kind];
+    const refund = Math.floor(tower.investedCost / 2);
+    const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
+    const panelX = Phaser.Math.Clamp(tower.body.x, 330, WIDTH - 185);
+    const panelY = Phaser.Math.Clamp(tower.body.y - 88, 135, HEIGHT - 120);
+    const panel = this.add.container(panelX, panelY).setDepth(18);
+    const background = this.add.rectangle(0, 0, 316, 70, 0x061713, 0.96)
+      .setStrokeStyle(1, 0x66806d, 0.8);
+    const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
+    const upgradeButton = this.makeButton(-78, 0, 142, 42, upgradeLabel, 0x315c45, () => {
+      if (nextUpgradeCost === null) {
+        this.updateHud(`${definition.name} est déjà au niveau maximal`);
+        return;
+      }
+      this.upgradeTower(tower);
+      this.showTowerActions(tower);
+    });
+    const deleteButton = this.makeButton(78, 0, 142, 42, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
+      this.removeTower(tower);
+    });
+    panel.add([background, upgradeButton, deleteButton]);
+    this.towerActionPanel = panel;
+    this.updateHud(`${definition.name} niveau ${tower.level} — valeur investie : ${tower.investedCost} pièces`);
+  }
+
+  private removeTower(tower: Tower): void {
+    const index = this.towers.indexOf(tower);
+    if (index === -1) return;
+    const refund = Math.floor(tower.investedCost / 2);
+    const name = TOWERS[tower.kind].name;
+    this.energy += refund;
+    tower.body.destroy();
+    this.towers.splice(index, 1);
+    this.closeTowerActions();
+    this.recalculateEnemyPaths();
+    this.updateHud(`${name} supprimée — ${refund} pièces récupérées`);
+  }
+
+  private closeTowerActions(): void {
+    this.towerActionPanel?.destroy(true);
+    this.towerActionPanel = undefined;
   }
 
   private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
