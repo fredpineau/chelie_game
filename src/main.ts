@@ -6,15 +6,15 @@ const HEIGHT = 720;
 const CELL = 52;
 const GRID_X = 230;
 const GRID_Y = 142;
-const GRID_COLS = 17;
+const GRID_COLS = 20;
 const GRID_ROWS = 10;
-const TOP_ENTRY_COL = 8;
+const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_ENTRY_COL = 0;
 const TOP_ENTRY_ROW = 0;
 const BOTTOM_ENTRY_ROW = 5;
 const TOP_EXIT_COL = GRID_COLS - 1;
 const TOP_EXIT_ROW = 5;
-const BOTTOM_EXIT_COL = 8;
+const BOTTOM_EXIT_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 
 type EnemyKind = "air" | "sea";
@@ -189,15 +189,13 @@ class DefenseScene extends Phaser.Scene {
     background.fillGradientStyle(0x163a2b, 0x164e45, 0x155e75, 0x0f4c5c, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
-    this.add.rectangle(WIDTH - 88, HEIGHT / 2, 176, HEIGHT, 0x031008, 0.74);
-    this.add.rectangle(WIDTH - 176, HEIGHT / 2, 3, HEIGHT, 0x84cc16, 0.5);
     this.createGates();
   }
 
   private createGates(): void {
     this.createCreatureGate(GRID_X + TOP_ENTRY_COL * CELL, GRID_Y - 24, "ENTRÉE 1", 0, false);
     this.createCreatureGate(GRID_X + 40, GRID_Y + BOTTOM_ENTRY_ROW * CELL, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitQueen(GRID_X + TOP_EXIT_COL * CELL + 24, GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2);
+    this.createExitQueen(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), GRID_Y + TOP_EXIT_ROW * CELL, "SORTIE 1", -Math.PI / 2);
     this.createExitQueen(GRID_X + BOTTOM_EXIT_COL * CELL, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "SORTIE 2", Math.PI);
   }
 
@@ -228,7 +226,7 @@ class DefenseScene extends Phaser.Scene {
     this.tweens.add({ targets: [leftEye, rightEye], alpha: 0.3, yoyo: true, repeat: -1, duration: 740 });
 
     const verticalQueen = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
-    const labelX = verticalQueen ? x + (rotation > 0 ? -58 : 58) : x;
+    const labelX = verticalQueen ? x - 58 : x;
     const labelY = verticalQueen ? y : y + 56;
     this.add.text(labelX, labelY, `${label} · REINE`, {
       fontFamily: "Arial",
