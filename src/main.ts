@@ -99,10 +99,10 @@ type LevelDefinition = {
 };
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
-  harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
-  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
-  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 0 },
-  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 0 },
+  harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 24, range: 205, fireDelay: 820, effect: "standard", unlockLevel: 0 },
+  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 250, fireDelay: 520, effect: "standard", unlockLevel: 0 },
+  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 11, range: 220, fireDelay: 700, effect: "standard", unlockLevel: 0 },
+  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 190, fireDelay: 1050, effect: "slow", unlockLevel: 0 },
 };
 
 const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
@@ -1461,7 +1461,10 @@ class DefenseScene extends Phaser.Scene {
       victims.forEach((enemy) => this.damageEnemy(enemy, Math.round(tower.damage * 0.55), definition.color));
     }
 
-    this.damageEnemy(target, tower.damage, definition.color, tower.level >= 5 && tower.kind === "harpoon");
+    let directDamage = tower.damage;
+    if (tower.kind === "harpoon" && target.trait === "armored") directDamage = Math.round(directDamage * 1.4);
+    if (tower.kind === "flak" && target.trait === "swift") directDamage = Math.round(directDamage * 1.35);
+    this.damageEnemy(target, directDamage, definition.color, tower.level >= 5 && tower.kind === "harpoon");
   }
 
   private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
