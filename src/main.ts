@@ -18,6 +18,7 @@ const TOP_EXIT_COL = GRID_COLS - 1;
 const TOP_EXIT_ROW = Math.floor(GRID_ROWS / 2);
 const BOTTOM_EXIT_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
+const GATE_OUTSET = 18;
 
 type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
@@ -405,14 +406,14 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(MAP_CENTER_X, GRID_Y - CELL / 2, "ENTRÉE 1", Math.PI, false);
-    this.createCreatureGate(GRID_X - CELL / 2, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitTrap(GRID_X + TOP_EXIT_COL * CELL + CELL / 2, MAP_CENTER_Y, "right", -Math.PI / 2);
-    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + CELL / 2, "bottom", 0);
+    this.createCreatureGate(MAP_CENTER_X, GRID_Y - CELL / 2 - GATE_OUTSET, "ENTRÉE 1", Math.PI, false);
+    this.createCreatureGate(GRID_X - CELL / 2 - GATE_OUTSET, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
+    this.createExitTrap(GRID_X + TOP_EXIT_COL * CELL + CELL / 2 + GATE_OUTSET, MAP_CENTER_Y, "right", -Math.PI / 2);
+    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + CELL / 2 + GATE_OUTSET, "bottom", 0);
   }
 
   private createExitTrap(x: number, y: number, exitId: ExitId, rotation: number): void {
-    const trap = this.add.container(x, y).setRotation(rotation).setScale(0.48);
+    const trap = this.add.container(x, y).setRotation(rotation).setScale(0.42);
     const shadow = this.add.ellipse(0, 3, 90, 76, 0x07110b, 0.32);
     const stem = this.add.rectangle(0, 37, 13, 48, 0x31562f).setStrokeStyle(2, 0x1d3820);
     const leftJaw = this.add.container(-17, -5).setRotation(-0.22);
@@ -518,7 +519,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
-    const flower = this.add.container(x, y).setRotation(rotation).setScale(0.52);
+    const flower = this.add.container(x, y).setRotation(rotation).setScale(0.42);
     const shadow = this.add.circle(0, 3, 44, 0x17313a, 0.25);
     flower.add(shadow);
 
