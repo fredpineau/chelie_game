@@ -622,9 +622,9 @@ class DefenseScene extends Phaser.Scene {
 
   private createTowerPalette(): void {
     const x = 112;
-    const startY = 195;
+    const startY = 203;
 
-    this.add.rectangle(x, 418, 208, 556, 0x17231d, 0.78)
+    this.add.rectangle(x, 422, 208, 564, 0x17231d, 0.78)
       .setStrokeStyle(2, 0x667766, 0.72);
     this.add.text(x, startY - 34, "HERBIER", this.labelStyle(0xd9f99d)).setOrigin(0.5);
 
