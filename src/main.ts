@@ -592,7 +592,7 @@ class DefenseScene extends Phaser.Scene {
     this.setStartButtonEnabled(true);
     this.nextWaveAt = 0;
     this.autoWaveText.setText("PREMIÈRE VAGUE : LANCEMENT MANUEL");
-    this.updateHud(`${LEVELS[this.levelIndex].name} — placez vos plantes puis appuyez sur LANCER`);
+    this.updateHud("");
   }
 
   private completeLevel(): void {
@@ -1419,7 +1419,7 @@ class DefenseScene extends Phaser.Scene {
     this.hpText?.setText(`VIES ${this.baseHp} / 20`);
     this.energyText?.setText(`PIÈCES ${this.energy}`);
     this.waveText?.setText(this.waveActive ? "MENACE ACTIVE" : "MENACE EN ATTENTE");
-    this.statusText?.setText(message);
+    this.statusText?.setText(message).setVisible(message.length > 0);
   }
 
   private setStartButtonEnabled(enabled: boolean): void {
