@@ -1244,16 +1244,17 @@ class DefenseScene extends Phaser.Scene {
   private spawnWaveEnemies(time: number): void {
     if (!this.waveActive || this.spawnedThisWave >= this.enemiesToSpawn || time < this.nextSpawnAt) return;
 
-    let kind: EnemyKind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
-    if (this.wave >= 3 && this.spawnedThisWave % 4 === 3) {
-      const antiAir = this.towers.filter((tower) => TOWERS[tower.kind].target === "air" || TOWERS[tower.kind].target === "all").length;
-      const antiGround = this.towers.filter((tower) => TOWERS[tower.kind].target === "sea" || TOWERS[tower.kind].target === "all").length;
-      kind = antiAir > antiGround ? "sea" : "air";
-    }
+    const profile = this.getWaveProfile();
+    let kind: EnemyKind;
+    if (profile === 0) kind = this.spawnedThisWave % 5 === 4 ? "air" : "sea";
+    else if (profile === 1) kind = this.spawnedThisWave % 5 === 4 ? "sea" : "air";
+    else kind = (this.spawnedThisWave + this.wave) % 2 === 0 ? "air" : "sea";
+
     const isBoss = this.isBossWave() && this.spawnedThisWave === 0;
     this.spawnEnemy(kind, isBoss);
     this.spawnedThisWave += 1;
-    this.nextSpawnAt = time + Math.max(300, 1050 - this.wave * 50 - this.levelIndex * 40);
+    const profileSpeed = profile === 3 ? 0.62 : profile === 1 ? 0.82 : 1;
+    this.nextSpawnAt = time + Math.max(260, (1050 - this.wave * 50 - this.levelIndex * 40) * profileSpeed);
   }
 
   private spawnEnemy(kind: EnemyKind, isBoss = false): void {
@@ -1372,11 +1373,16 @@ class DefenseScene extends Phaser.Scene {
 
   private getEnemyTrait(isBoss: boolean): EnemyTrait {
     if (isBoss) return "armored";
-    const signature = this.wave * 3 + this.spawnedThisWave;
-    if (this.wave >= 4 && signature % 9 === 0) return "regenerator";
-    if (this.wave >= 3 && signature % 6 === 0) return "swift";
-    if (this.wave >= 2 && signature % 5 === 0) return "armored";
+    const profile = this.getWaveProfile();
+    if (profile === 0) return this.spawnedThisWave % 3 === 2 ? "normal" : "armored";
+    if (profile === 1) return this.spawnedThisWave % 3 === 2 ? "normal" : "swift";
+    if (profile === 2 && this.wave >= 3) return this.spawnedThisWave % 4 === 3 ? "regenerator" : "normal";
+    if (profile === 3) return this.spawnedThisWave % 2 === 0 ? "swift" : "normal";
     return "normal";
+  }
+
+  private getWaveProfile(): number {
+    return (this.wave - 1 + this.levelIndex) % 4;
   }
 
   private moveEnemies(time: number, delta: number): void {
