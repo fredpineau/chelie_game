@@ -111,7 +111,7 @@ const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
 };
 
 const MAX_TOWER_LEVEL = 5;
-const UPGRADE_COSTS = [0, 30, 60, 100, 160];
+const UPGRADE_COSTS = [0, 40, 100, 220, 450];
 
 const LEVELS: LevelDefinition[] = [
   { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
@@ -796,7 +796,7 @@ class DefenseScene extends Phaser.Scene {
         bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
       });
     });
-    this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : 30 / 60 / 100 / 160 pièces`);
+    this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : ${UPGRADE_COSTS.slice(1).join(" / ")} pièces`);
   }
 
   private placeTower(x: number, y: number): void {
