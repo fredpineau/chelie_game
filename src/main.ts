@@ -23,7 +23,7 @@ type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
 type TargetPriority = "first" | "strong" | "weak";
 type ExitId = "right" | "bottom";
-type TowerKind = "harpoon" | "flak" | "pulse" | "cryo" | "tesla" | "railgun" | "nova";
+type TowerKind = "harpoon" | "flak" | "pulse" | "cryo";
 type TowerEffect = "standard" | "slow" | "splash";
 
 type Enemy = {
@@ -90,11 +90,15 @@ type LevelDefinition = {
 const TOWERS: Record<TowerKind, TowerDefinition> = {
   harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 18, range: 210, fireDelay: 780, effect: "standard", unlockLevel: 0 },
   flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 220, fireDelay: 500, effect: "standard", unlockLevel: 0 },
-  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 1 },
-  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 2 },
-  tesla: { name: "Orchidée arc", icon: "O", color: 0x9f894b, target: "all", cost: 45, damage: 12, range: 190, fireDelay: 280, effect: "standard", unlockLevel: 3 },
-  railgun: { name: "Épineuse", icon: "E", color: 0x718448, target: "all", cost: 70, damage: 55, range: 310, fireDelay: 1600, effect: "standard", unlockLevel: 4 },
-  nova: { name: "Rafflesia", icon: "F", color: 0x873d3b, target: "all", cost: 100, damage: 28, range: 230, fireDelay: 1250, effect: "splash", unlockLevel: 5 },
+  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 14, range: 230, fireDelay: 650, effect: "standard", unlockLevel: 0 },
+  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 205, fireDelay: 900, effect: "slow", unlockLevel: 0 },
+};
+
+const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
+  harpoon: ["Dionée", "Dionée vorace", "Dionée titan"],
+  flak: ["Sarracénie", "Sarracénie chasseuse", "Sarracénie céleste"],
+  pulse: ["Drosera", "Drosera pourpre", "Drosera écarlate"],
+  cryo: ["Népenthès", "Népenthès brumeuse", "Népenthès polaire"],
 };
 
 const MAX_TOWER_LEVEL = 5;
@@ -131,8 +135,6 @@ class DefenseScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
-  private herbariumPanel?: Phaser.GameObjects.Container;
-  private herbariumOpen = false;
   private towerActionPanel?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, { leftJaw: Phaser.GameObjects.Container; rightJaw: Phaser.GameObjects.Container }>();
 
@@ -196,8 +198,6 @@ class DefenseScene extends Phaser.Scene {
     this.nextWaveAt = 0;
     this.selectedTower = null;
     this.towerButtons.clear();
-    this.herbariumPanel = undefined;
-    this.herbariumOpen = false;
     this.exitTraps.clear();
   }
 
@@ -626,61 +626,16 @@ class DefenseScene extends Phaser.Scene {
 
   private createTowerPalette(): void {
     const dockY = HEIGHT - 48;
-    const availableKinds = (Object.keys(TOWERS) as TowerKind[])
-      .filter((kind) => this.levelIndex >= TOWERS[kind].unlockLevel);
-    const quickKinds = availableKinds.slice(0, 3);
-    const quickPositions = quickKinds.map((_kind, index) => 292 + index * 92);
-    const herbariumX = 292 + quickKinds.length * 92;
-
-    const quickDockWidth = 112 + quickKinds.length * 92;
-    this.add.rectangle(252 + quickDockWidth / 2, dockY, quickDockWidth, 94, 0x17231d, 0.88)
+    const kinds = Object.keys(TOWERS) as TowerKind[];
+    const positions = [300, 402, 504, 606];
+    this.add.rectangle(453, dockY, 420, 94, 0x17231d, 0.88)
       .setStrokeStyle(2, 0x667766, 0.78);
-
-    quickKinds.forEach((kind, index) => {
-      this.createTowerPaletteButton(kind, quickPositions[index], dockY, false);
+    kinds.forEach((kind, index) => {
+      this.createTowerPaletteButton(kind, positions[index], dockY);
     });
-
-    const herbariumButton = this.add.container(herbariumX, dockY);
-    const herbariumBg = this.add.circle(0, 0, 35, 0x24483c, 0.98).setStrokeStyle(2, 0x83a98c, 1);
-    const herbariumIcon = this.add.text(0, -4, "✦", {
-      fontFamily: "Arial",
-      fontSize: "23px",
-      color: "#d8e8d4",
-      fontStyle: "bold",
-    }).setOrigin(0.5);
-    const herbariumLabel = this.add.text(0, 29, "HERBIER", {
-      fontFamily: "Arial",
-      fontSize: "9px",
-      color: "#f8fafc",
-      fontStyle: "bold",
-      stroke: "#08100c",
-      strokeThickness: 2,
-    }).setOrigin(0.5);
-    herbariumButton.add([herbariumBg, herbariumIcon, herbariumLabel]);
-    herbariumButton.setSize(82, 90).setInteractive({ useHandCursor: true });
-    herbariumButton.on("pointerdown", () => this.toggleHerbarium());
-
-    const panel = this.add.container(WIDTH / 2, HEIGHT - 142).setDepth(15).setVisible(false);
-    const panelBg = this.add.rectangle(0, 0, 820, 104, 0x17231d, 0.97)
-      .setStrokeStyle(2, 0x78907d, 0.9);
-    const panelTitle = this.add.text(-392, -42, "HERBIER COMPLET", {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: "#d8e8d4",
-      fontStyle: "bold",
-      letterSpacing: 1,
-    });
-    panel.add([panelBg, panelTitle]);
-
-    (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
-      const button = this.createTowerPaletteButton(kind, -330 + index * 110, 5, true);
-      panel.add(button);
-    });
-    this.herbariumPanel = panel;
-    this.setHerbariumInteractive(false);
   }
 
-  private createTowerPaletteButton(kind: TowerKind, x: number, y: number, compact: boolean): Phaser.GameObjects.Container {
+  private createTowerPaletteButton(kind: TowerKind, x: number, y: number): Phaser.GameObjects.Container {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
       const button = this.add.container(x, y);
@@ -690,7 +645,7 @@ class DefenseScene extends Phaser.Scene {
         .setPosition(0, 3)
         .setScale(0.76)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(0, compact ? -37 : -39, definition.name.toUpperCase(), {
+      const title = this.add.text(0, -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
         fontSize: "9px",
         color: available ? "#f8fafc" : "#64748b",
@@ -712,27 +667,11 @@ class DefenseScene extends Phaser.Scene {
       button.setSize(82, 94).setInteractive({ useHandCursor: true });
       button.on("pointerover", () => bg.setScale(1.08));
       button.on("pointerout", () => bg.setScale(1));
-      button.on("pointerdown", () => {
-        this.selectTower(kind);
-        if (this.herbariumOpen) this.toggleHerbarium(false);
-      });
+      button.on("pointerdown", () => this.selectTower(kind));
       const buttons = this.towerButtons.get(kind) ?? [];
       buttons.push(button);
       this.towerButtons.set(kind, buttons);
       return button;
-  }
-
-  private toggleHerbarium(force?: boolean): void {
-    this.herbariumOpen = force ?? !this.herbariumOpen;
-    this.herbariumPanel?.setVisible(this.herbariumOpen);
-    this.setHerbariumInteractive(this.herbariumOpen);
-  }
-
-  private setHerbariumInteractive(enabled: boolean): void {
-    this.herbariumPanel?.each((child: Phaser.GameObjects.GameObject) => {
-      if (!(child instanceof Phaser.GameObjects.Container) || !child.input) return;
-      child.input.enabled = enabled;
-    });
   }
 
   private createPlacementZone(): void {
@@ -907,6 +846,36 @@ class DefenseScene extends Phaser.Scene {
       plant.add(this.add.circle(0, -7, 10, 0x713f12).setStrokeStyle(2, 0xfbbf24));
     }
     return plant;
+  }
+
+  private getTowerName(tower: Tower): string {
+    const stage = tower.level >= 5 ? 2 : tower.level >= 3 ? 1 : 0;
+    return TOWER_EVOLUTIONS[tower.kind][stage];
+  }
+
+  private evolveTowerVisual(tower: Tower): void {
+    const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
+    const color = TOWERS[tower.kind].color;
+    if (tower.level === 3) {
+      plant.add([
+        this.add.ellipse(-18, 5, 18, 8, 0x3f6212, 0.95).setRotation(-0.5),
+        this.add.ellipse(18, 5, 18, 8, 0x3f6212, 0.95).setRotation(0.5),
+        this.add.circle(0, -8, 22, color, 0.12).setStrokeStyle(2, color, 0.72),
+      ]);
+    }
+    if (tower.level === 5) {
+      for (let angle = 0; angle < 360; angle += 60) {
+        const rad = Phaser.Math.DegToRad(angle);
+        plant.add(this.add.triangle(
+          Math.cos(rad) * 25,
+          -8 + Math.sin(rad) * 25,
+          -4, 5, 0, -9, 4, 5,
+          color,
+          0.95,
+        ).setRotation(rad + Math.PI / 2));
+      }
+      plant.add(this.add.circle(0, -8, 28, color, 0.08).setStrokeStyle(3, 0xf4d35e, 0.85));
+    }
   }
 
   private startWave(): void {
@@ -1146,16 +1115,18 @@ class DefenseScene extends Phaser.Scene {
     const impactY = target.body.y;
 
     if (definition.effect === "slow") {
-      target.slowedUntil = Math.max(target.slowedUntil, this.time.now + 2200);
+      target.slowedUntil = Math.max(target.slowedUntil, this.time.now + (tower.level >= 5 ? 4200 : 2200));
     }
-    if (definition.effect === "splash") {
+    if (definition.effect === "splash" || (tower.level >= 5 && (tower.kind === "flak" || tower.kind === "pulse"))) {
       const victims = this.enemies.filter((enemy) =>
-        enemy !== target && Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= 90,
+        enemy !== target
+        && (definition.target === "all" || definition.target === enemy.kind)
+        && Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= 90,
       );
       victims.forEach((enemy) => this.damageEnemy(enemy, Math.round(tower.damage * 0.55), definition.color));
     }
 
-    this.damageEnemy(target, tower.damage, definition.color, tower.kind === "railgun");
+    this.damageEnemy(target, tower.damage, definition.color, tower.level >= 5 && tower.kind === "harpoon");
   }
 
   private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
@@ -1182,7 +1153,7 @@ class DefenseScene extends Phaser.Scene {
   private upgradeTower(tower: Tower): void {
     const definition = TOWERS[tower.kind];
     if (tower.level >= MAX_TOWER_LEVEL) {
-      this.updateHud(`${definition.name} au niveau maximal`);
+      this.updateHud(`${this.getTowerName(tower)} au niveau maximal`);
       this.createUpgradePulse(tower, 0x4ade80);
       return;
     }
@@ -1204,11 +1175,13 @@ class DefenseScene extends Phaser.Scene {
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
     plant.setScale(1 + (tower.level - 1) * 0.07);
+    this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
+    const evolvedName = this.getTowerName(tower);
     this.updateHud(nextCost === null
-      ? `${definition.name} niveau ${tower.level} — niveau maximal atteint`
-      : `${definition.name} niveau ${tower.level} — prochain niveau : ${nextCost} pièces`);
+      ? `${evolvedName} niveau ${tower.level} — forme ultime atteinte`
+      : `${evolvedName} niveau ${tower.level} — prochain niveau : ${nextCost} pièces`);
   }
 
   private showTowerActions(tower: Tower): void {
@@ -1226,7 +1199,7 @@ class DefenseScene extends Phaser.Scene {
     const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
     const upgradeButton = this.makeButton(-78, -24, 142, 42, upgradeLabel, 0x315c45, () => {
       if (nextUpgradeCost === null) {
-        this.updateHud(`${definition.name} est déjà au niveau maximal`);
+        this.updateHud(`${this.getTowerName(tower)} est déjà au niveau maximal`);
         return;
       }
       this.upgradeTower(tower);
@@ -1242,14 +1215,14 @@ class DefenseScene extends Phaser.Scene {
     });
     panel.add([background, upgradeButton, deleteButton, priorityButton]);
     this.towerActionPanel = panel;
-    this.updateHud(`${definition.name} niveau ${tower.level} — valeur investie : ${tower.investedCost} pièces`);
+    this.updateHud(`${this.getTowerName(tower)} niveau ${tower.level} — valeur investie : ${tower.investedCost} pièces`);
   }
 
   private removeTower(tower: Tower): void {
     const index = this.towers.indexOf(tower);
     if (index === -1) return;
     const refund = Math.floor(tower.investedCost / 2);
-    const name = TOWERS[tower.kind].name;
+    const name = this.getTowerName(tower);
     this.energy += refund;
     tower.body.destroy();
     this.towers.splice(index, 1);
