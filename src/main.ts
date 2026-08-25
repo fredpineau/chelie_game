@@ -124,7 +124,13 @@ const LEVELS: LevelDefinition[] = [
   { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.7, speedMultiplier: 1.17, swarmBonus: 6 },
   { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 2.05, speedMultiplier: 1.25, swarmBonus: 8 },
   { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.45, speedMultiplier: 1.32, swarmBonus: 10 },
-  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 2.8, speedMultiplier: 1.38, swarmBonus: 12 },
+  { name: "Fosse des spores", code: "BIOME 06", waves: 35, healthMultiplier: 2.9, speedMultiplier: 1.38, swarmBonus: 12 },
+  { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.4, speedMultiplier: 1.44, swarmBonus: 14 },
+  { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 4, speedMultiplier: 1.5, swarmBonus: 16 },
+  { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.7, speedMultiplier: 1.57, swarmBonus: 18 },
+  { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 5.5, speedMultiplier: 1.64, swarmBonus: 20 },
+  { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 6.4, speedMultiplier: 1.72, swarmBonus: 23 },
+  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 7.2, speedMultiplier: 1.8, swarmBonus: 26 },
 ];
 
 class DefenseScene extends Phaser.Scene {
@@ -144,6 +150,7 @@ class DefenseScene extends Phaser.Scene {
   private levelIndex = 0;
   private levelStarted = false;
   private requestedLevelIndex: number | null = null;
+  private selectionPage = 0;
   private waveEntryTop = true;
   private waveExitId: ExitId = "right";
   private waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
@@ -165,8 +172,9 @@ class DefenseScene extends Phaser.Scene {
     super("defense");
   }
 
-  init(data: { levelIndex?: number; home?: boolean } = {}): void {
+  init(data: { levelIndex?: number; home?: boolean; selectionPage?: number } = {}): void {
     this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
+    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? 0, 0, 1);
   }
 
   create(): void {
@@ -733,15 +741,25 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
     }).setOrigin(0.5).setDepth(32);
 
-    const biomeColors = [0x4f8068, 0x477f78, 0x9a555d, 0x475965, 0x6d7849, 0x596337];
-    const biomeAccents = [0xa8d5a2, 0x91d4c8, 0xf1a3a9, 0x9eb9c6, 0xc5d58b, 0xe0d27d];
-    const biomeIcons = ["✦", "⌁", "✹", "◆", "♣", "∞"];
+    const firstPage = this.makeButton(270, 294, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
+      this.scene.restart({ home: true, selectionPage: 0 });
+    }).setDepth(32);
+    const secondPage = this.makeButton(450, 294, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
+      this.scene.restart({ home: true, selectionPage: 1 });
+    }).setDepth(32);
+    if (unlocked < 6) secondPage.setAlpha(0.62);
 
-    LEVELS.forEach((level, index) => {
-      const col = index % 2;
-      const row = Math.floor(index / 2);
+    const biomeColors = [0x4f8068, 0x477f78, 0x9a555d, 0x475965, 0x6d7849, 0x527060, 0x3f7172, 0x54645f, 0x775361, 0x594c68, 0x4b6051, 0x596337];
+    const biomeAccents = [0xa8d5a2, 0x91d4c8, 0xf1a3a9, 0x9eb9c6, 0xc5d58b, 0x9cc8ae, 0x85d4d0, 0xa7c6b7, 0xd6a1b4, 0xb9a4d4, 0x9dc5a7, 0xe0d27d];
+    const biomeIcons = ["✦", "⌁", "✹", "◆", "♣", "✧", "≋", "⬟", "✣", "◇", "♠", "∞"];
+    const pageStart = this.selectionPage * 6;
+
+    LEVELS.slice(pageStart, pageStart + 6).forEach((level, localIndex) => {
+      const index = pageStart + localIndex;
+      const col = localIndex % 2;
+      const row = Math.floor(localIndex / 2);
       const x = 225 + col * 270;
-      const y = 380 + row * 220;
+      const y = 398 + row * 210;
       const available = index <= unlocked;
       const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : "MENACE CROISSANTE";
       const card = this.add.container(x, y).setDepth(32);
