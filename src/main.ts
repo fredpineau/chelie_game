@@ -444,7 +444,8 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(28, 47, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
       fontSize: "9px",
-      color: "#789b91",
+      color: "#d2e2da",
+      fontStyle: "bold",
       letterSpacing: 2,
     });
 
@@ -455,13 +456,15 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(940, 68, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
       fontFamily: "Arial",
       fontSize: "9px",
-      color: "#829578",
+      color: "#e1e8d8",
+      fontStyle: "bold",
       letterSpacing: 0.4,
     });
     this.statusText = this.add.text(430, 98, "", {
       fontFamily: "Arial",
       fontSize: "13px",
-      color: "#cbd8cf",
+      color: "#f3f7f3",
+      fontStyle: "bold",
       align: "center",
       wordWrap: { width: 570 },
     }).setOrigin(0.5);
@@ -522,7 +525,8 @@ class DefenseScene extends Phaser.Scene {
     this.add.text(WIDTH / 2, 193, "Protégez un biome pour faire éclore la plante suivante", {
       fontFamily: "Arial",
       fontSize: "14px",
-      color: "#94a3b8",
+      color: "#cbd5e1",
+      fontStyle: "bold",
     }).setOrigin(0.5).setDepth(32);
 
     LEVELS.forEach((level, index) => {
@@ -541,7 +545,8 @@ class DefenseScene extends Phaser.Scene {
         this.add.text(x, y + 52, waveLabel, {
           fontFamily: "Arial",
           fontSize: "10px",
-          color: "#64748b",
+          color: "#94a3b8",
+          fontStyle: "bold",
           letterSpacing: 1,
         }).setOrigin(0.5).setDepth(32);
       } else {
@@ -557,6 +562,7 @@ class DefenseScene extends Phaser.Scene {
           fontFamily: "Arial",
           fontSize: "11px",
           color: "#334155",
+          fontStyle: "bold",
         }).setOrigin(0.5).setDepth(33);
       }
     });
@@ -595,6 +601,7 @@ class DefenseScene extends Phaser.Scene {
       fontFamily: "Arial",
       fontSize: "17px",
       color: "#cbd5e1",
+      fontStyle: "bold",
     }).setOrigin(0.5).setDepth(31);
 
     const nextLabel = this.levelIndex === LEVELS.length - 2 ? "DÉBLOQUER LA FLORAISON INFINIE" : "BIOME SUIVANT";
@@ -650,7 +657,8 @@ class DefenseScene extends Phaser.Scene {
       const target = this.add.text(-26, 7, detail, {
         fontFamily: "Arial",
         fontSize: "9px",
-        color: "#64748b",
+        color: available ? "#cbd5e1" : "#8190a5",
+        fontStyle: "bold",
       });
       button.add([bg, plantPreview, title, target]);
       bg.setInteractive({ useHandCursor: true });
@@ -957,6 +965,7 @@ class DefenseScene extends Phaser.Scene {
       fontFamily: "Arial",
       fontSize: "8px",
       color: trait === "armored" ? "#cbd5d1" : trait === "swift" ? "#d6c49b" : "#b7cba7",
+      fontStyle: "bold",
       letterSpacing: 1,
     }).setOrigin(0.5) : null;
     container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
