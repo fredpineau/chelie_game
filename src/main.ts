@@ -1301,7 +1301,7 @@ class DefenseScene extends Phaser.Scene {
     const deleteButton = this.makeButton(88, -31, 166, 52, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
       this.removeTower(tower);
     });
-    const priorityNames: Record<TargetPriority, string> = { first: "PROCHE SORTIE", strong: "PLUS FORT", weak: "PLUS FAIBLE" };
+    const priorityNames: Record<TargetPriority, string> = { first: "PROCHE SORTIE", strong: "ROBUSTE", weak: "PLUS FAIBLE" };
     const priorityButton = this.makeButton(0, 35, 340, 46, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
       tower.priority = tower.priority === "first" ? "strong" : tower.priority === "strong" ? "weak" : "first";
       this.showTowerActions(tower);
