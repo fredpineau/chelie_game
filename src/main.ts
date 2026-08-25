@@ -3,9 +3,9 @@ import "./style.css";
 
 const WIDTH = 720;
 const HEIGHT = 1280;
-const CELL = 52;
-const GRID_X = 100;
-const GRID_Y = 260;
+const CELL = 58;
+const GRID_X = 70;
+const GRID_Y = 145;
 const GRID_COLS = 11;
 const GRID_ROWS = 14;
 const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
@@ -149,7 +149,6 @@ class DefenseScene extends Phaser.Scene {
   private waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
-  private waveNumberText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private energyText!: Phaser.GameObjects.Text;
   private shearText!: Phaser.GameObjects.Text;
@@ -532,8 +531,6 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 115, WIDTH, 230, 0x438f99, 0.96)
-      .setStrokeStyle(2, 0xb9d8df, 0.84);
     this.add.text(WIDTH / 2, 5, "CHELIE", {
       fontFamily: "Arial",
       fontSize: "32px",
@@ -553,21 +550,37 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 3,
     }).setOrigin(0.5, 0);
 
-    this.levelText = this.createHudBadge(90, 125, "B", 0x315c54, "BIOME", "#a7c4bc");
-    this.waveText = this.createHudBadge(270, 125, "", 0x58322e, "VAGUE", "#d8c0b4");
-    this.waveNumberText = this.add.text(270, 125, "1", {
-      fontFamily: "Arial",
-      fontSize: "27px",
-      color: "#f4d7c9",
-      fontStyle: "bold",
-      stroke: "#321c19",
-      strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(3);
-    this.hpText = this.createHudBadge(450, 125, "♥", 0xb83f52, "20 / 20", "#e96b78");
-    this.energyText = this.createHudBadge(630, 125, "◈", 0x60532c, "60", "#d8c787");
+    const statsY = HEIGHT - 222;
+    this.levelText = this.createCompactHudBadge(72, statsY, 132, "BIOME", 0x315c54, "#d8f2ed");
+    this.waveText = this.createCompactHudBadge(216, statsY, 132, "VAGUE 1", 0x58322e, "#f4d7c9");
+    this.hpText = this.createCompactHudBadge(360, statsY, 132, "♥ 20/20", 0xb83f52, "#ffd4da");
+    this.energyText = this.createCompactHudBadge(504, statsY, 132, "◈ 60", 0x60532c, "#f2e5a9");
+    this.shearText = this.createCompactHudBadge(648, statsY, 132, "💧 0", 0x277887, "#dffaff");
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 54, 310, 76, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 42, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+  }
+
+  private createCompactHudBadge(
+    x: number,
+    y: number,
+    width: number,
+    initialText: string,
+    color: number,
+    textColor: string,
+  ): Phaser.GameObjects.Text {
+    this.add.rectangle(x + 2, y + 3, width, 42, 0x071a20, 0.45).setDepth(2);
+    this.add.rectangle(x, y, width, 42, 0x0b2630, 0.96)
+      .setStrokeStyle(2, color, 0.95)
+      .setDepth(3);
+    return this.add.text(x, y, initialText, {
+      fontFamily: "Arial",
+      fontSize: "15px",
+      color: textColor,
+      fontStyle: "bold",
+      stroke: "#07110d",
+      strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(4);
   }
 
   private createHudBadge(
@@ -831,13 +844,12 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const dockY = HEIGHT - 164;
+    const dockY = HEIGHT - 126;
     const kinds = Object.keys(TOWERS) as TowerKind[];
     const positions = [90, 270, 450, 630];
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
-    this.shearText = this.createHudBadge(630, HEIGHT - 55, "💧", 0x8ddce6, `${this.wateringCans} ARROSOIRS`, "#dffaff");
   }
 
   private createTowerPaletteButton(kind: TowerKind, x: number, y: number): Phaser.GameObjects.Container {
@@ -1752,11 +1764,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private updateHud(_message: string): void {
-    this.hpText?.setText(`${this.baseHp} / 20`);
-    this.energyText?.setText(`${this.energy} PIÈCES`);
-    this.waveText?.setText("VAGUE");
-    this.waveNumberText?.setText(String(Math.max(1, this.wave)));
-    this.shearText?.setText(`${this.wateringCans} ARROSOIRS`);
+    this.hpText?.setText(`♥ ${this.baseHp}/20`);
+    this.energyText?.setText(`◈ ${this.energy}`);
+    this.waveText?.setText(`VAGUE ${Math.max(1, this.wave)}`);
+    this.shearText?.setText(`💧 ${this.wateringCans}`);
     this.statusText?.setText("").setVisible(false);
   }
 
