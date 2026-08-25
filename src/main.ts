@@ -470,8 +470,8 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 68, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
-    this.autoWaveText = this.add.text(WIDTH - 88, HEIGHT - 38, "", {
+    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 38, 150, 42, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.autoWaveText = this.add.text(WIDTH - 88, HEIGHT - 70, "", {
       fontFamily: "Arial",
       fontSize: "11px",
       color: "#bef264",
