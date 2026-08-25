@@ -165,8 +165,8 @@ class DefenseScene extends Phaser.Scene {
     super("defense");
   }
 
-  init(data: { levelIndex?: number }): void {
-    this.requestedLevelIndex = data.levelIndex ?? null;
+  init(data: { levelIndex?: number; home?: boolean } = {}): void {
+    this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
   }
 
   create(): void {
@@ -606,7 +606,7 @@ class DefenseScene extends Phaser.Scene {
       this.scene.restart({ levelIndex: this.levelIndex });
     });
     const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 98, 330, 58, "ACCUEIL", 0x315968, () => {
-      this.scene.restart();
+      this.goToHome();
     });
     menu.add([veil, panel, title, resume, restart, home]);
     this.menuOverlay = menu;
@@ -628,6 +628,11 @@ class DefenseScene extends Phaser.Scene {
     this.menuOpen = false;
     this.menuOpenedAt = 0;
     this.setStartButtonEnabled(this.levelStarted && !this.waveActive && this.baseHp > 0);
+  }
+
+  private goToHome(): void {
+    this.requestedLevelIndex = null;
+    this.scene.restart({ home: true });
   }
 
   private createCompactHudBadge(
@@ -867,7 +872,7 @@ class DefenseScene extends Phaser.Scene {
       this.scene.restart({ levelIndex: nextIndex });
     }).setDepth(31);
     this.makeButton(WIDTH / 2, HEIGHT / 2 + 105, 220, 44, "CHOIX DU BIOME", 0x334155, () => {
-      this.scene.restart();
+      this.goToHome();
     }).setDepth(31);
   }
 
@@ -920,7 +925,7 @@ class DefenseScene extends Phaser.Scene {
     this.wateringCans -= cost;
     this.plantMastery[kind] += 1;
     this.savePermanentProgress();
-    this.scene.restart();
+    this.goToHome();
   }
 
   private createTowerPalette(): void {
@@ -1836,7 +1841,7 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
     }).setOrigin(0.5);
     const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0f766e, () => this.scene.restart({ levelIndex: this.levelIndex }));
-    const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.scene.restart());
+    const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.goToHome());
     overlay.setDepth(20);
     title.setDepth(21);
     retry.setDepth(21);
