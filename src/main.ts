@@ -118,7 +118,7 @@ class DefenseScene extends Phaser.Scene {
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
   private waveActive = false;
-  private selectedTower: TowerKind = "harpoon";
+  private selectedTower: TowerKind | null = null;
   private nextSpawnAt = 0;
   private nextWaveAt = 0;
   private lastCountdownValue = -1;
@@ -195,7 +195,7 @@ class DefenseScene extends Phaser.Scene {
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
     this.lastCountdownValue = -1;
-    this.selectedTower = "harpoon";
+    this.selectedTower = null;
     this.towerButtons.clear();
     this.exitTraps.clear();
   }
@@ -689,7 +689,12 @@ class DefenseScene extends Phaser.Scene {
 
   private placeTower(x: number, y: number): void {
     this.closeTowerActions();
-    const definition = TOWERS[this.selectedTower];
+    if (this.selectedTower === null) {
+      this.updateHud("Sélectionnez une plante dans l'herbier avant de la poser");
+      return;
+    }
+    const selectedKind = this.selectedTower;
+    const definition = TOWERS[selectedKind];
     const col = Phaser.Math.Clamp(Math.round((x - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
     const towerX = GRID_X + col * CELL;
@@ -735,7 +740,7 @@ class DefenseScene extends Phaser.Scene {
     const towerBody = this.add.container(towerX, towerY);
 
     const base = this.add.circle(0, 9, 27, 0x29210f).setStrokeStyle(3, 0x4d7c0f, 0.85);
-    const plant = this.createPlantVisual(this.selectedTower, definition.color);
+    const plant = this.createPlantVisual(selectedKind, definition.color);
     const levelBadge = this.add.text(21, 21, "1", {
       fontFamily: "Arial",
       fontSize: "11px",
@@ -748,7 +753,7 @@ class DefenseScene extends Phaser.Scene {
 
     const tower: Tower = {
       body: towerBody,
-      kind: this.selectedTower,
+      kind: selectedKind,
       range: definition.range,
       damage: definition.damage,
       fireDelay: definition.fireDelay,
@@ -772,7 +777,12 @@ class DefenseScene extends Phaser.Scene {
     });
     this.towers.push(tower);
     this.recalculateEnemyPaths();
-    this.updateHud(`${definition.name} diffuse son parfum — niveau 2 : 30 pièces`);
+    this.selectedTower = null;
+    this.towerButtons.forEach((button) => {
+      const bg = button.getAt(0) as Phaser.GameObjects.Arc;
+      bg.setStrokeStyle(2, 0x28665e, 1);
+    });
+    this.updateHud(`${definition.name} posée — sélection annulée pour éviter une pose accidentelle`);
   }
 
   private createPlantVisual(kind: TowerKind, color: number): Phaser.GameObjects.Container {
