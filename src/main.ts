@@ -13,10 +13,10 @@ const MAP_CENTER_Y = GRID_Y + ((GRID_ROWS - 1) * CELL) / 2;
 const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_ENTRY_COL = 0;
 const TOP_ENTRY_ROW = 0;
-const BOTTOM_ENTRY_ROW = Math.floor(GRID_ROWS / 2);
+const BOTTOM_ENTRY_ROW = Math.floor((GRID_ROWS - 1) / 2);
 const TOP_EXIT_COL = GRID_COLS - 1;
-const TOP_EXIT_ROW = Math.floor(GRID_ROWS / 2);
-const BOTTOM_EXIT_COL = Math.floor(GRID_COLS / 2);
+const TOP_EXIT_ROW = Math.floor((GRID_ROWS - 1) / 2);
+const BOTTOM_EXIT_COL = Math.floor((GRID_COLS - 1) / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 const GATE_OUTSET = 18;
 
@@ -265,12 +265,20 @@ class DefenseScene extends Phaser.Scene {
     const boundary = this.add.graphics();
     const left = GRID_X - CELL / 2;
     const top = GRID_Y - CELL / 2;
-    const width = GRID_COLS * CELL;
+    const width = GRID_COLS * CELL + CELL / 2;
     const height = GRID_ROWS * CELL;
     boundary.lineStyle(4, 0x397f86, 0.82);
     boundary.strokeRoundedRect(left, top, width, height, 18);
     boundary.lineStyle(1, 0xd5f1ee, 0.38);
     boundary.strokeRoundedRect(left + 5, top + 5, width - 10, height - 10, 14);
+  }
+
+  private gridToWorldX(col: number, row: number): number {
+    return GRID_X + col * CELL + (row % 2 === 1 ? CELL / 2 : 0);
+  }
+
+  private gridToWorldY(row: number): number {
+    return GRID_Y + row * CELL;
   }
 
   private createCommandDeck(): void {
@@ -406,10 +414,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(MAP_CENTER_X, GRID_Y - CELL / 2 - GATE_OUTSET, "ENTRÉE 1", Math.PI, false);
-    this.createCreatureGate(GRID_X - CELL / 2 - GATE_OUTSET, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitTrap(GRID_X + TOP_EXIT_COL * CELL + CELL / 2 + GATE_OUTSET, MAP_CENTER_Y, "right", -Math.PI / 2);
-    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + CELL / 2 + GATE_OUTSET, "bottom", 0);
+    this.createCreatureGate(this.gridToWorldX(TOP_ENTRY_COL, TOP_ENTRY_ROW), GRID_Y - CELL / 2 - GATE_OUTSET, "ENTRÉE 1", Math.PI, false);
+    this.createCreatureGate(GRID_X - CELL / 2 - GATE_OUTSET, this.gridToWorldY(BOTTOM_ENTRY_ROW), "ENTRÉE 2", -Math.PI / 2, false);
+    this.createExitTrap(this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW) + CELL / 2 + GATE_OUTSET, this.gridToWorldY(TOP_EXIT_ROW), "right", -Math.PI / 2);
+    this.createExitTrap(this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW), this.gridToWorldY(BOTTOM_EXIT_ROW) + CELL / 2 + GATE_OUTSET, "bottom", 0);
   }
 
   private createExitTrap(x: number, y: number, exitId: ExitId, rotation: number): void {
@@ -1129,9 +1137,9 @@ class DefenseScene extends Phaser.Scene {
 
   private createPlacementZone(): void {
     const zone = this.add.zone(
-      GRID_X + ((GRID_COLS - 1) * CELL) / 2,
+      GRID_X + ((GRID_COLS - 1) * CELL) / 2 + CELL / 4,
       GRID_Y + ((GRID_ROWS - 1) * CELL) / 2,
-      GRID_COLS * CELL,
+      GRID_COLS * CELL + CELL / 2,
       GRID_ROWS * CELL,
     ).setInteractive({ useHandCursor: true });
     zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
@@ -1163,10 +1171,11 @@ class DefenseScene extends Phaser.Scene {
     }
     const selectedKind = this.selectedTower;
     const definition = TOWERS[selectedKind];
-    const col = Phaser.Math.Clamp(Math.round((x - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
-    const towerX = GRID_X + col * CELL;
-    const towerY = GRID_Y + row * CELL;
+    const rowOffset = row % 2 === 1 ? CELL / 2 : 0;
+    const col = Phaser.Math.Clamp(Math.round((x - GRID_X - rowOffset) / CELL), 0, GRID_COLS - 1);
+    const towerX = this.gridToWorldX(col, row);
+    const towerY = this.gridToWorldY(row);
 
     if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
       this.updateHud("Cet emplacement est déjà occupé");
@@ -1405,10 +1414,14 @@ class DefenseScene extends Phaser.Scene {
     const exitRow = this.waveExitId === "right" ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
     const exitCol = this.waveExitId === "right" ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
     const exitId: ExitId = this.waveExitId;
-    const spawnX = this.isTopWave() ? MAP_CENTER_X : GRID_X;
-    const spawnY = this.isTopWave() ? GRID_Y : MAP_CENTER_Y;
-    const exitX = this.waveExitId === "right" ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
-    const exitY = this.waveExitId === "right" ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
+    const spawnX = this.isTopWave()
+      ? this.gridToWorldX(TOP_ENTRY_COL, TOP_ENTRY_ROW)
+      : this.gridToWorldX(BOTTOM_ENTRY_COL, BOTTOM_ENTRY_ROW);
+    const spawnY = this.isTopWave() ? this.gridToWorldY(TOP_ENTRY_ROW) : this.gridToWorldY(BOTTOM_ENTRY_ROW);
+    const exitX = this.waveExitId === "right"
+      ? this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW)
+      : this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW);
+    const exitY = this.waveExitId === "right" ? this.gridToWorldY(TOP_EXIT_ROW) : this.gridToWorldY(BOTTOM_EXIT_ROW);
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.15 : 0.72;
     const shadow = this.add.ellipse(0, 17, 58 * scale, 12 * scale, 0x010403, 0.62);
@@ -1873,8 +1886,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private recalculateEnemyPath(enemy: Enemy): void {
-    const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1);
     const approximateRow = Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
+    const rowOffset = approximateRow % 2 === 1 ? CELL / 2 : 0;
+    const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X - rowOffset) / CELL), 0, GRID_COLS - 1);
     const blocked = new Set(this.towers.map((tower) => `${tower.col},${tower.row}`));
     const candidates: { col: number; row: number }[] = [];
 
@@ -1895,21 +1909,21 @@ class DefenseScene extends Phaser.Scene {
       const distanceA = Phaser.Math.Distance.Squared(
         enemy.body.x,
         enemy.body.y,
-        GRID_X + a.col * CELL,
-        GRID_Y + a.row * CELL,
+        this.gridToWorldX(a.col, a.row),
+        this.gridToWorldY(a.row),
       );
       const distanceB = Phaser.Math.Distance.Squared(
         enemy.body.x,
         enemy.body.y,
-        GRID_X + b.col * CELL,
-        GRID_Y + b.row * CELL,
+        this.gridToWorldX(b.col, b.row),
+        this.gridToWorldY(b.row),
       );
       return distanceA - distanceB;
     });
 
     const exits: Array<{ id: ExitId; col: number; row: number; x: number; y: number }> = [
-      { id: "right" as ExitId, col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: GRID_X + TOP_EXIT_COL * CELL, y: MAP_CENTER_Y },
-      { id: "bottom" as ExitId, col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: MAP_CENTER_X, y: GRID_Y + BOTTOM_EXIT_ROW * CELL },
+      { id: "right" as ExitId, col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW), y: this.gridToWorldY(TOP_EXIT_ROW) },
+      { id: "bottom" as ExitId, col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW), y: this.gridToWorldY(BOTTOM_EXIT_ROW) },
     ].filter((exit) => !blocked.has(`${exit.col},${exit.row}`));
 
     let bestRoute: { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null = null;
@@ -1973,7 +1987,7 @@ class DefenseScene extends Phaser.Scene {
           cursor = previous.get(key(cursor.col, cursor.row))!;
           cells.push(cursor);
         }
-        return cells.reverse().map((cell) => new Phaser.Math.Vector2(GRID_X + cell.col * CELL, GRID_Y + cell.row * CELL));
+        return cells.reverse().map((cell) => new Phaser.Math.Vector2(this.gridToWorldX(cell.col, cell.row), this.gridToWorldY(cell.row)));
       }
 
       for (const direction of directions) {
