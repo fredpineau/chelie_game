@@ -48,9 +48,9 @@ canvas {
   }
 }
 
-@media (pointer: coarse) and (orientation: portrait) {
+@media (pointer: coarse) and (orientation: landscape) {
   #app::before {
-    content: "TOURNEZ VOTRE TÉLÉPHONE\A Le marais se joue en mode paysage";
+    content: "TOURNEZ VOTRE TÉLÉPHONE\A Le marais se joue en mode portrait";
     position: absolute;
     inset: 0;
     z-index: 10;
