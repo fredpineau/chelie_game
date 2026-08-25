@@ -514,8 +514,6 @@ class DefenseScene extends Phaser.Scene {
   private createHud(): void {
     this.add.rectangle(WIDTH / 2, 115, WIDTH, 230, 0x438f99, 0.96)
       .setStrokeStyle(2, 0xb9d8df, 0.84);
-    this.add.rectangle(WIDTH / 2, 41, 520, 72, 0x173a48, 0.42)
-      .setStrokeStyle(2, 0xaed7df, 0.48);
     this.add.text(WIDTH / 2, 5, "CHELIE", {
       fontFamily: "Arial",
       fontSize: "32px",
