@@ -207,8 +207,26 @@ class DefenseScene extends Phaser.Scene {
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
+    this.createCommandDeck();
 
     this.createGates();
+  }
+
+  private createCommandDeck(): void {
+    const deckTop = HEIGHT - 96;
+    const deck = this.add.graphics();
+    deck.fillGradientStyle(0x26362d, 0x26362d, 0x14221c, 0x14221c, 0.96);
+    deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
+    deck.lineStyle(3, 0x8da28d, 0.82);
+    deck.beginPath();
+    deck.moveTo(0, deckTop);
+    deck.lineTo(WIDTH, deckTop);
+    deck.strokePath();
+    deck.lineStyle(1, 0xd8e3d6, 0.16);
+    deck.beginPath();
+    deck.moveTo(0, deckTop + 6);
+    deck.lineTo(WIDTH, deckTop + 6);
+    deck.strokePath();
   }
 
   private createMarshAtmosphere(): void {
@@ -627,7 +645,7 @@ class DefenseScene extends Phaser.Scene {
   private createTowerPalette(): void {
     const dockY = HEIGHT - 48;
     const kinds = Object.keys(TOWERS) as TowerKind[];
-    const positions = [220, 330, 440, 550];
+    const positions = [90, 205, 320, 435];
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
