@@ -235,9 +235,22 @@ class DefenseScene extends Phaser.Scene {
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
+    this.drawMapBoundary();
     this.createCommandDeck();
 
     this.createGates();
+  }
+
+  private drawMapBoundary(): void {
+    const boundary = this.add.graphics();
+    const left = GRID_X - CELL / 2;
+    const top = GRID_Y - CELL / 2;
+    const width = GRID_COLS * CELL;
+    const height = GRID_ROWS * CELL;
+    boundary.lineStyle(4, 0x397f86, 0.82);
+    boundary.strokeRoundedRect(left, top, width, height, 18);
+    boundary.lineStyle(1, 0xd5f1ee, 0.38);
+    boundary.strokeRoundedRect(left + 5, top + 5, width - 10, height - 10, 14);
   }
 
   private createCommandDeck(): void {
@@ -258,8 +271,8 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createMarshAtmosphere(): void {
-    const sunX = 170;
-    const sunY = 92;
+    const sunX = 58;
+    const sunY = 58;
     const sunHalo = this.add.circle(sunX, sunY, 50, 0xf6d98b, 0.1);
     const sun = this.add.circle(sunX, sunY, 27, 0xf1cf78, 0.86).setStrokeStyle(2, 0xffe5a6, 0.55);
     const sunRays = this.add.graphics();
@@ -373,10 +386,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(MAP_CENTER_X, GRID_Y + 30, "ENTRÉE 1", Math.PI, false);
-    this.createCreatureGate(GRID_X - 24, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
-    this.createExitTrap(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "right", -Math.PI / 2);
-    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "bottom", 0);
+    this.createCreatureGate(MAP_CENTER_X, GRID_Y - CELL / 2, "ENTRÉE 1", Math.PI, false);
+    this.createCreatureGate(GRID_X - CELL / 2, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
+    this.createExitTrap(GRID_X + TOP_EXIT_COL * CELL + CELL / 2, MAP_CENTER_Y, "right", -Math.PI / 2);
+    this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + CELL / 2, "bottom", 0);
   }
 
   private createExitTrap(x: number, y: number, exitId: ExitId, rotation: number): void {
