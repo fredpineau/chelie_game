@@ -563,7 +563,7 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 3,
     }).setOrigin(0.5, 0);
 
-    const statsY = HEIGHT - 222;
+    const statsY = HEIGHT - 240;
     this.levelText = this.createCompactHudBadge(120, statsY, 212, "BIOME", 0x315c54, "#d8f2ed");
     this.waveText = this.createCompactHudBadge(360, statsY, 212, "VAGUE 1", 0x58322e, "#f4d7c9");
     this.hpText = this.createCompactHudBadge(600, statsY, 212, "♥ 20/20", 0xb83f52, "#ffd4da");
@@ -571,7 +571,7 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x277887, "#dffaff");
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 42, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private createCompactHudBadge(
@@ -857,7 +857,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const dockY = HEIGHT - 126;
+    const dockY = HEIGHT - 138;
     const kinds = Object.keys(TOWERS) as TowerKind[];
     const positions = [90, 270, 450, 630];
     kinds.forEach((kind, index) => {
