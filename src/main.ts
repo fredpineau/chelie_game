@@ -371,7 +371,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createExitTrap(x: number, y: number, exitId: ExitId, rotation: number): void {
-    const trap = this.add.container(x, y).setRotation(rotation).setScale(0.62);
+    const trap = this.add.container(x, y).setRotation(rotation).setScale(0.48);
     const shadow = this.add.ellipse(0, 3, 90, 76, 0x07110b, 0.32);
     const stem = this.add.rectangle(0, 37, 13, 48, 0x31562f).setStrokeStyle(2, 0x1d3820);
     const leftJaw = this.add.container(-17, -5).setRotation(-0.22);
@@ -477,7 +477,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
-    const flower = this.add.container(x, y).setRotation(rotation).setScale(0.66);
+    const flower = this.add.container(x, y).setRotation(rotation).setScale(0.52);
     const shadow = this.add.circle(0, 3, 44, 0x17313a, 0.25);
     flower.add(shadow);
 
