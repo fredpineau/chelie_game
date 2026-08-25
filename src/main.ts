@@ -121,7 +121,6 @@ class DefenseScene extends Phaser.Scene {
   private selectedTower: TowerKind | null = null;
   private nextSpawnAt = 0;
   private nextWaveAt = 0;
-  private lastCountdownValue = -1;
   private levelIndex = 0;
   private levelStarted = false;
   private requestedLevelIndex: number | null = null;
@@ -130,7 +129,6 @@ class DefenseScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text;
   private energyText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
-  private autoWaveText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
   private towerActionPanel?: Phaser.GameObjects.Container;
@@ -194,7 +192,6 @@ class DefenseScene extends Phaser.Scene {
     this.levelStarted = false;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
-    this.lastCountdownValue = -1;
     this.selectedTower = null;
     this.towerButtons.clear();
     this.exitTraps.clear();
@@ -471,15 +468,6 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 53, 150, 42, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
-    this.autoWaveText = this.add.text(WIDTH - 88, HEIGHT - 88, "", {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: "#bef264",
-      fontStyle: "bold",
-      backgroundColor: "#17231de6",
-      padding: { x: 6, y: 3 },
-      letterSpacing: 1,
-    }).setOrigin(0.5);
   }
 
   private createHudBadge(
@@ -582,14 +570,12 @@ class DefenseScene extends Phaser.Scene {
     this.levelText.setText(LEVELS[this.levelIndex].name.toUpperCase());
     this.setStartButtonEnabled(true);
     this.nextWaveAt = 0;
-    this.autoWaveText.setText("PREMIÈRE VAGUE : LANCEMENT MANUEL");
     this.updateHud("");
   }
 
   private completeLevel(): void {
     this.levelStarted = false;
     this.nextWaveAt = 0;
-    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const nextIndex = Math.min(this.levelIndex + 1, LEVELS.length - 1);
     this.saveUnlockedLevel(nextIndex);
@@ -860,8 +846,6 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = true;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
-    this.lastCountdownValue = -1;
-    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const origin = this.isTopWave() ? "NORD" : "OUEST";
     this.updateHud(this.isBossWave()
@@ -871,17 +855,11 @@ class DefenseScene extends Phaser.Scene {
 
   private scheduleNextWave(delay: number): void {
     this.nextWaveAt = this.time.now + delay;
-    this.lastCountdownValue = -1;
     this.updateAutoWave(this.time.now);
   }
 
   private updateAutoWave(time: number): void {
     if (this.waveActive || this.nextWaveAt <= 0 || !this.levelStarted) return;
-    const remaining = Math.max(0, Math.ceil((this.nextWaveAt - time) / 1000));
-    if (remaining !== this.lastCountdownValue) {
-      this.lastCountdownValue = remaining;
-      this.autoWaveText.setText(`DÉPART AUTO : ${remaining}s`);
-    }
     if (time >= this.nextWaveAt) {
       this.startWave();
     }
@@ -1389,7 +1367,6 @@ class DefenseScene extends Phaser.Scene {
     this.waveActive = false;
     this.levelStarted = false;
     this.nextWaveAt = 0;
-    this.autoWaveText.setText("");
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x022c2b, 0.82);
     const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "20 INSECTES SE SONT ÉCHAPPÉS", {
