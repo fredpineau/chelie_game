@@ -471,7 +471,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 53, 150, 42, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 48, 150, 42, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private createHudBadge(
