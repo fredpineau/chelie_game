@@ -140,6 +140,9 @@ class DefenseScene extends Phaser.Scene {
   private levelIndex = 0;
   private levelStarted = false;
   private requestedLevelIndex: number | null = null;
+  private waveEntryTop = true;
+  private waveExitId: ExitId = "right";
+  private waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
@@ -210,6 +213,9 @@ class DefenseScene extends Phaser.Scene {
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
     this.selectedTower = null;
+    this.waveEntryTop = true;
+    this.waveExitId = "right";
+    this.waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
     this.towerButtons.clear();
     this.exitTraps.clear();
   }
@@ -836,17 +842,18 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
       return;
     }
-    const topPath = this.calculatePath(
+    const entrances = [
       { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW },
-      { col: TOP_EXIT_COL, row: TOP_EXIT_ROW },
-      { col, row },
-    );
-    const bottomPath = this.calculatePath(
       { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW },
+    ];
+    const exits = [
+      { col: TOP_EXIT_COL, row: TOP_EXIT_ROW },
       { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW },
-      { col, row },
-    );
-    if (!topPath || !bottomPath) {
+    ];
+    const everyRouteOpen = entrances.every((entry) => exits.every((exit) =>
+      this.calculatePath(entry, exit, { col, row }) !== null,
+    ));
+    if (!everyRouteOpen) {
       this.updateHud("Un chemin doit rester ouvert entre chaque entrée et sa sortie");
       this.cameras.main.shake(120, 0.002);
       return;
@@ -1014,6 +1021,7 @@ class DefenseScene extends Phaser.Scene {
     const level = LEVELS[this.levelIndex];
     if (level.waves !== null && this.wave >= level.waves) return;
     this.wave += 1;
+    this.selectWaveRoute();
     this.enemiesToSpawn = 6 + this.wave * 3 + level.swarmBonus;
     this.spawnedThisWave = 0;
     this.waveActive = true;
@@ -1062,13 +1070,13 @@ class DefenseScene extends Phaser.Scene {
             : kind === "air" ? 0x625747 : 0x3f5d59;
     const entryRow = this.isTopWave() ? TOP_ENTRY_ROW : BOTTOM_ENTRY_ROW;
     const entryCol = this.isTopWave() ? TOP_ENTRY_COL : BOTTOM_ENTRY_COL;
-    const exitRow = this.isTopWave() ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
-    const exitCol = this.isTopWave() ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
-    const exitId: ExitId = this.isTopWave() ? "right" : "bottom";
+    const exitRow = this.waveExitId === "right" ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;
+    const exitCol = this.waveExitId === "right" ? TOP_EXIT_COL : BOTTOM_EXIT_COL;
+    const exitId: ExitId = this.waveExitId;
     const spawnX = this.isTopWave() ? MAP_CENTER_X : GRID_X;
     const spawnY = this.isTopWave() ? GRID_Y : MAP_CENTER_Y;
-    const exitX = this.isTopWave() ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
-    const exitY = this.isTopWave() ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
+    const exitX = this.waveExitId === "right" ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
+    const exitY = this.waveExitId === "right" ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.55 : 1;
     const shadow = this.add.ellipse(0, 17, 58 * scale, 12 * scale, 0x010403, 0.62);
@@ -1449,7 +1457,20 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private isTopWave(): boolean {
-    return this.wave % 2 === 1;
+    return this.waveEntryTop;
+  }
+
+  private selectWaveRoute(): void {
+    const routes: Array<{ top: boolean; exit: ExitId; guide: { col: number; row: number } }> = [
+      { top: true, exit: "right", guide: { col: 3, row: 4 } },
+      { top: false, exit: "bottom", guide: { col: 7, row: 9 } },
+      { top: true, exit: "bottom", guide: { col: 2, row: 9 } },
+      { top: false, exit: "right", guide: { col: 8, row: 4 } },
+    ];
+    const route = routes[(this.wave - 1 + this.levelIndex) % routes.length];
+    this.waveEntryTop = route.top;
+    this.waveExitId = route.exit;
+    this.waveRouteGuide = route.guide;
   }
 
   private createImpact(x: number, y: number, color: number): void {
@@ -1578,7 +1599,9 @@ class DefenseScene extends Phaser.Scene {
           else if (distance === 2) scentStrength += 0.14;
           else if (distance === 3) scentStrength += 0.05;
         });
-        const movementCost = Math.max(0.38, 1 - scentStrength);
+        const guideDistance = Math.abs(next.col - this.waveRouteGuide.col) + Math.abs(next.row - this.waveRouteGuide.row);
+        const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.035);
+        const movementCost = Math.max(0.34, 1 - scentStrength - routeAttraction);
         const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost;
         if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
         costs.set(nextKey, newCost);
