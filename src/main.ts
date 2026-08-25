@@ -265,7 +265,7 @@ class DefenseScene extends Phaser.Scene {
     const boundary = this.add.graphics();
     const left = GRID_X - CELL / 2;
     const top = GRID_Y - CELL / 2;
-    const width = GRID_COLS * CELL + CELL / 2;
+    const width = GRID_COLS * CELL;
     const height = GRID_ROWS * CELL;
     boundary.lineStyle(4, 0x397f86, 0.82);
     boundary.strokeRoundedRect(left, top, width, height, 18);
@@ -274,7 +274,8 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private gridToWorldX(col: number, row: number): number {
-    return GRID_X + col * CELL + (row % 2 === 1 ? CELL / 2 : 0);
+    void row;
+    return GRID_X + col * CELL;
   }
 
   private gridToWorldY(row: number): number {
@@ -674,7 +675,7 @@ class DefenseScene extends Phaser.Scene {
     }
     return this.add.text(x, y, initialText, {
       fontFamily: "Arial",
-      fontSize: highlighted ? "22px" : "15px",
+      fontSize: highlighted ? "26px" : "15px",
       color: textColor,
       fontStyle: "bold",
       stroke: "#07110d",
@@ -1137,9 +1138,9 @@ class DefenseScene extends Phaser.Scene {
 
   private createPlacementZone(): void {
     const zone = this.add.zone(
-      GRID_X + ((GRID_COLS - 1) * CELL) / 2 + CELL / 4,
+      GRID_X + ((GRID_COLS - 1) * CELL) / 2,
       GRID_Y + ((GRID_ROWS - 1) * CELL) / 2,
-      GRID_COLS * CELL + CELL / 2,
+      GRID_COLS * CELL,
       GRID_ROWS * CELL,
     ).setInteractive({ useHandCursor: true });
     zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
@@ -1172,12 +1173,15 @@ class DefenseScene extends Phaser.Scene {
     const selectedKind = this.selectedTower;
     const definition = TOWERS[selectedKind];
     const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
-    const rowOffset = row % 2 === 1 ? CELL / 2 : 0;
-    const col = Phaser.Math.Clamp(Math.round((x - GRID_X - rowOffset) / CELL), 0, GRID_COLS - 1);
-    const towerX = this.gridToWorldX(col, row);
+    const halfCol = Phaser.Math.Clamp(Math.round((x - GRID_X) / (CELL / 2)), 0, (GRID_COLS - 1) * 2);
+    const col = Phaser.Math.Clamp(Math.round(halfCol / 2), 0, GRID_COLS - 1);
+    const towerX = GRID_X + halfCol * (CELL / 2);
     const towerY = this.gridToWorldY(row);
 
-    if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
+    if (this.towers.some((tower) =>
+      Math.abs(tower.body.x - towerX) < CELL - 1
+      && Math.abs(tower.body.y - towerY) < CELL - 1,
+    )) {
       this.updateHud("Cet emplacement est déjà occupé");
       return;
     }
@@ -1203,7 +1207,7 @@ class DefenseScene extends Phaser.Scene {
 
     const base = this.add.rectangle(0, 0, CELL, CELL, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(2, 0x4d7c0f, 0.9);
-    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 3).setScale(0.54);
+    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 3).setScale(0.64);
     const levelBadge = this.add.text(10, 10, "", {
       fontFamily: "Arial",
       fontSize: "10px",
@@ -1713,7 +1717,7 @@ class DefenseScene extends Phaser.Scene {
     base.setStrokeStyle(tower.level >= 5 ? 3 : 2, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setAlpha(1).setScale(0.54 + (tower.level - 1) * 0.035);
+    plant.setAlpha(1).setScale(0.64 + (tower.level - 1) * 0.04);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
@@ -1887,8 +1891,7 @@ class DefenseScene extends Phaser.Scene {
 
   private recalculateEnemyPath(enemy: Enemy): void {
     const approximateRow = Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
-    const rowOffset = approximateRow % 2 === 1 ? CELL / 2 : 0;
-    const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X - rowOffset) / CELL), 0, GRID_COLS - 1);
+    const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1);
     const blocked = new Set(this.towers.map((tower) => `${tower.col},${tower.row}`));
     const candidates: { col: number; row: number }[] = [];
 
