@@ -72,6 +72,8 @@ type Tower = {
   levelBadge: Phaser.GameObjects.Text;
   investedCost: number;
   priority: TargetPriority;
+  isUpgrading: boolean;
+  upgradeReadyAt: number;
 };
 
 type TowerDefinition = {
@@ -112,6 +114,7 @@ const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
 
 const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 40, 100, 220, 450];
+const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
 
 const LEVELS: LevelDefinition[] = [
   { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
@@ -179,6 +182,7 @@ class DefenseScene extends Phaser.Scene {
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
+    this.updateTowerUpgrades(time);
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
@@ -878,6 +882,8 @@ class DefenseScene extends Phaser.Scene {
       levelBadge,
       investedCost: definition.cost,
       priority: "first",
+      isUpgrading: false,
+      upgradeReadyAt: 0,
     };
     towerBody.setSize(CELL - 4, CELL - 4).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
@@ -1199,6 +1205,7 @@ class DefenseScene extends Phaser.Scene {
 
   private fireTowers(time: number): void {
     for (const tower of this.towers) {
+      if (tower.isUpgrading) continue;
       if (time - tower.lastShot < tower.fireDelay) continue;
       const target = this.findTarget(tower);
       if (!target) continue;
@@ -1276,7 +1283,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private upgradeTower(tower: Tower): void {
-    const definition = TOWERS[tower.kind];
+    if (tower.isUpgrading) return;
     if (tower.level >= MAX_TOWER_LEVEL) {
       this.updateHud(`${this.getTowerName(tower)} au niveau maximal`);
       this.createUpgradePulse(tower, 0x4ade80);
@@ -1292,6 +1299,29 @@ class DefenseScene extends Phaser.Scene {
 
     this.energy -= cost;
     tower.investedCost += cost;
+    tower.isUpgrading = true;
+    tower.upgradeReadyAt = this.time.now + UPGRADE_DURATIONS[tower.level];
+    tower.levelBadge.setText(`${Math.ceil(UPGRADE_DURATIONS[tower.level] / 1000)}s`);
+    this.createUpgradePulse(tower, TOWERS[tower.kind].color);
+    this.updateHud("");
+  }
+
+  private updateTowerUpgrades(time: number): void {
+    this.towers.forEach((tower) => {
+      if (!tower.isUpgrading) return;
+      const remaining = Math.max(0, tower.upgradeReadyAt - time);
+      tower.levelBadge.setText(`${Math.ceil(remaining / 1000)}s`);
+      const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
+      plant.setAlpha(0.68 + Math.sin(time / 180) * 0.22);
+      if (remaining <= 0) this.completeTowerUpgrade(tower);
+    });
+  }
+
+  private completeTowerUpgrade(tower: Tower): void {
+    if (!tower.isUpgrading || !tower.body.active) return;
+    const definition = TOWERS[tower.kind];
+    tower.isUpgrading = false;
+    tower.upgradeReadyAt = 0;
     tower.level += 1;
     tower.damage = Math.round(tower.damage * 1.35);
     tower.range += 16;
@@ -1301,7 +1331,7 @@ class DefenseScene extends Phaser.Scene {
     base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setScale(1 + (tower.level - 1) * 0.07);
+    plant.setAlpha(1).setScale(1 + (tower.level - 1) * 0.07);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
@@ -1338,8 +1368,12 @@ class DefenseScene extends Phaser.Scene {
       index < tower.level ? definition.color : 0x263c34,
       1,
     ).setStrokeStyle(2, index < tower.level ? 0xdde9d7 : 0x52645c, 0.85));
-    const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
+    const remainingSeconds = tower.isUpgrading ? Math.ceil((tower.upgradeReadyAt - this.time.now) / 1000) : 0;
+    const upgradeLabel = tower.isUpgrading
+      ? `ÉVOLUTION · ${Math.max(1, remainingSeconds)}s`
+      : nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
     const upgradeButton = this.makeButton(-88, -12, 166, 52, upgradeLabel, 0x315c45, () => {
+      if (tower.isUpgrading) return;
       if (nextUpgradeCost === null) {
         this.updateHud(`${this.getTowerName(tower)} est déjà au niveau maximal`);
         return;
