@@ -615,7 +615,7 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 4,
     }).setOrigin(0.5);
     const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 62, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
-    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 18, 330, 58, "RECOMMENCER", 0x6b4f25, () => {
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 18, 390, 58, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
       this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
     });
     const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 98, 330, 58, "ACCUEIL", 0x315968, () => {
@@ -1910,7 +1910,7 @@ class DefenseScene extends Phaser.Scene {
       color: "#fb7185",
       fontStyle: "bold",
     }).setOrigin(0.5);
-    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0f766e, () => this.scene.restart({
+    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 390, 52, "RECOMMENCER LA PARTIE", 0x0f766e, () => this.scene.restart({
       levelIndex: this.levelIndex,
       infiniteNightmare: this.infiniteNightmare,
     }));
