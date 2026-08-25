@@ -853,13 +853,15 @@ class DefenseScene extends Phaser.Scene {
 
     const base = this.add.circle(0, 9, 27, 0x29210f).setStrokeStyle(3, 0x4d7c0f, 0.85);
     const plant = this.createPlantVisual(selectedKind, definition.color);
-    const levelBadge = this.add.text(21, 21, "1", {
+    const levelBadge = this.add.text(21, 21, "N1", {
       fontFamily: "Arial",
-      fontSize: "11px",
+      fontSize: "14px",
       color: "#ffffff",
-      backgroundColor: "#0f172a",
-      padding: { x: 4, y: 2 },
+      backgroundColor: "#173f49",
+      padding: { x: 5, y: 3 },
       fontStyle: "bold",
+      stroke: "#071a20",
+      strokeThickness: 2,
     }).setOrigin(0.5);
     towerBody.add([base, plant, levelBadge]);
 
@@ -1294,7 +1296,9 @@ class DefenseScene extends Phaser.Scene {
     tower.damage = Math.round(tower.damage * 1.35);
     tower.range += 16;
     tower.fireDelay = Math.max(260, Math.round(tower.fireDelay * 0.88));
-    tower.levelBadge.setText(String(tower.level));
+    tower.levelBadge.setText(`N${tower.level}`);
+    const base = tower.body.getAt(0) as Phaser.GameObjects.Arc;
+    base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
     plant.setScale(1 + (tower.level - 1) * 0.07);
@@ -1315,12 +1319,27 @@ class DefenseScene extends Phaser.Scene {
     const refund = Math.floor(tower.investedCost / 2);
     const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
     const panelX = Phaser.Math.Clamp(tower.body.x, 190, WIDTH - 190);
-    const panelY = Phaser.Math.Clamp(tower.body.y - 118, 170, HEIGHT - 155);
+    const panelY = Phaser.Math.Clamp(tower.body.y - 132, 180, HEIGHT - 175);
     const panel = this.add.container(panelX, panelY).setDepth(18);
-    const background = this.add.rectangle(0, 0, 360, 148, 0x061713, 0.96)
+    const background = this.add.rectangle(0, 0, 360, 190, 0x061713, 0.96)
       .setStrokeStyle(1, 0x66806d, 0.8);
+    const towerTitle = this.add.text(0, -73, `${this.getTowerName(tower).toUpperCase()} · NIVEAU ${tower.level}/${MAX_TOWER_LEVEL}`, {
+      fontFamily: "Arial",
+      fontSize: "17px",
+      color: "#f4faf6",
+      fontStyle: "bold",
+      stroke: "#08120d",
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+    const progressDots = Array.from({ length: MAX_TOWER_LEVEL }, (_unused, index) => this.add.circle(
+      -48 + index * 24,
+      -48,
+      6,
+      index < tower.level ? definition.color : 0x263c34,
+      1,
+    ).setStrokeStyle(2, index < tower.level ? 0xdde9d7 : 0x52645c, 0.85));
     const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
-    const upgradeButton = this.makeButton(-88, -31, 166, 52, upgradeLabel, 0x315c45, () => {
+    const upgradeButton = this.makeButton(-88, -12, 166, 52, upgradeLabel, 0x315c45, () => {
       if (nextUpgradeCost === null) {
         this.updateHud(`${this.getTowerName(tower)} est déjà au niveau maximal`);
         return;
@@ -1328,15 +1347,15 @@ class DefenseScene extends Phaser.Scene {
       this.upgradeTower(tower);
       this.showTowerActions(tower);
     });
-    const deleteButton = this.makeButton(88, -31, 166, 52, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
+    const deleteButton = this.makeButton(88, -12, 166, 52, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
       this.removeTower(tower);
     });
     const priorityNames: Record<TargetPriority, string> = { first: "PROCHE SORTIE", strong: "ROBUSTE", weak: "PLUS FAIBLE" };
-    const priorityButton = this.makeButton(0, 35, 340, 46, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
+    const priorityButton = this.makeButton(0, 55, 340, 46, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
       tower.priority = tower.priority === "first" ? "strong" : tower.priority === "strong" ? "weak" : "first";
       this.showTowerActions(tower);
     });
-    panel.add([background, upgradeButton, deleteButton, priorityButton]);
+    panel.add([background, towerTitle, ...progressDots, upgradeButton, deleteButton, priorityButton]);
     this.towerActionPanel = panel;
     this.updateHud(`${this.getTowerName(tower)} niveau ${tower.level} — valeur investie : ${tower.investedCost} pièces`);
   }
