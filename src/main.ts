@@ -3,11 +3,11 @@ import "./style.css";
 
 const WIDTH = 720;
 const HEIGHT = 1280;
-const CELL = 58;
-const GRID_X = 70;
-const GRID_Y = 130;
-const GRID_COLS = 11;
-const GRID_ROWS = 15;
+const CELL = 29;
+const GRID_X = 55;
+const GRID_Y = 116;
+const GRID_COLS = 22;
+const GRID_ROWS = 30;
 const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
 const MAP_CENTER_Y = GRID_Y + ((GRID_ROWS - 1) * CELL) / 2;
 const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
@@ -1193,14 +1193,14 @@ class DefenseScene extends Phaser.Scene {
     const towerBody = this.add.container(towerX, towerY);
 
     const base = this.add.rectangle(0, 0, CELL, CELL, TEMP_LEVEL_COLORS[0])
-      .setStrokeStyle(3, 0x4d7c0f, 0.9);
-    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 5).setScale(0.68);
-    const levelBadge = this.add.text(20, 20, "", {
+      .setStrokeStyle(2, 0x4d7c0f, 0.9);
+    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 3).setScale(0.46);
+    const levelBadge = this.add.text(10, 10, "", {
       fontFamily: "Arial",
-      fontSize: "14px",
+      fontSize: "10px",
       color: "#ffffff",
       backgroundColor: "#173f49",
-      padding: { x: 5, y: 3 },
+      padding: { x: 3, y: 2 },
       fontStyle: "bold",
       stroke: "#071a20",
       strokeThickness: 2,
@@ -1410,7 +1410,7 @@ class DefenseScene extends Phaser.Scene {
     const exitX = this.waveExitId === "right" ? GRID_X + TOP_EXIT_COL * CELL : MAP_CENTER_X;
     const exitY = this.waveExitId === "right" ? MAP_CENTER_Y : GRID_Y + BOTTOM_EXIT_ROW * CELL;
     const container = this.add.container(spawnX, spawnY);
-    const scale = isBoss ? 1.55 : 1;
+    const scale = isBoss ? 1.15 : 0.72;
     const shadow = this.add.ellipse(0, 17, 58 * scale, 12 * scale, 0x010403, 0.62);
     const insectParts: Phaser.GameObjects.GameObject[] = [shadow];
     if (kind === "air") {
@@ -1697,10 +1697,10 @@ class DefenseScene extends Phaser.Scene {
     tower.levelBadge.setText("").setVisible(false);
     const base = tower.body.getAt(0) as Phaser.GameObjects.Rectangle;
     base.setFillStyle(TEMP_LEVEL_COLORS[tower.level - 1], 1);
-    base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
+    base.setStrokeStyle(tower.level >= 5 ? 3 : 2, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setAlpha(1).setScale(0.68 + (tower.level - 1) * 0.045);
+    plant.setAlpha(1).setScale(0.46 + (tower.level - 1) * 0.03);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
@@ -1829,10 +1829,10 @@ class DefenseScene extends Phaser.Scene {
     guide: { col: number; row: number };
   }> {
     return [
-      { top: true, exit: "right", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 3, row: 4 } },
-      { top: false, exit: "bottom", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 7, row: 9 } },
-      { top: true, exit: "bottom", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 2, row: 9 } },
-      { top: false, exit: "right", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 8, row: 4 } },
+      { top: true, exit: "right", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 6, row: 8 } },
+      { top: false, exit: "bottom", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 14, row: 18 } },
+      { top: true, exit: "bottom", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 4, row: 18 } },
+      { top: false, exit: "right", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 16, row: 8 } },
     ];
   }
 
@@ -1985,12 +1985,12 @@ class DefenseScene extends Phaser.Scene {
         let scentStrength = 0;
         attractors.forEach((tower) => {
           const distance = Math.abs(next.col - tower.col) + Math.abs(next.row - tower.row);
-          if (distance === 1) scentStrength += 0.34;
-          else if (distance === 2) scentStrength += 0.14;
-          else if (distance === 3) scentStrength += 0.05;
+          if (distance <= 2) scentStrength += 0.34;
+          else if (distance <= 4) scentStrength += 0.14;
+          else if (distance <= 6) scentStrength += 0.05;
         });
         const guideDistance = Math.abs(next.col - this.waveRouteGuide.col) + Math.abs(next.row - this.waveRouteGuide.row);
-        const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.035);
+        const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.0175);
         const movementCost = Math.max(0.34, 1 - scentStrength - routeAttraction);
         const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost;
         if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
