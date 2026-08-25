@@ -422,12 +422,15 @@ class DefenseScene extends Phaser.Scene {
     const rim = this.add.circle(0, 0, 29, 0x547f90, 0.96).setStrokeStyle(3, 0xa7ccd4, 0.75);
     const opening = this.add.circle(0, 0, 21, 0x102d39, 1).setStrokeStyle(2, 0x315d70, 0.9);
     const depth = this.add.circle(0, 0, 11, 0x071a23, 0.95);
-    const redCore = this.add.circle(0, 0, 7, 0x9b3038, 0.95).setStrokeStyle(2, 0x541d25, 0.9);
-    flower.add([rim, opening, depth, redCore]);
+    const redHalo = this.add.circle(0, 0, 13, 0xef3340, 0.2);
+    const redCore = this.add.circle(0, 0, 9, 0xd52232, 1).setStrokeStyle(2, 0x6f111d, 1);
+    const redHighlight = this.add.circle(-3, -3, 2.5, 0xff8b91, 0.85);
+    flower.add([rim, opening, depth, redHalo, redCore, redHighlight]);
 
     this.tweens.add({ targets: petals, scaleY: 1.045, alpha: 0.76, yoyo: true, repeat: -1, duration: 1900 });
     this.tweens.add({ targets: depth, scale: 1.18, alpha: 0.65, yoyo: true, repeat: -1, duration: 1300 });
-    this.tweens.add({ targets: redCore, scale: 1.16, alpha: 0.72, yoyo: true, repeat: -1, duration: 1050 });
+    this.tweens.add({ targets: redHalo, scale: 1.35, alpha: 0.06, yoyo: true, repeat: -1, duration: 1050 });
+    this.tweens.add({ targets: [redCore, redHighlight], scale: 1.12, yoyo: true, repeat: -1, duration: 1050 });
   }
 
   private createHud(): void {
