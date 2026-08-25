@@ -149,6 +149,7 @@ class DefenseScene extends Phaser.Scene {
   private waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
   private hpText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
+  private waveNumberText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private energyText!: Phaser.GameObjects.Text;
   private shearText!: Phaser.GameObjects.Text;
@@ -553,7 +554,15 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
 
     this.levelText = this.createHudBadge(90, 125, "B", 0x315c54, "BIOME", "#a7c4bc");
-    this.waveText = this.createHudBadge(270, 125, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
+    this.waveText = this.createHudBadge(270, 125, "", 0x58322e, "VAGUE", "#d8c0b4");
+    this.waveNumberText = this.add.text(270, 125, "1", {
+      fontFamily: "Arial",
+      fontSize: "27px",
+      color: "#f4d7c9",
+      fontStyle: "bold",
+      stroke: "#321c19",
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(3);
     this.hpText = this.createHudBadge(450, 125, "♥", 0xb83f52, "20 / 20", "#e96b78");
     this.energyText = this.createHudBadge(630, 125, "◈", 0x60532c, "60", "#d8c787");
     this.statusText = this.add.text(0, 0, "").setVisible(false);
@@ -1745,7 +1754,8 @@ class DefenseScene extends Phaser.Scene {
   private updateHud(_message: string): void {
     this.hpText?.setText(`${this.baseHp} / 20`);
     this.energyText?.setText(`${this.energy} PIÈCES`);
-    this.waveText?.setText(this.waveActive ? "ACTIVE" : "EN ATTENTE");
+    this.waveText?.setText("VAGUE");
+    this.waveNumberText?.setText(String(Math.max(1, this.wave)));
     this.shearText?.setText(`${this.wateringCans} ARROSOIRS`);
     this.statusText?.setText("").setVisible(false);
   }
