@@ -115,6 +115,8 @@ const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
 const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 40, 100, 220, 450];
 const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
+const MASTERY_COSTS = [1, 2, 3, 5, 8];
+const TEMP_LEVEL_COLORS = [0x29210f, 0x3f6f4b, 0x397f78, 0x79684a, 0x8f4e59];
 
 const LEVELS: LevelDefinition[] = [
   { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
@@ -130,6 +132,8 @@ class DefenseScene extends Phaser.Scene {
   private towers: Tower[] = [];
   private baseHp = 20;
   private energy = 60;
+  private wateringCans = 0;
+  private plantMastery: Record<TowerKind, number> = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
   private wave = 0;
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
@@ -147,6 +151,7 @@ class DefenseScene extends Phaser.Scene {
   private waveText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private energyText!: Phaser.GameObjects.Text;
+  private shearText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
@@ -189,6 +194,9 @@ class DefenseScene extends Phaser.Scene {
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
+      this.wateringCans += 1;
+      this.savePermanentProgress();
+      this.showWateringCanReward();
       const level = LEVELS[this.levelIndex];
       if (level.waves !== null && this.wave >= level.waves) {
         this.completeLevel();
@@ -205,6 +213,7 @@ class DefenseScene extends Phaser.Scene {
     this.towers = [];
     this.baseHp = 20;
     this.energy = 60;
+    this.loadPermanentProgress();
     this.wave = 0;
     this.enemiesToSpawn = 0;
     this.spawnedThisWave = 0;
@@ -672,6 +681,49 @@ class DefenseScene extends Phaser.Scene {
       }
     });
 
+    this.add.text(WIDTH / 2, 958, `SERRE PERMANENTE  ·  ${this.wateringCans} ARROSOIR${this.wateringCans > 1 ? "S" : ""}`, {
+      fontFamily: "Arial",
+      fontSize: "18px",
+      color: "#effdfb",
+      fontStyle: "bold",
+      stroke: "#173943",
+      strokeThickness: 3,
+      letterSpacing: 1.2,
+    }).setOrigin(0.5).setDepth(32);
+    this.add.text(WIDTH / 2, 986, "Touchez une plante pour l'arroser durablement", {
+      fontFamily: "Arial",
+      fontSize: "13px",
+      color: "#cde9e7",
+      fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(32);
+
+    const masteryKinds = Object.keys(TOWERS) as TowerKind[];
+    masteryKinds.forEach((kind, index) => {
+      const mastery = this.plantMastery[kind];
+      const cost = mastery < MASTERY_COSTS.length ? MASTERY_COSTS[mastery] : null;
+      const x = 90 + index * 180;
+      const button = this.add.container(x, 1050).setDepth(32);
+      const bg = this.add.circle(0, 0, 45, 0x173f47, 0.98)
+        .setStrokeStyle(3, mastery >= MASTERY_COSTS.length ? 0xf0d77a : 0x8ddce6, 0.95);
+      const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
+      const costText = this.add.text(0, 55, cost === null ? "MAX" : `💧 ${cost}`, {
+        fontFamily: "Arial",
+        fontSize: "15px",
+        color: cost === null ? "#ffe89a" : this.wateringCans >= cost ? "#e6fbff" : "#86aeb3",
+        fontStyle: "bold",
+        stroke: "#173943",
+        strokeThickness: 2,
+      }).setOrigin(0.5);
+      button.add([bg, plant, costText]);
+      for (let dot = 0; dot < MASTERY_COSTS.length; dot += 1) {
+        button.add(this.add.circle(-24 + dot * 12, 36, 4, dot < mastery ? 0xf0d77a : 0x557d82, 1));
+      }
+      button.setSize(105, 130).setInteractive({ useHandCursor: true });
+      button.on("pointerover", () => bg.setScale(1.07));
+      button.on("pointerout", () => bg.setScale(1));
+      button.on("pointerdown", () => this.upgradePlantMastery(kind));
+    });
+
     overlay.on("pointerdown", () => undefined);
     panel.setInteractive().on("pointerdown", () => undefined);
     this.tweens.add({ targets: glow, alpha: 0.08, scale: 1.08, yoyo: true, repeat: -1, duration: 2400 });
@@ -733,6 +785,42 @@ class DefenseScene extends Phaser.Scene {
     }
   }
 
+  private loadPermanentProgress(): void {
+    try {
+      this.wateringCans = Math.max(0, Number(localStorage.getItem("chelie-watering-cans") ?? 0));
+      const stored = JSON.parse(localStorage.getItem("chelie-plant-mastery") ?? "{}") as Partial<Record<TowerKind, number>>;
+      (Object.keys(TOWERS) as TowerKind[]).forEach((kind) => {
+        this.plantMastery[kind] = Phaser.Math.Clamp(Number(stored[kind] ?? 0), 0, MASTERY_COSTS.length);
+      });
+    } catch {
+      this.wateringCans = 0;
+      this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
+    }
+  }
+
+  private savePermanentProgress(): void {
+    try {
+      localStorage.setItem("chelie-watering-cans", String(this.wateringCans));
+      localStorage.setItem("chelie-plant-mastery", JSON.stringify(this.plantMastery));
+    } catch {
+      // La progression reste disponible pour la session si le stockage est désactivé.
+    }
+  }
+
+  private upgradePlantMastery(kind: TowerKind): void {
+    const mastery = this.plantMastery[kind];
+    if (mastery >= MASTERY_COSTS.length) return;
+    const cost = MASTERY_COSTS[mastery];
+    if (this.wateringCans < cost) {
+      this.cameras.main.shake(110, 0.0015);
+      return;
+    }
+    this.wateringCans -= cost;
+    this.plantMastery[kind] += 1;
+    this.savePermanentProgress();
+    this.scene.restart();
+  }
+
   private createTowerPalette(): void {
     const dockY = HEIGHT - 164;
     const kinds = Object.keys(TOWERS) as TowerKind[];
@@ -740,6 +828,7 @@ class DefenseScene extends Phaser.Scene {
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
+    this.shearText = this.createHudBadge(630, HEIGHT - 55, "💧", 0x8ddce6, `${this.wateringCans} ARROSOIRS`, "#dffaff");
   }
 
   private createTowerPaletteButton(kind: TowerKind, x: number, y: number): Phaser.GameObjects.Container {
@@ -862,9 +951,9 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const base = this.add.circle(0, 9, 27, 0x29210f).setStrokeStyle(3, 0x4d7c0f, 0.85);
+    const base = this.add.circle(0, 9, 27, TEMP_LEVEL_COLORS[0]).setStrokeStyle(3, 0x4d7c0f, 0.85);
     const plant = this.createPlantVisual(selectedKind, definition.color);
-    const levelBadge = this.add.text(21, 21, "N1", {
+    const levelBadge = this.add.text(21, 21, "", {
       fontFamily: "Arial",
       fontSize: "14px",
       color: "#ffffff",
@@ -873,15 +962,15 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       stroke: "#071a20",
       strokeThickness: 2,
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setVisible(false);
     towerBody.add([base, plant, levelBadge]);
 
     const tower: Tower = {
       body: towerBody,
       kind: selectedKind,
-      range: definition.range,
-      damage: definition.damage,
-      fireDelay: definition.fireDelay,
+      range: definition.range + this.plantMastery[selectedKind] * 6,
+      damage: Math.round(definition.damage * (1 + this.plantMastery[selectedKind] * 0.12)),
+      fireDelay: Math.max(260, Math.round(definition.fireDelay * (1 - this.plantMastery[selectedKind] * 0.04))),
       lastShot: 0,
       col,
       row,
@@ -1290,6 +1379,26 @@ class DefenseScene extends Phaser.Scene {
       : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
   }
 
+  private showWateringCanReward(): void {
+    const reward = this.add.text(WIDTH / 2, HEIGHT - 292, "+1 ARROSOIR  💧", {
+      fontFamily: "Arial",
+      fontSize: "22px",
+      color: "#dffaff",
+      fontStyle: "bold",
+      stroke: "#164e63",
+      strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(25);
+    this.tweens.add({
+      targets: reward,
+      y: reward.y - 52,
+      alpha: 0,
+      duration: 1450,
+      ease: "Cubic.easeOut",
+      onComplete: () => reward.destroy(),
+    });
+    this.updateHud("");
+  }
+
   private upgradeTower(tower: Tower): void {
     if (tower.isUpgrading) return;
     if (tower.level >= MAX_TOWER_LEVEL) {
@@ -1309,7 +1418,7 @@ class DefenseScene extends Phaser.Scene {
     tower.investedCost += cost;
     tower.isUpgrading = true;
     tower.upgradeReadyAt = this.time.now + UPGRADE_DURATIONS[tower.level];
-    tower.levelBadge.setText(`${Math.ceil(UPGRADE_DURATIONS[tower.level] / 1000)}s`);
+    tower.levelBadge.setText(`${Math.ceil(UPGRADE_DURATIONS[tower.level] / 1000)}s`).setVisible(true);
     this.createUpgradePulse(tower, TOWERS[tower.kind].color);
     this.updateHud("");
   }
@@ -1334,8 +1443,9 @@ class DefenseScene extends Phaser.Scene {
     tower.damage = Math.round(tower.damage * 1.35);
     tower.range += 16;
     tower.fireDelay = Math.max(260, Math.round(tower.fireDelay * 0.88));
-    tower.levelBadge.setText(`N${tower.level}`);
+    tower.levelBadge.setText("").setVisible(false);
     const base = tower.body.getAt(0) as Phaser.GameObjects.Arc;
+    base.setFillStyle(TEMP_LEVEL_COLORS[tower.level - 1], 1);
     base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
@@ -1636,6 +1746,7 @@ class DefenseScene extends Phaser.Scene {
     this.hpText?.setText(`${this.baseHp} / 20`);
     this.energyText?.setText(`${this.energy} PIÈCES`);
     this.waveText?.setText(this.waveActive ? "ACTIVE" : "EN ATTENTE");
+    this.shearText?.setText(`${this.wateringCans} ARROSOIRS`);
     this.statusText?.setText("").setVisible(false);
   }
 
