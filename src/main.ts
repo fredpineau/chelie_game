@@ -725,7 +725,7 @@ class DefenseScene extends Phaser.Scene {
         .setPosition(0, 3)
         .setScale(0.88)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(0, -39, definition.name.toUpperCase(), {
+      const title = this.add.text(0, -51, definition.name.toUpperCase(), {
         fontFamily: "Arial",
         fontSize: "18px",
         color: available ? "#f8fafc" : "#64748b",
