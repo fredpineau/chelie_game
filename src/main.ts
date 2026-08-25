@@ -203,7 +203,7 @@ class DefenseScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const background = this.add.graphics();
-    background.fillGradientStyle(0x8b7b5c, 0xa49470, 0x796b50, 0x91805e, 1);
+    background.fillGradientStyle(0xc8bb94, 0xd8cba5, 0xb9ad88, 0xcdbf98, 1);
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
@@ -247,19 +247,19 @@ class DefenseScene extends Phaser.Scene {
     this.tweens.add({ targets: sun, alpha: 0.72, yoyo: true, repeat: -1, duration: 2200 });
 
     const terrain = this.add.graphics();
-    terrain.fillStyle(0x5f533f, 0.34);
+    terrain.fillStyle(0x8f8060, 0.24);
     terrain.fillEllipse(470, 245, 390, 180);
     terrain.fillEllipse(925, 500, 520, 230);
-    terrain.fillStyle(0x4f8588, 0.42);
+    terrain.fillStyle(0x72a9a9, 0.38);
     terrain.fillEllipse(730, 360, 610, 300);
-    terrain.fillStyle(0x88b0a5, 0.24);
+    terrain.fillStyle(0xa9cec1, 0.28);
     terrain.fillEllipse(660, 330, 450, 170);
     terrain.fillEllipse(1030, 235, 310, 130);
-    terrain.fillStyle(0x5f533f, 0.3);
+    terrain.fillStyle(0x928363, 0.22);
     terrain.fillEllipse(330, 690, 610, 380);
-    terrain.fillStyle(0x4f8588, 0.38);
+    terrain.fillStyle(0x78aeae, 0.34);
     terrain.fillEllipse(390, 745, 520, 300);
-    terrain.fillStyle(0x88b0a5, 0.2);
+    terrain.fillStyle(0xb0d1c6, 0.24);
     terrain.fillEllipse(250, 850, 350, 150);
 
     const waterSheen = this.add.graphics();
