@@ -575,66 +575,96 @@ class DefenseScene extends Phaser.Scene {
 
   private showLevelSelection(): void {
     const unlocked = this.getUnlockedLevel();
-    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x02040a, 0.9)
+    const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)
       .setDepth(30)
       .setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 660, 940, 0x090e18, 0.98)
-      .setStrokeStyle(1, 0x475569, 0.9)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 660, 1010, 0x326f77, 0.98)
+      .setStrokeStyle(3, 0xb9d8df, 0.85)
       .setDepth(31);
-    this.add.text(WIDTH / 2, 190, "SÉLECTION DU BIOME", {
+    const glow = this.add.ellipse(WIDTH / 2, 215, 560, 190, 0x71c4c1, 0.16).setDepth(31);
+    this.add.circle(92, 188, 50, 0x91d5c3, 0.12).setDepth(31);
+    this.add.circle(630, 1070, 72, 0x173f47, 0.22).setDepth(31);
+    this.add.text(WIDTH / 2, 164, "CHOISISSEZ VOTRE", {
       fontFamily: "Arial",
-      fontSize: "30px",
+      fontSize: "16px",
+      color: "#cde9e7",
+      fontStyle: "bold",
+      letterSpacing: 4,
+    }).setOrigin(0.5).setDepth(32);
+    this.add.text(WIDTH / 2, 206, "TOURBIÈRE", {
+      fontFamily: "Arial",
+      fontSize: "40px",
       color: "#f8fafc",
       fontStyle: "bold",
-      letterSpacing: 3,
+      stroke: "#173943",
+      strokeThickness: 5,
+      letterSpacing: 5,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 235, "Choisissez la tourbière à défendre", {
+    this.add.text(WIDTH / 2, 252, "Chaque biome renforce la menace", {
       fontFamily: "Arial",
-      fontSize: "14px",
-      color: "#cbd5e1",
+      fontSize: "16px",
+      color: "#d9edeb",
       fontStyle: "bold",
     }).setOrigin(0.5).setDepth(32);
+
+    const biomeColors = [0x4f8068, 0x477f78, 0x9a555d, 0x475965, 0x6d7849, 0x596337];
+    const biomeAccents = [0xa8d5a2, 0x91d4c8, 0xf1a3a9, 0x9eb9c6, 0xc5d58b, 0xe0d27d];
+    const biomeIcons = ["✦", "⌁", "✹", "◆", "♣", "∞"];
 
     LEVELS.forEach((level, index) => {
       const col = index % 2;
       const row = Math.floor(index / 2);
       const x = 225 + col * 270;
-      const y = 355 + row * 210;
+      const y = 380 + row * 220;
       const available = index <= unlocked;
       const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : "MENACE CROISSANTE";
-
+      const card = this.add.container(x, y).setDepth(32);
+      const background = this.add.graphics();
+      background.fillStyle(available ? biomeColors[index] : 0x29464b, available ? 1 : 0.76);
+      background.fillRoundedRect(-116, -76, 232, 152, 18);
+      background.lineStyle(available ? 3 : 2, available ? biomeAccents[index] : 0x557176, available ? 0.92 : 0.6);
+      background.strokeRoundedRect(-116, -76, 232, 152, 18);
+      const iconHalo = this.add.circle(0, -39, 29, available ? biomeAccents[index] : 0x496469, available ? 0.24 : 0.16);
+      const icon = this.add.text(0, -40, available ? biomeIcons[index] : "×", {
+        fontFamily: "Arial",
+        fontSize: "29px",
+        color: available ? "#f7fbf5" : "#769095",
+        fontStyle: "bold",
+      }).setOrigin(0.5);
+      const code = this.add.text(0, -6, available ? level.code : "VERROUILLÉ", {
+        fontFamily: "Arial",
+        fontSize: "12px",
+        color: available ? "#e2efeb" : "#789095",
+        fontStyle: "bold",
+        letterSpacing: 2,
+      }).setOrigin(0.5);
+      const name = this.add.text(0, 22, level.name.toUpperCase(), {
+        fontFamily: "Arial",
+        fontSize: "17px",
+        color: available ? "#ffffff" : "#71888d",
+        fontStyle: "bold",
+        stroke: available ? "#203a35" : "#253b40",
+        strokeThickness: 3,
+      }).setOrigin(0.5);
+      const threat = this.add.text(0, 53, available ? waveLabel : level.code, {
+        fontFamily: "Arial",
+        fontSize: "10px",
+        color: available ? "#d9e8df" : "#617a7f",
+        fontStyle: "bold",
+        letterSpacing: 1,
+      }).setOrigin(0.5);
+      card.add([background, iconHalo, icon, code, name, threat]);
       if (available) {
-        const button = this.makeButton(x, y, 230, 100, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x4d7c0f : 0x0f766e, () => {
-          this.scene.restart({ levelIndex: index });
-        });
-        button.setDepth(32);
-        this.add.text(x, y + 68, waveLabel, {
-          fontFamily: "Arial",
-          fontSize: "10px",
-          color: "#94a3b8",
-          fontStyle: "bold",
-          letterSpacing: 1,
-        }).setOrigin(0.5).setDepth(32);
-      } else {
-        this.add.rectangle(x, y, 230, 100, 0x111827, 0.7).setStrokeStyle(1, 0x334155).setDepth(32);
-        this.add.text(x, y - 6, "VERROUILLÉ", {
-          fontFamily: "Arial",
-      fontSize: "18px",
-          color: "#475569",
-          fontStyle: "bold",
-          letterSpacing: 2,
-        }).setOrigin(0.5).setDepth(33);
-        this.add.text(x, y + 22, level.code, {
-          fontFamily: "Arial",
-          fontSize: "11px",
-          color: "#334155",
-          fontStyle: "bold",
-        }).setOrigin(0.5).setDepth(33);
+        card.setSize(232, 152).setInteractive({ useHandCursor: true });
+        card.on("pointerover", () => card.setScale(1.035));
+        card.on("pointerout", () => card.setScale(1));
+        card.on("pointerdown", () => this.scene.restart({ levelIndex: index }));
       }
     });
 
     overlay.on("pointerdown", () => undefined);
     panel.setInteractive().on("pointerdown", () => undefined);
+    this.tweens.add({ targets: glow, alpha: 0.08, scale: 1.08, yoyo: true, repeat: -1, duration: 2400 });
   }
 
   private beginLevel(index: number): void {
