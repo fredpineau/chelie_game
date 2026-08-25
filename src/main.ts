@@ -457,15 +457,6 @@ class DefenseScene extends Phaser.Scene {
     this.waveText = this.createHudBadge(430, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
     this.hpText = this.createHudBadge(900, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
     this.energyText = this.createHudBadge(1100, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
-    this.add.text(940, 68, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
-      fontFamily: "Arial",
-      fontSize: "10px",
-      color: "#e1e8d8",
-      fontStyle: "bold",
-      stroke: "#17231d",
-      strokeThickness: 2,
-      letterSpacing: 0.4,
-    });
     this.statusText = this.add.text(430, 98, "", {
       fontFamily: "Arial",
       fontSize: "15px",
