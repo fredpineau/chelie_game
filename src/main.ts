@@ -5,7 +5,7 @@ const WIDTH = 720;
 const HEIGHT = 1280;
 const CELL = 52;
 const GRID_X = 100;
-const GRID_Y = 235;
+const GRID_Y = 260;
 const GRID_COLS = 11;
 const GRID_ROWS = 14;
 const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
@@ -459,29 +459,38 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.text(WIDTH / 2, 18, "CHELIE // CARNIVORE GARDEN", {
+    this.add.rectangle(WIDTH / 2, 105, WIDTH, 210, 0x14221c, 0.94)
+      .setStrokeStyle(2, 0x839582, 0.65);
+    this.add.text(WIDTH / 2, 14, "CHELIE", {
       fontFamily: "Arial",
-      fontSize: "18px",
+      fontSize: "22px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#17231d",
       strokeThickness: 3,
-      letterSpacing: 4,
+      letterSpacing: 5,
+    }).setOrigin(0.5, 0);
+    this.add.text(WIDTH / 2, 43, "CARNIVORE GARDEN", {
+      fontFamily: "Arial",
+      fontSize: "10px",
+      color: "#a9beb0",
+      fontStyle: "bold",
+      letterSpacing: 3,
     }).setOrigin(0.5, 0);
 
-    this.levelText = this.createHudBadge(62, 72, "B", 0x315c54, "BIOME --", "#a7c4bc");
-    this.waveText = this.createHudBadge(392, 72, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
-    this.hpText = this.createHudBadge(62, 132, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
-    this.energyText = this.createHudBadge(392, 132, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
-    this.statusText = this.add.text(WIDTH / 2, 184, "", {
+    this.levelText = this.createHudBadge(90, 91, "B", 0x315c54, "BIOME", "#a7c4bc");
+    this.waveText = this.createHudBadge(270, 91, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
+    this.hpText = this.createHudBadge(450, 91, "♥", 0x5c2929, "20 / 20", "#d8aaa6");
+    this.energyText = this.createHudBadge(630, 91, "◈", 0x60532c, "60", "#d8c787");
+    this.statusText = this.add.text(WIDTH / 2, 181, "", {
       fontFamily: "Arial",
       fontSize: "18px",
       color: "#f3f7f3",
       fontStyle: "bold",
       align: "center",
       wordWrap: { width: 620 },
-      backgroundColor: "#26352dd9",
-      padding: { x: 10, y: 5 },
+      backgroundColor: "#314238e6",
+      padding: { x: 14, y: 7 },
       stroke: "#101813",
       strokeThickness: 2,
     }).setOrigin(0.5);
@@ -497,8 +506,8 @@ class DefenseScene extends Phaser.Scene {
     initialText: string,
     textColor: string,
   ): Phaser.GameObjects.Text {
-    const shadow = this.add.circle(x + 2, y + 3, 29, 0x020706, 0.55);
-    const badge = this.add.circle(x, y, 27, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
+    const shadow = this.add.circle(x + 2, y + 3, 30, 0x020706, 0.55);
+    const badge = this.add.circle(x, y, 28, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
     const symbol = this.add.text(x, y, icon, {
       fontFamily: "Arial",
       fontSize: "20px",
@@ -509,15 +518,15 @@ class DefenseScene extends Phaser.Scene {
     shadow.setDepth(1);
     badge.setDepth(2);
     symbol.setDepth(3);
-    return this.add.text(x + 38, y, initialText, {
+    return this.add.text(x, y + 43, initialText, {
       fontFamily: "Arial",
-      fontSize: "16px",
+      fontSize: "13px",
       color: textColor,
       fontStyle: "bold",
       letterSpacing: 0.8,
       stroke: "#07110d",
       strokeThickness: 3,
-    }).setOrigin(0, 0.5).setDepth(3);
+    }).setOrigin(0.5).setDepth(3);
   }
 
   private showLevelSelection(): void {
@@ -1444,9 +1453,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private updateHud(message: string): void {
-    this.hpText?.setText(`VIES ${this.baseHp} / 20`);
-    this.energyText?.setText(`PIÈCES ${this.energy}`);
-    this.waveText?.setText(this.waveActive ? "MENACE ACTIVE" : "MENACE EN ATTENTE");
+    this.hpText?.setText(`${this.baseHp} / 20`);
+    this.energyText?.setText(`${this.energy} PIÈCES`);
+    this.waveText?.setText(this.waveActive ? "ACTIVE" : "EN ATTENTE");
     this.statusText?.setText(message).setVisible(message.length > 0);
   }
 
