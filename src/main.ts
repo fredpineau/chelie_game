@@ -215,14 +215,14 @@ class DefenseScene extends Phaser.Scene {
   private createCommandDeck(): void {
     const deckTop = HEIGHT - 250;
     const deck = this.add.graphics();
-    deck.fillGradientStyle(0x26362d, 0x26362d, 0x14221c, 0x14221c, 0.96);
+    deck.fillGradientStyle(0x58705f, 0x58705f, 0x344a3d, 0x344a3d, 0.96);
     deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
-    deck.lineStyle(3, 0x8da28d, 0.82);
+    deck.lineStyle(3, 0xb6c8b5, 0.9);
     deck.beginPath();
     deck.moveTo(0, deckTop);
     deck.lineTo(WIDTH, deckTop);
     deck.strokePath();
-    deck.lineStyle(1, 0xd8e3d6, 0.16);
+    deck.lineStyle(1, 0xf0f5ed, 0.28);
     deck.beginPath();
     deck.moveTo(0, deckTop + 6);
     deck.lineTo(WIDTH, deckTop + 6);
@@ -670,7 +670,7 @@ class DefenseScene extends Phaser.Scene {
         .setAlpha(available ? 1 : 0.25);
       const title = this.add.text(0, -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "12px",
+        fontSize: "14px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -680,7 +680,7 @@ class DefenseScene extends Phaser.Scene {
       const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
       const target = this.add.text(0, 43, detail, {
         fontFamily: "Arial",
-        fontSize: "12px",
+        fontSize: "13px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -1478,7 +1478,7 @@ class DefenseScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x71867a, 0.65);
     const text = this.add.text(0, 0, label, {
       fontFamily: "Arial",
-      fontSize: "16px",
+      fontSize: "18px",
       color: "#ffffff",
       fontStyle: "bold",
       stroke: "#111a15",
