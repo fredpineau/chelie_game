@@ -567,8 +567,8 @@ class DefenseScene extends Phaser.Scene {
     this.levelText = this.createCompactHudBadge(120, statsY, 212, "BIOME", 0x315c54, "#d8f2ed");
     this.waveText = this.createCompactHudBadge(360, statsY, 212, "VAGUE 1", 0x58322e, "#f4d7c9");
     this.hpText = this.createCompactHudBadge(600, statsY, 212, "♥ 20/20", 0xb83f52, "#ffd4da");
-    this.energyText = this.createCompactHudBadge(650, 24, 120, "◈ 60", 0x60532c, "#f2e5a9");
-    this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x277887, "#dffaff");
+    this.energyText = this.createCompactHudBadge(650, 24, 120, "◈ 60", 0xd7b84b, "#fff3b0", true);
+    this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
     this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
@@ -581,10 +581,16 @@ class DefenseScene extends Phaser.Scene {
     initialText: string,
     color: number,
     textColor: string,
+    highlighted = false,
   ): Phaser.GameObjects.Text {
+    if (highlighted) {
+      this.add.rectangle(x, y, width + 8, 50, color, 0.16)
+        .setStrokeStyle(2, color, 0.42)
+        .setDepth(2);
+    }
     this.add.rectangle(x + 2, y + 3, width, 42, 0x071a20, 0.45).setDepth(2);
-    this.add.rectangle(x, y, width, 42, 0x0b2630, 0.96)
-      .setStrokeStyle(2, color, 0.95)
+    this.add.rectangle(x, y, width, 42, highlighted ? 0x123b44 : 0x0b2630, 0.96)
+      .setStrokeStyle(highlighted ? 3 : 2, color, 0.98)
       .setDepth(3);
     return this.add.text(x, y, initialText, {
       fontFamily: "Arial",
