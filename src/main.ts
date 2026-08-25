@@ -4,7 +4,7 @@ import "./style.css";
 const WIDTH = 1280;
 const HEIGHT = 720;
 const CELL = 52;
-const GRID_X = 230;
+const GRID_X = 146;
 const GRID_Y = 142;
 const GRID_COLS = 20;
 const GRID_ROWS = 10;
@@ -322,7 +322,7 @@ class DefenseScene extends Phaser.Scene {
 
   private createGates(): void {
     this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", Math.PI, false);
-    this.createCreatureGate(GRID_X + 40, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
+    this.createCreatureGate(GRID_X - 24, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
     this.createExitTrap(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "right", -Math.PI / 2);
     this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "bottom", 0);
   }
@@ -627,9 +627,7 @@ class DefenseScene extends Phaser.Scene {
   private createTowerPalette(): void {
     const dockY = HEIGHT - 48;
     const kinds = Object.keys(TOWERS) as TowerKind[];
-    const positions = [300, 402, 504, 606];
-    this.add.rectangle(453, dockY, 420, 94, 0x17231d, 0.88)
-      .setStrokeStyle(2, 0x667766, 0.78);
+    const positions = [250, 350, 450, 550];
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
