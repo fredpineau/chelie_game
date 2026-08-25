@@ -639,22 +639,27 @@ class DefenseScene extends Phaser.Scene {
     textColor: string,
     highlighted = false,
   ): Phaser.GameObjects.Text {
-    if (highlighted) {
-      this.add.rectangle(x, y, width + 8, 50, color, 0.16)
-        .setStrokeStyle(2, color, 0.42)
-        .setDepth(2);
+    if (!highlighted) {
+      this.add.rectangle(x + 2, y + 3, width, 42, 0x071a20, 0.45).setDepth(2);
+      this.add.rectangle(x, y, width, 42, 0x0b2630, 0.96)
+        .setStrokeStyle(2, color, 0.98)
+        .setDepth(3);
     }
-    this.add.rectangle(x + 2, y + 3, width, 42, 0x071a20, 0.45).setDepth(2);
-    this.add.rectangle(x, y, width, 42, highlighted ? 0x123b44 : 0x0b2630, 0.96)
-      .setStrokeStyle(highlighted ? 3 : 2, color, 0.98)
-      .setDepth(3);
     return this.add.text(x, y, initialText, {
       fontFamily: "Arial",
-      fontSize: "15px",
+      fontSize: highlighted ? "18px" : "15px",
       color: textColor,
       fontStyle: "bold",
       stroke: "#07110d",
-      strokeThickness: 2,
+      strokeThickness: highlighted ? 4 : 2,
+      shadow: highlighted ? {
+        offsetX: 0,
+        offsetY: 0,
+        color: `#${color.toString(16).padStart(6, "0")}`,
+        blur: 10,
+        stroke: true,
+        fill: true,
+      } : undefined,
     }).setOrigin(0.5).setDepth(4);
   }
 
