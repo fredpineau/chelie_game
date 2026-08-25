@@ -564,11 +564,11 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
 
     const statsY = HEIGHT - 222;
-    this.levelText = this.createCompactHudBadge(72, statsY, 132, "BIOME", 0x315c54, "#d8f2ed");
-    this.waveText = this.createCompactHudBadge(216, statsY, 132, "VAGUE 1", 0x58322e, "#f4d7c9");
-    this.hpText = this.createCompactHudBadge(360, statsY, 132, "♥ 20/20", 0xb83f52, "#ffd4da");
-    this.energyText = this.createCompactHudBadge(504, statsY, 132, "◈ 60", 0x60532c, "#f2e5a9");
-    this.shearText = this.createCompactHudBadge(648, statsY, 132, "💧 0", 0x277887, "#dffaff");
+    this.levelText = this.createCompactHudBadge(120, statsY, 212, "BIOME", 0x315c54, "#d8f2ed");
+    this.waveText = this.createCompactHudBadge(360, statsY, 212, "VAGUE 1", 0x58322e, "#f4d7c9");
+    this.hpText = this.createCompactHudBadge(600, statsY, 212, "♥ 20/20", 0xb83f52, "#ffd4da");
+    this.energyText = this.createCompactHudBadge(650, 24, 120, "◈ 60", 0x60532c, "#f2e5a9");
+    this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x277887, "#dffaff");
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
     this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 42, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
