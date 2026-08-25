@@ -151,6 +151,7 @@ class DefenseScene extends Phaser.Scene {
   private levelStarted = false;
   private requestedLevelIndex: number | null = null;
   private selectionPage = 0;
+  private infiniteNightmare = false;
   private waveEntryTop = true;
   private waveExitId: ExitId = "right";
   private waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
@@ -172,9 +173,10 @@ class DefenseScene extends Phaser.Scene {
     super("defense");
   }
 
-  init(data: { levelIndex?: number; home?: boolean; selectionPage?: number } = {}): void {
+  init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; infiniteNightmare?: boolean } = {}): void {
     this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
     this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? 0, 0, 1);
+    this.infiniteNightmare = data.infiniteNightmare ?? false;
   }
 
   create(): void {
@@ -205,9 +207,12 @@ class DefenseScene extends Phaser.Scene {
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
-      this.wateringCans += 1;
-      this.savePermanentProgress();
-      this.showWateringCanReward();
+      const earnsWateringCan = this.levelIndex !== LEVELS.length - 1 || this.wave % 5 === 0;
+      if (earnsWateringCan) {
+        this.wateringCans += 1;
+        this.savePermanentProgress();
+        this.showWateringCanReward();
+      }
       const level = LEVELS[this.levelIndex];
       if (level.waves !== null && this.wave >= level.waves) {
         this.completeLevel();
@@ -611,7 +616,7 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5);
     const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 62, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
     const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 18, 330, 58, "RECOMMENCER", 0x6b4f25, () => {
-      this.scene.restart({ levelIndex: this.levelIndex });
+      this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
     });
     const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 98, 330, 58, "ACCUEIL", 0x315968, () => {
       this.goToHome();
@@ -760,7 +765,8 @@ class DefenseScene extends Phaser.Scene {
       const row = Math.floor(localIndex / 2);
       const x = 225 + col * 270;
       const y = 398 + row * 210;
-      const available = index <= unlocked;
+      const isInfinite = index === LEVELS.length - 1;
+      const available = index <= unlocked || (isInfinite && unlocked >= 6);
       const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";
       const card = this.add.container(x, y).setDepth(32);
       const background = this.add.graphics();
@@ -803,6 +809,29 @@ class DefenseScene extends Phaser.Scene {
         card.on("pointerover", () => card.setScale(1.035));
         card.on("pointerout", () => card.setScale(1));
         card.on("pointerdown", () => this.scene.restart({ levelIndex: index }));
+        if (isInfinite && unlocked >= 11) {
+          const nightmare = this.add.text(0, 55, "CAUCHEMAR", {
+            fontFamily: "Arial",
+            fontSize: "11px",
+            color: "#ffe4e6",
+            backgroundColor: "#7f1d2d",
+            padding: { x: 11, y: 5 },
+            fontStyle: "bold",
+            stroke: "#3f0c16",
+            strokeThickness: 2,
+          }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+          nightmare.on("pointerdown", (
+            _pointer: Phaser.Input.Pointer,
+            _localX: number,
+            _localY: number,
+            event: Phaser.Types.Input.EventData,
+          ) => {
+            event.stopPropagation();
+            this.scene.restart({ levelIndex: index, infiniteNightmare: true });
+          });
+          threat.setY(35).setText("MODE NORMAL");
+          card.add(nightmare);
+        }
       }
     });
 
@@ -857,10 +886,24 @@ class DefenseScene extends Phaser.Scene {
   private beginLevel(index: number): void {
     this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
     this.levelStarted = true;
-    this.levelText.setText(LEVELS[this.levelIndex].name.toUpperCase());
+    this.levelText.setText(this.infiniteNightmare ? "INFINI CAUCHEMAR" : LEVELS[this.levelIndex].name.toUpperCase());
     this.setStartButtonEnabled(true);
     this.nextWaveAt = 0;
     this.updateHud("");
+  }
+
+  private getActiveLevel(): LevelDefinition {
+    const level = LEVELS[this.levelIndex];
+    if (this.levelIndex !== LEVELS.length - 1) return level;
+    const bestWorld = Phaser.Math.Clamp(this.getUnlockedLevel(), 6, LEVELS.length - 2);
+    const reference = LEVELS[bestWorld];
+    const nightmareMultiplier = this.infiniteNightmare ? 1.55 : 1.08;
+    return {
+      ...level,
+      healthMultiplier: reference.healthMultiplier * nightmareMultiplier,
+      speedMultiplier: reference.speedMultiplier * (this.infiniteNightmare ? 1.16 : 1.04),
+      swarmBonus: reference.swarmBonus + (this.infiniteNightmare ? 9 : 3),
+    };
   }
 
   private completeLevel(): void {
@@ -1231,7 +1274,7 @@ class DefenseScene extends Phaser.Scene {
 
   private startWave(): void {
     if (!this.levelStarted || this.waveActive || this.baseHp <= 0) return;
-    const level = LEVELS[this.levelIndex];
+    const level = this.getActiveLevel();
     if (level.waves !== null && this.wave >= level.waves) return;
     this.wave += 1;
     this.selectWaveRoute();
@@ -1354,7 +1397,7 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5) : null;
     container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
 
-    const level = LEVELS[this.levelIndex];
+    const level = this.getActiveLevel();
     const traitHealthMultiplier = trait === "swift" ? 0.78 : trait === "armored" ? 1.28 : 1;
     const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1) * traitHealthMultiplier);
     this.enemies.push({
@@ -1867,7 +1910,10 @@ class DefenseScene extends Phaser.Scene {
       color: "#fb7185",
       fontStyle: "bold",
     }).setOrigin(0.5);
-    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0f766e, () => this.scene.restart({ levelIndex: this.levelIndex }));
+    const retry = this.makeButton(WIDTH / 2, HEIGHT / 2 + 15, 210, 48, "RECOMMENCER", 0x0f766e, () => this.scene.restart({
+      levelIndex: this.levelIndex,
+      infiniteNightmare: this.infiniteNightmare,
+    }));
     const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.goToHome());
     overlay.setDepth(20);
     title.setDepth(21);
