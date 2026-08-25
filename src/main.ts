@@ -23,6 +23,15 @@ type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
 type TargetPriority = "first" | "strong" | "weak";
 type ExitId = "right" | "bottom";
+type TrapJawPair = {
+  leftJaw: Phaser.GameObjects.Container;
+  rightJaw: Phaser.GameObjects.Container;
+  leftX: number;
+  rightX: number;
+  y: number;
+  leftRotation: number;
+  rightRotation: number;
+};
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo";
 type TowerEffect = "standard" | "slow" | "splash";
 
@@ -136,7 +145,7 @@ class DefenseScene extends Phaser.Scene {
   private startButton!: Phaser.GameObjects.Container;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
   private towerActionPanel?: Phaser.GameObjects.Container;
-  private exitTraps = new Map<ExitId, { leftJaw: Phaser.GameObjects.Container; rightJaw: Phaser.GameObjects.Container }>();
+  private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
   constructor() {
     super("defense");
@@ -382,34 +391,78 @@ class DefenseScene extends Phaser.Scene {
       leftJaw.add(this.add.line(0, 0, 9, hairY, 14, hairY - 5, 0x331a20, 0.75).setLineWidth(1));
       rightJaw.add(this.add.line(0, 0, -9, hairY, -14, hairY - 5, 0x331a20, 0.75).setLineWidth(1));
     }
-    trap.add([shadow, stem, leftJaw, rightJaw]);
-    this.exitTraps.set(exitId, { leftJaw, rightJaw });
+    const jawPairs: TrapJawPair[] = [{
+      leftJaw,
+      rightJaw,
+      leftX: -17,
+      rightX: 17,
+      y: -5,
+      leftRotation: -0.22,
+      rightRotation: 0.22,
+    }];
+    const sideJaws: Phaser.GameObjects.Container[] = [];
+    [-43, 43].forEach((offsetX, index) => {
+      const sideLeftX = offsetX - 11;
+      const sideRightX = offsetX + 11;
+      const sideY = 15;
+      const sideLeft = this.add.container(sideLeftX, sideY).setRotation(-0.28).setScale(0.68);
+      const sideRight = this.add.container(sideRightX, sideY).setRotation(0.28).setScale(0.68);
+      const sideColor = index === 0 ? 0x75965c : 0x6f9158;
+      sideLeft.add([
+        this.add.ellipse(0, 0, 40, 70, sideColor).setStrokeStyle(3, 0x294b31),
+        this.add.ellipse(7, -2, 25, 54, 0x7c454c, 0.92).setStrokeStyle(2, 0x4b252d),
+      ]);
+      sideRight.add([
+        this.add.ellipse(0, 0, 40, 70, sideColor).setStrokeStyle(3, 0x294b31),
+        this.add.ellipse(-7, -2, 25, 54, 0x7c454c, 0.92).setStrokeStyle(2, 0x4b252d),
+      ]);
+      for (let tooth = -2; tooth <= 2; tooth += 1) {
+        const toothY = tooth * 11;
+        sideLeft.add(this.add.line(0, 0, 15, toothY, 28, toothY - tooth * 0.7, 0xc7d9a8, 0.95).setLineWidth(1.5));
+        sideRight.add(this.add.line(0, 0, -15, toothY, -28, toothY - tooth * 0.7, 0xc7d9a8, 0.95).setLineWidth(1.5));
+      }
+      sideJaws.push(sideLeft, sideRight);
+      jawPairs.push({
+        leftJaw: sideLeft,
+        rightJaw: sideRight,
+        leftX: sideLeftX,
+        rightX: sideRightX,
+        y: sideY,
+        leftRotation: -0.28,
+        rightRotation: 0.28,
+      });
+    });
+    trap.add([shadow, stem, ...sideJaws, leftJaw, rightJaw]);
+    this.exitTraps.set(exitId, jawPairs);
     this.tweens.add({ targets: [leftLobe, rightLobe], scaleY: 1.025, yoyo: true, repeat: -1, duration: 1450 });
   }
 
   private snapExitTrap(exitId: ExitId): void {
-    const trap = this.exitTraps.get(exitId);
-    if (!trap) return;
-    this.tweens.killTweensOf([trap.leftJaw, trap.rightJaw]);
-    trap.leftJaw.setPosition(-17, -5).setRotation(-0.22);
-    trap.rightJaw.setPosition(17, -5).setRotation(0.22);
-    this.tweens.add({
-      targets: trap.leftJaw,
-      x: -4,
-      rotation: -0.02,
-      duration: 95,
-      hold: 120,
-      yoyo: true,
-      ease: "Cubic.easeIn",
-    });
-    this.tweens.add({
-      targets: trap.rightJaw,
-      x: 4,
-      rotation: 0.02,
-      duration: 95,
-      hold: 120,
-      yoyo: true,
-      ease: "Cubic.easeIn",
+    const jawPairs = this.exitTraps.get(exitId);
+    if (!jawPairs) return;
+    jawPairs.forEach((pair, index) => {
+      this.tweens.killTweensOf([pair.leftJaw, pair.rightJaw]);
+      pair.leftJaw.setPosition(pair.leftX, pair.y).setRotation(pair.leftRotation);
+      pair.rightJaw.setPosition(pair.rightX, pair.y).setRotation(pair.rightRotation);
+      const centerX = (pair.leftX + pair.rightX) / 2;
+      this.tweens.add({
+        targets: pair.leftJaw,
+        x: centerX - 3,
+        rotation: -0.02,
+        duration: 90 + index * 18,
+        hold: 120,
+        yoyo: true,
+        ease: "Cubic.easeIn",
+      });
+      this.tweens.add({
+        targets: pair.rightJaw,
+        x: centerX + 3,
+        rotation: 0.02,
+        duration: 90 + index * 18,
+        hold: 120,
+        yoyo: true,
+        ease: "Cubic.easeIn",
+      });
     });
   }
 
