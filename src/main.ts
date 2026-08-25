@@ -224,7 +224,7 @@ class DefenseScene extends Phaser.Scene {
   private createCommandDeck(): void {
     const deckTop = HEIGHT - 250;
     const deck = this.add.graphics();
-    deck.fillGradientStyle(0x628593, 0x628593, 0x365a68, 0x365a68, 0.96);
+    deck.fillGradientStyle(0x58a8ad, 0x58a8ad, 0x2f7782, 0x2f7782, 0.96);
     deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
     deck.lineStyle(3, 0xb9d8df, 0.9);
     deck.beginPath();
@@ -512,7 +512,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 115, WIDTH, 230, 0x527684, 0.96)
+    this.add.rectangle(WIDTH / 2, 115, WIDTH, 230, 0x438f99, 0.96)
       .setStrokeStyle(2, 0xb9d8df, 0.84);
     this.add.rectangle(WIDTH / 2, 41, 520, 72, 0x173a48, 0.42)
       .setStrokeStyle(2, 0xaed7df, 0.48);
@@ -546,7 +546,7 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       align: "center",
       wordWrap: { width: 620 },
-      backgroundColor: "#345866e8",
+      backgroundColor: "#276d78eb",
       padding: { x: 14, y: 7 },
       stroke: "#101813",
       strokeThickness: 2,
