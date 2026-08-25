@@ -19,6 +19,14 @@ body,
   overflow: hidden;
 }
 
+#app {
+  position: relative;
+}
+
+#app::before {
+  display: none;
+}
+
 body {
   min-height: 100dvh;
   background:
@@ -32,4 +40,34 @@ canvas {
   max-height: 100%;
   touch-action: none;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.68);
+}
+
+@media (pointer: coarse) {
+  canvas {
+    box-shadow: none;
+  }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  #app::before {
+    content: "TOURNEZ VOTRE TÉLÉPHONE\A Le marais se joue en mode paysage";
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    color: #f4f7ef;
+    background: linear-gradient(155deg, #677052, #4f756f);
+    font-size: clamp(18px, 5vw, 28px);
+    font-weight: 800;
+    line-height: 1.55;
+    text-align: center;
+    white-space: pre-line;
+    letter-spacing: 0.04em;
+  }
+
+  canvas {
+    visibility: hidden;
+  }
 }
