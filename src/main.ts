@@ -588,7 +588,7 @@ class DefenseScene extends Phaser.Scene {
   private beginLevel(index: number): void {
     this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
     this.levelStarted = true;
-    this.levelText.setText(LEVELS[this.levelIndex].code);
+    this.levelText.setText(LEVELS[this.levelIndex].name.toUpperCase());
     this.setStartButtonEnabled(true);
     this.nextWaveAt = 0;
     this.autoWaveText.setText("PREMIÈRE VAGUE : LANCEMENT MANUEL");
