@@ -436,16 +436,20 @@ class DefenseScene extends Phaser.Scene {
   private createHud(): void {
     this.add.text(28, 24, "CHELIE //", {
       fontFamily: "Arial",
-      fontSize: "18px",
+      fontSize: "20px",
       color: "#f8fafc",
       fontStyle: "bold",
+      stroke: "#17231d",
+      strokeThickness: 3,
       letterSpacing: 4,
     });
     this.add.text(28, 47, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
-      fontSize: "9px",
+      fontSize: "11px",
       color: "#d2e2da",
       fontStyle: "bold",
+      stroke: "#17231d",
+      strokeThickness: 2,
       letterSpacing: 2,
     });
 
@@ -455,26 +459,34 @@ class DefenseScene extends Phaser.Scene {
     this.energyText = this.createHudBadge(1100, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
     this.add.text(940, 68, "N2 30  ·  N3 60  ·  N4 100  ·  N5 160", {
       fontFamily: "Arial",
-      fontSize: "9px",
+      fontSize: "10px",
       color: "#e1e8d8",
       fontStyle: "bold",
+      stroke: "#17231d",
+      strokeThickness: 2,
       letterSpacing: 0.4,
     });
     this.statusText = this.add.text(430, 98, "", {
       fontFamily: "Arial",
-      fontSize: "13px",
+      fontSize: "15px",
       color: "#f3f7f3",
       fontStyle: "bold",
       align: "center",
       wordWrap: { width: 570 },
+      backgroundColor: "#26352dd9",
+      padding: { x: 10, y: 5 },
+      stroke: "#101813",
+      strokeThickness: 2,
     }).setOrigin(0.5);
 
     this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 68, 150, 42, "LANCER", 0x0f766e, () => this.startWave());
     this.autoWaveText = this.add.text(WIDTH - 88, HEIGHT - 38, "", {
       fontFamily: "Arial",
-      fontSize: "10px",
+      fontSize: "11px",
       color: "#bef264",
       fontStyle: "bold",
+      backgroundColor: "#17231de6",
+      padding: { x: 6, y: 3 },
       letterSpacing: 1,
     }).setOrigin(0.5);
   }
@@ -500,10 +512,12 @@ class DefenseScene extends Phaser.Scene {
     symbol.setDepth(3);
     return this.add.text(x + 38, 43, initialText, {
       fontFamily: "Arial",
-      fontSize: "12px",
+      fontSize: "14px",
       color: textColor,
       fontStyle: "bold",
       letterSpacing: 0.8,
+      stroke: "#07110d",
+      strokeThickness: 3,
     }).setOrigin(0, 0.5).setDepth(3);
   }
 
@@ -633,6 +647,8 @@ class DefenseScene extends Phaser.Scene {
     const x = 112;
     const startY = 160;
 
+    this.add.rectangle(x, 390, 208, 540, 0x17231d, 0.78)
+      .setStrokeStyle(2, 0x667766, 0.72);
     this.add.text(x, startY - 34, "HERBIER", this.labelStyle(0xd9f99d)).setOrigin(0.5);
 
     (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
@@ -648,17 +664,21 @@ class DefenseScene extends Phaser.Scene {
         .setAlpha(available ? 1 : 0.25);
       const title = this.add.text(-26, -17, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "13px",
+        fontSize: "14px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
+        stroke: "#08100c",
+        strokeThickness: 2,
       });
       const targetLabel = definition.target === "sea" ? "RAMPANTS" : definition.target === "air" ? "VOLANTS" : "TOUS INSECTES";
       const detail = available ? `${definition.cost} PIÈCES  •  ${targetLabel}` : `DÉBLOCAGE : ${LEVELS[definition.unlockLevel].code}`;
       const target = this.add.text(-26, 7, detail, {
         fontFamily: "Arial",
-        fontSize: "9px",
+        fontSize: "10px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
+        stroke: "#08100c",
+        strokeThickness: 2,
       });
       button.add([bg, plantPreview, title, target]);
       bg.setInteractive({ useHandCursor: true });
@@ -1421,9 +1441,11 @@ class DefenseScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x71867a, 0.65);
     const text = this.add.text(0, 0, label, {
       fontFamily: "Arial",
-      fontSize: "15px",
+      fontSize: "16px",
       color: "#ffffff",
       fontStyle: "bold",
+      stroke: "#111a15",
+      strokeThickness: 2,
     }).setOrigin(0.5);
     container.add([bg, text]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
@@ -1440,10 +1462,12 @@ class DefenseScene extends Phaser.Scene {
   private labelStyle(color: number): Phaser.Types.GameObjects.Text.TextStyle {
     return {
       fontFamily: "Arial",
-      fontSize: "13px",
+      fontSize: "14px",
       color: `#${color.toString(16).padStart(6, "0")}`,
       fontStyle: "bold",
       letterSpacing: 2,
+      stroke: "#08100c",
+      strokeThickness: 2,
     };
   }
 }
