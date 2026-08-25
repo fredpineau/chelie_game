@@ -345,7 +345,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createGates(): void {
-    this.createCreatureGate(MAP_CENTER_X, GRID_Y - 24, "ENTRÉE 1", Math.PI, false);
+    this.createCreatureGate(MAP_CENTER_X, GRID_Y, "ENTRÉE 1", Math.PI, false);
     this.createCreatureGate(GRID_X - 24, MAP_CENTER_Y, "ENTRÉE 2", -Math.PI / 2, false);
     this.createExitTrap(Math.min(GRID_X + TOP_EXIT_COL * CELL + 24, WIDTH - 72), MAP_CENTER_Y, "right", -Math.PI / 2);
     this.createExitTrap(MAP_CENTER_X, GRID_Y + BOTTOM_EXIT_ROW * CELL + 24, "bottom", 0);
