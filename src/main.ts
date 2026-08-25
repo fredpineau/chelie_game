@@ -130,7 +130,9 @@ class DefenseScene extends Phaser.Scene {
   private energyText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
-  private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container>();
+  private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
+  private herbariumPanel?: Phaser.GameObjects.Container;
+  private herbariumOpen = false;
   private towerActionPanel?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, { leftJaw: Phaser.GameObjects.Container; rightJaw: Phaser.GameObjects.Container }>();
 
@@ -194,6 +196,8 @@ class DefenseScene extends Phaser.Scene {
     this.nextWaveAt = 0;
     this.selectedTower = null;
     this.towerButtons.clear();
+    this.herbariumPanel = undefined;
+    this.herbariumOpen = false;
     this.exitTraps.clear();
   }
 
@@ -622,24 +626,71 @@ class DefenseScene extends Phaser.Scene {
 
   private createTowerPalette(): void {
     const dockY = HEIGHT - 48;
-    const buttonPositions = [270, 365, 460, 555, 870, 965, 1060];
+    const availableKinds = (Object.keys(TOWERS) as TowerKind[])
+      .filter((kind) => this.levelIndex >= TOWERS[kind].unlockLevel);
+    const quickKinds = availableKinds.slice(0, 3);
+    const quickPositions = quickKinds.map((_kind, index) => 292 + index * 92);
+    const herbariumX = 292 + quickKinds.length * 92;
 
-    this.add.rectangle(412, dockY, 390, 94, 0x17231d, 0.84)
-      .setStrokeStyle(2, 0x667766, 0.72);
-    this.add.rectangle(965, dockY, 290, 94, 0x17231d, 0.84)
-      .setStrokeStyle(2, 0x667766, 0.72);
+    const quickDockWidth = 112 + quickKinds.length * 92;
+    this.add.rectangle(252 + quickDockWidth / 2, dockY, quickDockWidth, 94, 0x17231d, 0.88)
+      .setStrokeStyle(2, 0x667766, 0.78);
+
+    quickKinds.forEach((kind, index) => {
+      this.createTowerPaletteButton(kind, quickPositions[index], dockY, false);
+    });
+
+    const herbariumButton = this.add.container(herbariumX, dockY);
+    const herbariumBg = this.add.circle(0, 0, 35, 0x24483c, 0.98).setStrokeStyle(2, 0x83a98c, 1);
+    const herbariumIcon = this.add.text(0, -4, "✦", {
+      fontFamily: "Arial",
+      fontSize: "23px",
+      color: "#d8e8d4",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    const herbariumLabel = this.add.text(0, 29, "HERBIER", {
+      fontFamily: "Arial",
+      fontSize: "9px",
+      color: "#f8fafc",
+      fontStyle: "bold",
+      stroke: "#08100c",
+      strokeThickness: 2,
+    }).setOrigin(0.5);
+    herbariumButton.add([herbariumBg, herbariumIcon, herbariumLabel]);
+    herbariumButton.setSize(82, 90).setInteractive({ useHandCursor: true });
+    herbariumButton.on("pointerdown", () => this.toggleHerbarium());
+
+    const panel = this.add.container(WIDTH / 2, HEIGHT - 142).setDepth(15).setVisible(false);
+    const panelBg = this.add.rectangle(0, 0, 820, 104, 0x17231d, 0.97)
+      .setStrokeStyle(2, 0x78907d, 0.9);
+    const panelTitle = this.add.text(-392, -42, "HERBIER COMPLET", {
+      fontFamily: "Arial",
+      fontSize: "11px",
+      color: "#d8e8d4",
+      fontStyle: "bold",
+      letterSpacing: 1,
+    });
+    panel.add([panelBg, panelTitle]);
 
     (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
+      const button = this.createTowerPaletteButton(kind, -330 + index * 110, 5, true);
+      panel.add(button);
+    });
+    this.herbariumPanel = panel;
+    this.setHerbariumInteractive(false);
+  }
+
+  private createTowerPaletteButton(kind: TowerKind, x: number, y: number, compact: boolean): Phaser.GameObjects.Container {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
-      const button = this.add.container(buttonPositions[index], dockY);
+      const button = this.add.container(x, y);
       const bg = this.add.circle(0, 0, 33, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(0, 3)
         .setScale(0.76)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(0, -39, definition.name.toUpperCase(), {
+      const title = this.add.text(0, compact ? -37 : -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
         fontSize: "9px",
         color: available ? "#f8fafc" : "#64748b",
@@ -661,8 +712,26 @@ class DefenseScene extends Phaser.Scene {
       button.setSize(82, 94).setInteractive({ useHandCursor: true });
       button.on("pointerover", () => bg.setScale(1.08));
       button.on("pointerout", () => bg.setScale(1));
-      button.on("pointerdown", () => this.selectTower(kind));
-      this.towerButtons.set(kind, button);
+      button.on("pointerdown", () => {
+        this.selectTower(kind);
+        if (this.herbariumOpen) this.toggleHerbarium(false);
+      });
+      const buttons = this.towerButtons.get(kind) ?? [];
+      buttons.push(button);
+      this.towerButtons.set(kind, buttons);
+      return button;
+  }
+
+  private toggleHerbarium(force?: boolean): void {
+    this.herbariumOpen = force ?? !this.herbariumOpen;
+    this.herbariumPanel?.setVisible(this.herbariumOpen);
+    this.setHerbariumInteractive(this.herbariumOpen);
+  }
+
+  private setHerbariumInteractive(enabled: boolean): void {
+    this.herbariumPanel?.each((child: Phaser.GameObjects.GameObject) => {
+      if (!(child instanceof Phaser.GameObjects.Container) || !child.input) return;
+      child.input.enabled = enabled;
     });
   }
 
@@ -685,9 +754,11 @@ class DefenseScene extends Phaser.Scene {
     }
     this.selectedTower = kind;
     this.closeTowerActions();
-    this.towerButtons.forEach((button, buttonKind) => {
-      const bg = button.getAt(0) as Phaser.GameObjects.Arc;
-      bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
+    this.towerButtons.forEach((buttons, buttonKind) => {
+      buttons.forEach((button) => {
+        const bg = button.getAt(0) as Phaser.GameObjects.Arc;
+        bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
+      });
     });
     this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : 30 / 60 / 100 / 160 pièces`);
   }
@@ -783,9 +854,11 @@ class DefenseScene extends Phaser.Scene {
     this.towers.push(tower);
     this.recalculateEnemyPaths();
     this.selectedTower = null;
-    this.towerButtons.forEach((button) => {
-      const bg = button.getAt(0) as Phaser.GameObjects.Arc;
-      bg.setStrokeStyle(2, 0x28665e, 1);
+    this.towerButtons.forEach((buttons) => {
+      buttons.forEach((button) => {
+        const bg = button.getAt(0) as Phaser.GameObjects.Arc;
+        bg.setStrokeStyle(2, 0x28665e, 1);
+      });
     });
     this.updateHud(`${definition.name} posée — sélection annulée pour éviter une pose accidentelle`);
   }
