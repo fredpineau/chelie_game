@@ -254,7 +254,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createCommandDeck(): void {
-    const deckTop = HEIGHT - 250;
+    const deckTop = HEIGHT - 270;
     const deck = this.add.graphics();
     deck.fillGradientStyle(0x58a8ad, 0x58a8ad, 0x2f7782, 0x2f7782, 0.96);
     deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
