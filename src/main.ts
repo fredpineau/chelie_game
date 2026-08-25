@@ -215,14 +215,14 @@ class DefenseScene extends Phaser.Scene {
   private createCommandDeck(): void {
     const deckTop = HEIGHT - 250;
     const deck = this.add.graphics();
-    deck.fillGradientStyle(0x58705f, 0x58705f, 0x344a3d, 0x344a3d, 0.96);
+    deck.fillGradientStyle(0x628593, 0x628593, 0x365a68, 0x365a68, 0.96);
     deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
-    deck.lineStyle(3, 0xb6c8b5, 0.9);
+    deck.lineStyle(3, 0xb9d8df, 0.9);
     deck.beginPath();
     deck.moveTo(0, deckTop);
     deck.lineTo(WIDTH, deckTop);
     deck.strokePath();
-    deck.lineStyle(1, 0xf0f5ed, 0.28);
+    deck.lineStyle(1, 0xe8f6f8, 0.3);
     deck.beginPath();
     deck.moveTo(0, deckTop + 6);
     deck.lineTo(WIDTH, deckTop + 6);
@@ -459,8 +459,8 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 105, WIDTH, 210, 0x506858, 0.96)
-      .setStrokeStyle(2, 0xb6c8b5, 0.82);
+    this.add.rectangle(WIDTH / 2, 105, WIDTH, 210, 0x527684, 0.96)
+      .setStrokeStyle(2, 0xb9d8df, 0.84);
     this.add.text(WIDTH / 2, 14, "CHELIE", {
       fontFamily: "Arial",
       fontSize: "24px",
@@ -470,12 +470,14 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 3,
       letterSpacing: 5,
     }).setOrigin(0.5, 0);
-    this.add.text(WIDTH / 2, 43, "CARNIVORE GARDEN", {
+    this.add.text(WIDTH / 2, 45, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
-      fontSize: "12px",
-      color: "#d9e7db",
+      fontSize: "16px",
+      color: "#f4fbfc",
       fontStyle: "bold",
-      letterSpacing: 3,
+      stroke: "#183640",
+      strokeThickness: 3,
+      letterSpacing: 2,
     }).setOrigin(0.5, 0);
 
     this.levelText = this.createHudBadge(90, 109, "B", 0x315c54, "BIOME", "#a7c4bc");
@@ -489,7 +491,7 @@ class DefenseScene extends Phaser.Scene {
       fontStyle: "bold",
       align: "center",
       wordWrap: { width: 620 },
-      backgroundColor: "#314238e6",
+      backgroundColor: "#345866e8",
       padding: { x: 14, y: 7 },
       stroke: "#101813",
       strokeThickness: 2,
@@ -507,7 +509,7 @@ class DefenseScene extends Phaser.Scene {
     textColor: string,
   ): Phaser.GameObjects.Text {
     const shadow = this.add.circle(x + 2, y + 3, 30, 0x020706, 0.55);
-    const badge = this.add.circle(x, y, 28, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
+    const badge = this.add.circle(x, y, 28, 0x0b2630, 0.96).setStrokeStyle(2, color, 0.95);
     const symbol = this.add.text(x, y, icon, {
       fontFamily: "Arial",
       fontSize: "24px",
