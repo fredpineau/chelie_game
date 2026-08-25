@@ -1192,10 +1192,10 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const base = this.add.rectangle(0, 7, CELL, CELL, TEMP_LEVEL_COLORS[0])
+    const base = this.add.rectangle(0, 0, CELL, CELL, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(3, 0x4d7c0f, 0.9);
-    const plant = this.createPlantVisual(selectedKind, definition.color).setScale(0.78);
-    const levelBadge = this.add.text(18, 18, "", {
+    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 5).setScale(0.68);
+    const levelBadge = this.add.text(20, 20, "", {
       fontFamily: "Arial",
       fontSize: "14px",
       color: "#ffffff",
@@ -1700,7 +1700,7 @@ class DefenseScene extends Phaser.Scene {
     base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setAlpha(1).setScale(0.78 + (tower.level - 1) * 0.055);
+    plant.setAlpha(1).setScale(0.68 + (tower.level - 1) * 0.045);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
