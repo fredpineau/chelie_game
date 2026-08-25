@@ -1,21 +1,21 @@
 import Phaser from "phaser";
 import "./style.css";
 
-const WIDTH = 1280;
-const HEIGHT = 720;
+const WIDTH = 720;
+const HEIGHT = 1280;
 const CELL = 52;
-const GRID_X = 146;
-const GRID_Y = 142;
-const GRID_COLS = 20;
-const GRID_ROWS = 10;
+const GRID_X = 100;
+const GRID_Y = 235;
+const GRID_COLS = 11;
+const GRID_ROWS = 14;
 const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
 const MAP_CENTER_Y = GRID_Y + ((GRID_ROWS - 1) * CELL) / 2;
 const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_ENTRY_COL = 0;
 const TOP_ENTRY_ROW = 0;
-const BOTTOM_ENTRY_ROW = 5;
+const BOTTOM_ENTRY_ROW = Math.floor(GRID_ROWS / 2);
 const TOP_EXIT_COL = GRID_COLS - 1;
-const TOP_EXIT_ROW = 5;
+const TOP_EXIT_ROW = Math.floor(GRID_ROWS / 2);
 const BOTTOM_EXIT_COL = Math.floor(GRID_COLS / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 
@@ -213,7 +213,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createCommandDeck(): void {
-    const deckTop = HEIGHT - 96;
+    const deckTop = HEIGHT - 250;
     const deck = this.add.graphics();
     deck.fillGradientStyle(0x26362d, 0x26362d, 0x14221c, 0x14221c, 0.96);
     deck.fillRect(0, deckTop, WIDTH, HEIGHT - deckTop);
@@ -255,6 +255,12 @@ class DefenseScene extends Phaser.Scene {
     terrain.fillStyle(0x88b0a5, 0.24);
     terrain.fillEllipse(660, 330, 450, 170);
     terrain.fillEllipse(1030, 235, 310, 130);
+    terrain.fillStyle(0x5f533f, 0.3);
+    terrain.fillEllipse(330, 690, 610, 380);
+    terrain.fillStyle(0x4f8588, 0.38);
+    terrain.fillEllipse(390, 745, 520, 300);
+    terrain.fillStyle(0x88b0a5, 0.2);
+    terrain.fillEllipse(250, 850, 350, 150);
 
     const waterSheen = this.add.graphics();
     waterSheen.lineStyle(2, 0xd1e2dc, 0.27);
@@ -453,55 +459,47 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.text(28, 24, "CHELIE //", {
+    this.add.text(WIDTH / 2, 18, "CHELIE // CARNIVORE GARDEN", {
       fontFamily: "Arial",
-      fontSize: "20px",
+      fontSize: "18px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#17231d",
       strokeThickness: 3,
       letterSpacing: 4,
-    });
-    this.add.text(28, 47, "CARNIVORE GARDEN", {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: "#d2e2da",
-      fontStyle: "bold",
-      stroke: "#17231d",
-      strokeThickness: 2,
-      letterSpacing: 2,
-    });
+    }).setOrigin(0.5, 0);
 
-    this.levelText = this.createHudBadge(220, "B", 0x315c54, "BIOME --", "#a7c4bc");
-    this.waveText = this.createHudBadge(430, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
-    this.hpText = this.createHudBadge(900, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
-    this.energyText = this.createHudBadge(1100, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
-    this.statusText = this.add.text(430, 98, "", {
+    this.levelText = this.createHudBadge(62, 72, "B", 0x315c54, "BIOME --", "#a7c4bc");
+    this.waveText = this.createHudBadge(392, 72, "!", 0x58322e, "MENACE EN ATTENTE", "#d8c0b4");
+    this.hpText = this.createHudBadge(62, 132, "♥", 0x5c2929, "VIES 20 / 20", "#d8aaa6");
+    this.energyText = this.createHudBadge(392, 132, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
+    this.statusText = this.add.text(WIDTH / 2, 184, "", {
       fontFamily: "Arial",
       fontSize: "18px",
       color: "#f3f7f3",
       fontStyle: "bold",
       align: "center",
-      wordWrap: { width: 570 },
+      wordWrap: { width: 620 },
       backgroundColor: "#26352dd9",
       padding: { x: 10, y: 5 },
       stroke: "#101813",
       strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 104, HEIGHT - 48, 184, 76, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 54, 310, 76, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private createHudBadge(
     x: number,
+    y: number,
     icon: string,
     color: number,
     initialText: string,
     textColor: string,
   ): Phaser.GameObjects.Text {
-    const shadow = this.add.circle(x + 2, 46, 29, 0x020706, 0.55);
-    const badge = this.add.circle(x, 43, 27, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
-    const symbol = this.add.text(x, 43, icon, {
+    const shadow = this.add.circle(x + 2, y + 3, 29, 0x020706, 0.55);
+    const badge = this.add.circle(x, y, 27, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
+    const symbol = this.add.text(x, y, icon, {
       fontFamily: "Arial",
       fontSize: "20px",
       color: textColor,
@@ -511,7 +509,7 @@ class DefenseScene extends Phaser.Scene {
     shadow.setDepth(1);
     badge.setDepth(2);
     symbol.setDepth(3);
-    return this.add.text(x + 38, 43, initialText, {
+    return this.add.text(x + 38, y, initialText, {
       fontFamily: "Arial",
       fontSize: "16px",
       color: textColor,
@@ -527,17 +525,17 @@ class DefenseScene extends Phaser.Scene {
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x02040a, 0.9)
       .setDepth(30)
       .setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 12, 820, 510, 0x090e18, 0.98)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 660, 940, 0x090e18, 0.98)
       .setStrokeStyle(1, 0x475569, 0.9)
       .setDepth(31);
-    this.add.text(WIDTH / 2, 150, "SÉLECTION DU BIOME", {
+    this.add.text(WIDTH / 2, 190, "SÉLECTION DU BIOME", {
       fontFamily: "Arial",
       fontSize: "30px",
       color: "#f8fafc",
       fontStyle: "bold",
       letterSpacing: 3,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 193, "Protégez un biome pour faire éclore la plante suivante", {
+    this.add.text(WIDTH / 2, 235, "Choisissez la tourbière à défendre", {
       fontFamily: "Arial",
       fontSize: "14px",
       color: "#cbd5e1",
@@ -545,19 +543,19 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
 
     LEVELS.forEach((level, index) => {
-      const col = index % 3;
-      const row = Math.floor(index / 3);
-      const x = 400 + col * 240;
-      const y = 285 + row * 120;
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = 225 + col * 270;
+      const y = 355 + row * 210;
       const available = index <= unlocked;
       const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : "MENACE CROISSANTE";
 
       if (available) {
-        const button = this.makeButton(x, y, 210, 78, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x4d7c0f : 0x0f766e, () => {
+        const button = this.makeButton(x, y, 230, 100, `${level.code}\n${level.name.toUpperCase()}`, index === LEVELS.length - 1 ? 0x4d7c0f : 0x0f766e, () => {
           this.scene.restart({ levelIndex: index });
         });
         button.setDepth(32);
-        this.add.text(x, y + 52, waveLabel, {
+        this.add.text(x, y + 68, waveLabel, {
           fontFamily: "Arial",
           fontSize: "10px",
           color: "#94a3b8",
@@ -565,7 +563,7 @@ class DefenseScene extends Phaser.Scene {
           letterSpacing: 1,
         }).setOrigin(0.5).setDepth(32);
       } else {
-        this.add.rectangle(x, y, 210, 78, 0x111827, 0.7).setStrokeStyle(1, 0x334155).setDepth(32);
+        this.add.rectangle(x, y, 230, 100, 0x111827, 0.7).setStrokeStyle(1, 0x334155).setDepth(32);
         this.add.text(x, y - 6, "VERROUILLÉ", {
           fontFamily: "Arial",
       fontSize: "18px",
@@ -643,9 +641,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const dockY = HEIGHT - 48;
+    const dockY = HEIGHT - 164;
     const kinds = Object.keys(TOWERS) as TowerKind[];
-    const positions = [90, 205, 320, 435];
+    const positions = [90, 270, 450, 630];
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
@@ -1207,7 +1205,7 @@ class DefenseScene extends Phaser.Scene {
     const definition = TOWERS[tower.kind];
     const refund = Math.floor(tower.investedCost / 2);
     const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
-    const panelX = Phaser.Math.Clamp(tower.body.x, 360, WIDTH - 205);
+    const panelX = Phaser.Math.Clamp(tower.body.x, 190, WIDTH - 190);
     const panelY = Phaser.Math.Clamp(tower.body.y - 118, 170, HEIGHT - 155);
     const panel = this.add.container(panelX, panelY).setDepth(18);
     const background = this.add.rectangle(0, 0, 360, 148, 0x061713, 0.96)
