@@ -537,18 +537,7 @@ class DefenseScene extends Phaser.Scene {
     this.waveText = this.createHudBadge(270, 125, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
     this.hpText = this.createHudBadge(450, 125, "♥", 0xd7193f, "20 / 20", "#ff405c");
     this.energyText = this.createHudBadge(630, 125, "◈", 0x60532c, "60", "#d8c787");
-    this.statusText = this.add.text(WIDTH / 2, 207, "", {
-      fontFamily: "Arial",
-      fontSize: "22px",
-      color: "#f3f7f3",
-      fontStyle: "bold",
-      align: "center",
-      wordWrap: { width: 620 },
-      backgroundColor: "#276d78eb",
-      padding: { x: 14, y: 7 },
-      stroke: "#101813",
-      strokeThickness: 2,
-    }).setOrigin(0.5);
+    this.statusText = this.add.text(0, 0, "").setVisible(false);
 
     this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 54, 310, 76, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
@@ -1533,11 +1522,11 @@ class DefenseScene extends Phaser.Scene {
     menu.setDepth(21);
   }
 
-  private updateHud(message: string): void {
+  private updateHud(_message: string): void {
     this.hpText?.setText(`${this.baseHp} / 20`);
     this.energyText?.setText(`${this.energy} PIÈCES`);
     this.waveText?.setText(this.waveActive ? "ACTIVE" : "EN ATTENTE");
-    this.statusText?.setText(message).setVisible(message.length > 0);
+    this.statusText?.setText("").setVisible(false);
   }
 
   private setStartButtonEnabled(enabled: boolean): void {
