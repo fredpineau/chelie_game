@@ -1192,7 +1192,8 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const base = this.add.circle(0, 8, 23, TEMP_LEVEL_COLORS[0]).setStrokeStyle(3, 0x4d7c0f, 0.85);
+    const base = this.add.rectangle(0, 7, 46, 46, TEMP_LEVEL_COLORS[0])
+      .setStrokeStyle(3, 0x4d7c0f, 0.9);
     const plant = this.createPlantVisual(selectedKind, definition.color).setScale(0.78);
     const levelBadge = this.add.text(18, 18, "", {
       fontFamily: "Arial",
@@ -1694,7 +1695,7 @@ class DefenseScene extends Phaser.Scene {
     tower.range += 16;
     tower.fireDelay = Math.max(260, Math.round(tower.fireDelay * 0.88));
     tower.levelBadge.setText("").setVisible(false);
-    const base = tower.body.getAt(0) as Phaser.GameObjects.Arc;
+    const base = tower.body.getAt(0) as Phaser.GameObjects.Rectangle;
     base.setFillStyle(TEMP_LEVEL_COLORS[tower.level - 1], 1);
     base.setStrokeStyle(tower.level >= 5 ? 5 : 3, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
