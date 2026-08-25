@@ -621,47 +621,47 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const x = 112;
-    const startY = 203;
+    const dockY = HEIGHT - 48;
+    const buttonPositions = [270, 365, 460, 555, 870, 965, 1060];
 
-    this.add.rectangle(x, 422, 208, 564, 0x17231d, 0.78)
+    this.add.rectangle(412, dockY, 390, 94, 0x17231d, 0.84)
       .setStrokeStyle(2, 0x667766, 0.72);
-    this.add.text(x, startY - 34, "HERBIER", this.labelStyle(0xd9f99d)).setOrigin(0.5);
+    this.add.rectangle(965, dockY, 290, 94, 0x17231d, 0.84)
+      .setStrokeStyle(2, 0x667766, 0.72);
 
     (Object.keys(TOWERS) as TowerKind[]).forEach((kind, index) => {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
-      const y = startY + index * 76;
-      const button = this.add.container(x, y);
-      const bg = this.add.circle(-57, 0, 28, 0x052e2b, 0.98)
+      const button = this.add.container(buttonPositions[index], dockY);
+      const bg = this.add.circle(0, 0, 33, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const plantPreview = this.createPlantVisual(kind, definition.color)
-        .setPosition(-57, 3)
-        .setScale(0.67)
+        .setPosition(0, 3)
+        .setScale(0.76)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(-26, -17, definition.name.toUpperCase(), {
+      const title = this.add.text(0, -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "14px",
+        fontSize: "9px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
         strokeThickness: 2,
-      });
-      const targetLabel = definition.target === "sea" ? "RAMPANTS" : definition.target === "air" ? "VOLANTS" : "TOUS INSECTES";
-      const detail = available ? `${definition.cost} PIÈCES  •  ${targetLabel}` : `DÉBLOCAGE : ${LEVELS[definition.unlockLevel].code}`;
-      const target = this.add.text(-26, 7, detail, {
+      }).setOrigin(0.5);
+      const targetLabel = definition.target === "sea" ? "SOL" : definition.target === "air" ? "AIR" : "TOUS";
+      const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
+      const target = this.add.text(0, 36, detail, {
         fontFamily: "Arial",
-        fontSize: "10px",
+        fontSize: "9px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
         strokeThickness: 2,
-      });
+      }).setOrigin(0.5);
       button.add([bg, plantPreview, title, target]);
-      bg.setInteractive({ useHandCursor: true });
-      bg.on("pointerover", () => bg.setScale(1.08));
-      bg.on("pointerout", () => bg.setScale(1));
-      bg.on("pointerdown", () => this.selectTower(kind));
+      button.setSize(82, 94).setInteractive({ useHandCursor: true });
+      button.on("pointerover", () => bg.setScale(1.08));
+      button.on("pointerout", () => bg.setScale(1));
+      button.on("pointerdown", () => this.selectTower(kind));
       this.towerButtons.set(kind, button);
     });
   }
