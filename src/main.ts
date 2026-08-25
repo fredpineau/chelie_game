@@ -856,7 +856,7 @@ class DefenseScene extends Phaser.Scene {
       const mastery = this.plantMastery[kind];
       const cost = mastery < MASTERY_COSTS.length ? MASTERY_COSTS[mastery] : null;
       const x = 90 + index * 180;
-      const button = this.add.container(x, 1050).setDepth(32);
+      const button = this.add.container(x, 1040).setDepth(32);
       const bg = this.add.circle(0, 0, 45, 0x173f47, 0.98)
         .setStrokeStyle(3, mastery >= MASTERY_COSTS.length ? 0xf0d77a : 0x8ddce6, 0.95);
       const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
@@ -878,9 +878,98 @@ class DefenseScene extends Phaser.Scene {
       button.on("pointerdown", () => this.upgradePlantMastery(kind));
     });
 
+    this.makeButton(WIDTH / 2, 1124, 290, 36, "GUIDE DES ARROSOIRS", 0x245d68, () => {
+      this.showWateringGuide();
+    }).setDepth(33);
+
     overlay.on("pointerdown", () => undefined);
     panel.setInteractive().on("pointerdown", () => undefined);
     this.tweens.add({ targets: glow, alpha: 0.08, scale: 1.08, yoyo: true, repeat: -1, duration: 2400 });
+  }
+
+  private showWateringGuide(): void {
+    const guide = this.add.container(0, 0).setDepth(50);
+    const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.9).setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 640, 1040, 0x245d68, 0.995)
+      .setStrokeStyle(4, 0x8ddce6, 0.96);
+    const title = this.add.text(WIDTH / 2, 155, "GUIDE DES ARROSOIRS", {
+      fontFamily: "Arial",
+      fontSize: "30px",
+      color: "#effdff",
+      fontStyle: "bold",
+      stroke: "#12353d",
+      strokeThickness: 5,
+      letterSpacing: 2,
+    }).setOrigin(0.5);
+    const balance = this.add.text(WIDTH / 2, 205, `VOTRE RÉSERVE  💧 ${this.wateringCans}`, {
+      fontFamily: "Arial",
+      fontSize: "20px",
+      color: "#bff5fb",
+      fontStyle: "bold",
+      stroke: "#12353d",
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+    const explanation = this.add.text(WIDTH / 2, 275,
+      "Les arrosoirs améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.", {
+        fontFamily: "Arial",
+        fontSize: "17px",
+        color: "#edf8f7",
+        fontStyle: "bold",
+        align: "center",
+        lineSpacing: 9,
+        wordWrap: { width: 550 },
+      }).setOrigin(0.5);
+    const rewards = this.add.text(86, 350,
+      "COMMENT EN GAGNER\n\n• Mondes classiques : 1 après chaque vague\n• Mode infini : 1 toutes les 5 vagues\n• Les arrosoirs sont conservés après une défaite", {
+        fontFamily: "Arial",
+        fontSize: "17px",
+        color: "#d9f4f2",
+        fontStyle: "bold",
+        lineSpacing: 8,
+      });
+    const levelsTitle = this.add.text(WIDTH / 2, 515, "NIVEAUX PERMANENTS", {
+      fontFamily: "Arial",
+      fontSize: "21px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#12353d",
+      strokeThickness: 3,
+      letterSpacing: 1,
+    }).setOrigin(0.5);
+
+    const rows: Phaser.GameObjects.GameObject[] = [];
+    MASTERY_COSTS.forEach((cost, index) => {
+      const level = index + 1;
+      const y = 570 + index * 65;
+      const rowBg = this.add.rectangle(WIDTH / 2, y, 540, 50, index % 2 === 0 ? 0x184b55 : 0x1d535c, 0.95)
+        .setStrokeStyle(1, 0x70bec6, 0.45);
+      const rowText = this.add.text(WIDTH / 2, y,
+        `NIVEAU ${level}   💧 ${cost}   ·   +${level * 12}% dégâts   +${level * 6} portée   −${level * 4}% délai`, {
+          fontFamily: "Arial",
+          fontSize: "15px",
+          color: "#effdff",
+          fontStyle: "bold",
+        }).setOrigin(0.5);
+      rows.push(rowBg, rowText);
+    });
+    const total = this.add.text(WIDTH / 2, 915,
+      "19 arrosoirs pour maximiser une plante · 76 pour les quatre", {
+        fontFamily: "Arial",
+        fontSize: "16px",
+        color: "#ffe7a3",
+        fontStyle: "bold",
+        stroke: "#3d3520",
+        strokeThickness: 2,
+      }).setOrigin(0.5);
+    const distinction = this.add.text(WIDTH / 2, 965,
+      "Les pièces améliorent seulement les plantes de la partie en cours.", {
+        fontFamily: "Arial",
+        fontSize: "15px",
+        color: "#cfe9e7",
+        fontStyle: "bold",
+      }).setOrigin(0.5);
+    const close = this.makeButton(WIDTH / 2, 1050, 240, 54, "FERMER", 0x0f766e, () => guide.destroy(true));
+    guide.add([veil, panel, title, balance, explanation, rewards, levelsTitle, ...rows, total, distinction, close]);
   }
 
   private beginLevel(index: number): void {
