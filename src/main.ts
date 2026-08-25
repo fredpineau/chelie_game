@@ -535,10 +535,10 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 3,
     }).setOrigin(0.5, 0);
 
-    this.levelText = this.createHudBadge(90, 109, "B", 0x315c54, "BIOME", "#a7c4bc");
-    this.waveText = this.createHudBadge(270, 109, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
-    this.hpText = this.createHudBadge(450, 109, "♥", 0x5c2929, "20 / 20", "#d8aaa6");
-    this.energyText = this.createHudBadge(630, 109, "◈", 0x60532c, "60", "#d8c787");
+    this.levelText = this.createHudBadge(90, 119, "B", 0x315c54, "BIOME", "#a7c4bc");
+    this.waveText = this.createHudBadge(270, 119, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
+    this.hpText = this.createHudBadge(450, 119, "♥", 0x5c2929, "20 / 20", "#d8aaa6");
+    this.energyText = this.createHudBadge(630, 119, "◈", 0x60532c, "60", "#d8c787");
     this.statusText = this.add.text(WIDTH / 2, 207, "", {
       fontFamily: "Arial",
       fontSize: "22px",
