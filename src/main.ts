@@ -154,6 +154,9 @@ class DefenseScene extends Phaser.Scene {
   private shearText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
+  private menuOverlay?: Phaser.GameObjects.Container;
+  private menuOpen = false;
+  private menuOpenedAt = 0;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
   private towerActionPanel?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
@@ -184,7 +187,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (!this.levelStarted || this.baseHp <= 0) return;
+    if (!this.levelStarted || this.baseHp <= 0 || this.menuOpen) return;
 
     this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
@@ -227,6 +230,9 @@ class DefenseScene extends Phaser.Scene {
     this.waveRouteGuide = { col: Math.floor(GRID_COLS / 2), row: Math.floor(GRID_ROWS / 2) };
     this.towerButtons.clear();
     this.exitTraps.clear();
+    this.menuOpen = false;
+    this.menuOpenedAt = 0;
+    this.menuOverlay = undefined;
   }
 
   private drawWorld(): void {
@@ -571,7 +577,57 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
+    this.makeButton(76, HEIGHT - 50, 126, 64, "MENU", 0x315968, () => this.showGameMenu());
     this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+  }
+
+  private showGameMenu(): void {
+    if (this.menuOpen || !this.levelStarted) return;
+    this.menuOpen = true;
+    this.menuOpenedAt = this.time.now;
+    this.closeTowerActions();
+    this.setStartButtonEnabled(false);
+
+    const menu = this.add.container(0, 0).setDepth(40);
+    const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.78).setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 560, 430, 0x164f59, 0.99)
+      .setStrokeStyle(4, 0x8ddce6, 0.94);
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 150, "MENU", {
+      fontFamily: "Arial",
+      fontSize: "36px",
+      color: "#f4fbfc",
+      fontStyle: "bold",
+      stroke: "#173943",
+      strokeThickness: 5,
+      letterSpacing: 4,
+    }).setOrigin(0.5);
+    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 62, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 18, 330, 58, "RECOMMENCER", 0x6b4f25, () => {
+      this.scene.restart({ levelIndex: this.levelIndex });
+    });
+    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 98, 330, 58, "ACCUEIL", 0x315968, () => {
+      this.scene.restart();
+    });
+    menu.add([veil, panel, title, resume, restart, home]);
+    this.menuOverlay = menu;
+  }
+
+  private closeGameMenu(): void {
+    const pausedDuration = Math.max(0, this.time.now - this.menuOpenedAt);
+    if (this.nextSpawnAt > 0) this.nextSpawnAt += pausedDuration;
+    if (this.nextWaveAt > 0) this.nextWaveAt += pausedDuration;
+    this.towers.forEach((tower) => {
+      tower.lastShot += pausedDuration;
+      if (tower.isUpgrading) tower.upgradeReadyAt += pausedDuration;
+    });
+    this.enemies.forEach((enemy) => {
+      if (enemy.slowedUntil > 0) enemy.slowedUntil += pausedDuration;
+    });
+    this.menuOverlay?.destroy(true);
+    this.menuOverlay = undefined;
+    this.menuOpen = false;
+    this.menuOpenedAt = 0;
+    this.setStartButtonEnabled(this.levelStarted && !this.waveActive && this.baseHp > 0);
   }
 
   private createCompactHudBadge(
