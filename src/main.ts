@@ -1168,14 +1168,6 @@ class DefenseScene extends Phaser.Scene {
     const towerX = GRID_X + col * CELL;
     const towerY = GRID_Y + row * CELL;
 
-    const distanceToTopEntry = Math.abs(col - TOP_ENTRY_COL) + Math.abs(row - TOP_ENTRY_ROW);
-    const distanceToBottomEntry = Math.abs(col - BOTTOM_ENTRY_COL) + Math.abs(row - BOTTOM_ENTRY_ROW);
-    const distanceToTopExit = Math.abs(col - TOP_EXIT_COL) + Math.abs(row - TOP_EXIT_ROW);
-    const distanceToBottomExit = Math.abs(col - BOTTOM_EXIT_COL) + Math.abs(row - BOTTOM_EXIT_ROW);
-    if (distanceToTopEntry === 0 || distanceToBottomEntry === 0 || distanceToTopExit === 0 || distanceToBottomExit === 0) {
-      this.updateHud("Zone de portail protégée — plantez un peu plus loin");
-      return;
-    }
     if (this.towers.some((tower) => tower.col === col && tower.row === row)) {
       this.updateHud("Cet emplacement est déjà occupé");
       return;
@@ -1188,19 +1180,11 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
       return;
     }
-    const entrances = [
-      { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW },
-      { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW },
-    ];
-    const exits = [
-      { col: TOP_EXIT_COL, row: TOP_EXIT_ROW },
-      { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW },
-    ];
-    const everyRouteOpen = entrances.every((entry) => exits.every((exit) =>
-      this.calculatePath(entry, exit, { col, row }) !== null,
-    ));
-    if (!everyRouteOpen) {
-      this.updateHud("Un chemin doit rester ouvert entre chaque entrée et sa sortie");
+    const atLeastOneRouteOpen = this.getRouteOptions().some((route) =>
+      this.calculatePath(route.entry, route.destination, { col, row }) !== null,
+    );
+    if (!atLeastOneRouteOpen) {
+      this.updateHud("Cette plante fermerait toutes les issues aux insectes");
       this.cameras.main.shake(120, 0.002);
       return;
     }
@@ -1836,13 +1820,24 @@ class DefenseScene extends Phaser.Scene {
     return this.waveEntryTop;
   }
 
-  private selectWaveRoute(): void {
-    const routes: Array<{ top: boolean; exit: ExitId; guide: { col: number; row: number } }> = [
-      { top: true, exit: "right", guide: { col: 3, row: 4 } },
-      { top: false, exit: "bottom", guide: { col: 7, row: 9 } },
-      { top: true, exit: "bottom", guide: { col: 2, row: 9 } },
-      { top: false, exit: "right", guide: { col: 8, row: 4 } },
+  private getRouteOptions(): Array<{
+    top: boolean;
+    exit: ExitId;
+    entry: { col: number; row: number };
+    destination: { col: number; row: number };
+    guide: { col: number; row: number };
+  }> {
+    return [
+      { top: true, exit: "right", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 3, row: 4 } },
+      { top: false, exit: "bottom", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 7, row: 9 } },
+      { top: true, exit: "bottom", entry: { col: TOP_ENTRY_COL, row: TOP_ENTRY_ROW }, destination: { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW }, guide: { col: 2, row: 9 } },
+      { top: false, exit: "right", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 8, row: 4 } },
     ];
+  }
+
+  private selectWaveRoute(): void {
+    const routes = this.getRouteOptions().filter((route) => this.calculatePath(route.entry, route.destination) !== null);
+    if (routes.length === 0) return;
     const route = routes[(this.wave - 1 + this.levelIndex) % routes.length];
     this.waveEntryTop = route.top;
     this.waveExitId = route.exit;
@@ -1911,12 +1906,29 @@ class DefenseScene extends Phaser.Scene {
       return distanceA - distanceB;
     });
 
+    const exits: Array<{ id: ExitId; col: number; row: number; x: number; y: number }> = [
+      { id: "right" as ExitId, col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: GRID_X + TOP_EXIT_COL * CELL, y: MAP_CENTER_Y },
+      { id: "bottom" as ExitId, col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: MAP_CENTER_X, y: GRID_Y + BOTTOM_EXIT_ROW * CELL },
+    ].filter((exit) => !blocked.has(`${exit.col},${exit.row}`));
+
+    let bestRoute: { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null = null;
     for (const start of candidates) {
-      const path = this.calculatePath(start, { col: enemy.exitCol, row: enemy.exitRow });
-      if (!path) continue;
+      for (const exit of exits) {
+        const path = this.calculatePath(start, { col: exit.col, row: exit.row });
+        if (!path || (bestRoute && path.length >= bestRoute.path.length)) continue;
+        bestRoute = { path, exit };
+      }
+    }
+
+    if (bestRoute) {
+      enemy.exitId = bestRoute.exit.id;
+      enemy.exitCol = bestRoute.exit.col;
+      enemy.exitRow = bestRoute.exit.row;
+      enemy.exitX = bestRoute.exit.x;
+      enemy.exitY = bestRoute.exit.y;
       enemy.path = [
         new Phaser.Math.Vector2(enemy.body.x, enemy.body.y),
-        ...path,
+        ...bestRoute.path,
         new Phaser.Math.Vector2(enemy.exitX, enemy.exitY),
       ];
       enemy.pathIndex = 1;
@@ -1935,6 +1947,7 @@ class DefenseScene extends Phaser.Scene {
     const key = (col: number, row: number) => `${col},${row}`;
     const blocked = new Set(this.towers.map((tower) => key(tower.col, tower.row)));
     if (extraBlocked) blocked.add(key(extraBlocked.col, extraBlocked.row));
+    if (blocked.has(key(start.col, start.row)) || blocked.has(key(end.col, end.row))) return null;
 
     const frontier = [start];
     const costs = new Map<string, number>([[key(start.col, start.row), 0]]);
