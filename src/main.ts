@@ -460,7 +460,7 @@ class DefenseScene extends Phaser.Scene {
     this.energyText = this.createHudBadge(1100, "◈", 0x60532c, "PIÈCES 60", "#d8c787");
     this.statusText = this.add.text(430, 98, "", {
       fontFamily: "Arial",
-      fontSize: "15px",
+      fontSize: "18px",
       color: "#f3f7f3",
       fontStyle: "bold",
       align: "center",
@@ -471,7 +471,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.startButton = this.makeButton(WIDTH - 88, HEIGHT - 48, 150, 42, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.startButton = this.makeButton(WIDTH - 104, HEIGHT - 48, 184, 76, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private createHudBadge(
@@ -485,7 +485,7 @@ class DefenseScene extends Phaser.Scene {
     const badge = this.add.circle(x, 43, 27, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
     const symbol = this.add.text(x, 43, icon, {
       fontFamily: "Arial",
-      fontSize: "17px",
+      fontSize: "20px",
       color: textColor,
       fontStyle: "bold",
     }).setOrigin(0.5);
@@ -495,7 +495,7 @@ class DefenseScene extends Phaser.Scene {
     symbol.setDepth(3);
     return this.add.text(x + 38, 43, initialText, {
       fontFamily: "Arial",
-      fontSize: "14px",
+      fontSize: "16px",
       color: textColor,
       fontStyle: "bold",
       letterSpacing: 0.8,
@@ -550,7 +550,7 @@ class DefenseScene extends Phaser.Scene {
         this.add.rectangle(x, y, 210, 78, 0x111827, 0.7).setStrokeStyle(1, 0x334155).setDepth(32);
         this.add.text(x, y - 6, "VERROUILLÉ", {
           fontFamily: "Arial",
-          fontSize: "15px",
+      fontSize: "18px",
           color: "#475569",
           fontStyle: "bold",
           letterSpacing: 2,
@@ -627,7 +627,7 @@ class DefenseScene extends Phaser.Scene {
   private createTowerPalette(): void {
     const dockY = HEIGHT - 48;
     const kinds = Object.keys(TOWERS) as TowerKind[];
-    const positions = [250, 350, 450, 550];
+    const positions = [220, 330, 440, 550];
     kinds.forEach((kind, index) => {
       this.createTowerPaletteButton(kind, positions[index], dockY);
     });
@@ -637,15 +637,15 @@ class DefenseScene extends Phaser.Scene {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
       const button = this.add.container(x, y);
-      const bg = this.add.circle(0, 0, 33, 0x052e2b, 0.98)
+      const bg = this.add.circle(0, 0, 41, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(0, 3)
-        .setScale(0.76)
+        .setScale(0.88)
         .setAlpha(available ? 1 : 0.25);
       const title = this.add.text(0, -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "9px",
+        fontSize: "12px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -653,16 +653,16 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const targetLabel = definition.target === "sea" ? "SOL" : definition.target === "air" ? "AIR" : "TOUS";
       const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
-      const target = this.add.text(0, 36, detail, {
+      const target = this.add.text(0, 43, detail, {
         fontFamily: "Arial",
-        fontSize: "9px",
+        fontSize: "12px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
         strokeThickness: 2,
       }).setOrigin(0.5);
       button.add([bg, plantPreview, title, target]);
-      button.setSize(82, 94).setInteractive({ useHandCursor: true });
+      button.setSize(100, 104).setInteractive({ useHandCursor: true });
       button.on("pointerover", () => bg.setScale(1.08));
       button.on("pointerout", () => bg.setScale(1));
       button.on("pointerdown", () => this.selectTower(kind));
@@ -1189,13 +1189,13 @@ class DefenseScene extends Phaser.Scene {
     const definition = TOWERS[tower.kind];
     const refund = Math.floor(tower.investedCost / 2);
     const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
-    const panelX = Phaser.Math.Clamp(tower.body.x, 330, WIDTH - 185);
-    const panelY = Phaser.Math.Clamp(tower.body.y - 104, 155, HEIGHT - 135);
+    const panelX = Phaser.Math.Clamp(tower.body.x, 360, WIDTH - 205);
+    const panelY = Phaser.Math.Clamp(tower.body.y - 118, 170, HEIGHT - 155);
     const panel = this.add.container(panelX, panelY).setDepth(18);
-    const background = this.add.rectangle(0, 0, 316, 116, 0x061713, 0.96)
+    const background = this.add.rectangle(0, 0, 360, 148, 0x061713, 0.96)
       .setStrokeStyle(1, 0x66806d, 0.8);
     const upgradeLabel = nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
-    const upgradeButton = this.makeButton(-78, -24, 142, 42, upgradeLabel, 0x315c45, () => {
+    const upgradeButton = this.makeButton(-88, -31, 166, 52, upgradeLabel, 0x315c45, () => {
       if (nextUpgradeCost === null) {
         this.updateHud(`${this.getTowerName(tower)} est déjà au niveau maximal`);
         return;
@@ -1203,11 +1203,11 @@ class DefenseScene extends Phaser.Scene {
       this.upgradeTower(tower);
       this.showTowerActions(tower);
     });
-    const deleteButton = this.makeButton(78, -24, 142, 42, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
+    const deleteButton = this.makeButton(88, -31, 166, 52, `SUPPRIMER · +${refund}`, 0x6b2926, () => {
       this.removeTower(tower);
     });
     const priorityNames: Record<TargetPriority, string> = { first: "PREMIER", strong: "PLUS FORT", weak: "PLUS FAIBLE" };
-    const priorityButton = this.makeButton(0, 31, 298, 34, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
+    const priorityButton = this.makeButton(0, 35, 340, 46, `CIBLE : ${priorityNames[tower.priority]}`, 0x38483f, () => {
       tower.priority = tower.priority === "first" ? "strong" : tower.priority === "strong" ? "weak" : "first";
       this.showTowerActions(tower);
     });
