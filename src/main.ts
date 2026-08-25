@@ -130,7 +130,7 @@ const LEVELS: LevelDefinition[] = [
   { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.7, speedMultiplier: 1.57, swarmBonus: 18 },
   { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 5.5, speedMultiplier: 1.64, swarmBonus: 20 },
   { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 6.4, speedMultiplier: 1.72, swarmBonus: 23 },
-  { name: "Floraison éternelle", code: "MODE ∞", waves: null, healthMultiplier: 7.2, speedMultiplier: 1.8, swarmBonus: 26 },
+  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 7.2, speedMultiplier: 1.8, swarmBonus: 26 },
 ];
 
 class DefenseScene extends Phaser.Scene {
@@ -761,7 +761,7 @@ class DefenseScene extends Phaser.Scene {
       const x = 225 + col * 270;
       const y = 398 + row * 210;
       const available = index <= unlocked;
-      const waveLabel = level.waves === null ? "SURVIE SANS LIMITE" : "MENACE CROISSANTE";
+      const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";
       const card = this.add.container(x, y).setDepth(32);
       const background = this.add.graphics();
       background.fillStyle(available ? biomeColors[index] : 0x29464b, available ? 1 : 0.76);
