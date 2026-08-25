@@ -895,10 +895,36 @@ class DefenseScene extends Phaser.Scene {
         this.add.ellipse(7, -8, 25, 15, color).setRotation(-0.5).setStrokeStyle(2, 0x166534),
         this.add.circle(0, -8, 5, 0x9f1239),
       ]);
-    } else if (kind === "flak" || kind === "cryo") {
+    } else if (kind === "flak") {
+      const rearTrumpet = this.add.ellipse(-10, -2, 16, 37, 0xd9e2d1, 0.98)
+        .setRotation(-0.18)
+        .setStrokeStyle(2, 0x8fa68b);
+      const rearMouth = this.add.ellipse(-13, -21, 21, 9, 0xf4f1df)
+        .setRotation(-0.18)
+        .setStrokeStyle(2, 0x8e3942);
+      const mainTrumpet = this.add.ellipse(5, -6, 21, 48, 0xf1efdf, 1)
+        .setRotation(0.08)
+        .setStrokeStyle(2, 0x91a78e);
+      const mainMouth = this.add.ellipse(7, -31, 28, 11, 0xfffbea)
+        .setRotation(0.08)
+        .setStrokeStyle(3, 0x943943);
+      const hood = this.add.ellipse(10, -36, 29, 15, 0xe8ead8, 1)
+        .setRotation(-0.2)
+        .setStrokeStyle(2, 0x8e3942);
+      plant.add([rearTrumpet, rearMouth, mainTrumpet, mainMouth, hood]);
+      [
+        [-1, 15, 4, -27],
+        [5, 16, 8, -27],
+        [10, 12, 11, -26],
+        [-14, 13, -13, -17],
+      ].forEach(([x1, y1, x2, y2]) => {
+        plant.add(this.add.line(0, 0, x1, y1, x2, y2, 0xa84650, 0.72).setLineWidth(1.2));
+      });
+      plant.add(this.add.ellipse(7, -31, 15, 5, 0x6f1f2a, 0.88).setRotation(0.08));
+    } else if (kind === "cryo") {
       plant.add([
         this.add.ellipse(0, -5, 19, 34, color, 0.95).setStrokeStyle(2, 0x14532d),
-        this.add.ellipse(0, -20, 23, 8, kind === "flak" ? 0xfb923c : 0xa5f3fc).setStrokeStyle(2, 0x14532d),
+        this.add.ellipse(0, -20, 23, 8, 0xa5f3fc).setStrokeStyle(2, 0x14532d),
       ]);
     } else if (kind === "pulse") {
       for (let angle = 0; angle < 360; angle += 45) {
