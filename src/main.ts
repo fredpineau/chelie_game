@@ -459,11 +459,11 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.rectangle(WIDTH / 2, 105, WIDTH, 210, 0x14221c, 0.94)
-      .setStrokeStyle(2, 0x839582, 0.65);
+    this.add.rectangle(WIDTH / 2, 105, WIDTH, 210, 0x506858, 0.96)
+      .setStrokeStyle(2, 0xb6c8b5, 0.82);
     this.add.text(WIDTH / 2, 14, "CHELIE", {
       fontFamily: "Arial",
-      fontSize: "22px",
+      fontSize: "24px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#17231d",
@@ -472,8 +472,8 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     this.add.text(WIDTH / 2, 43, "CARNIVORE GARDEN", {
       fontFamily: "Arial",
-      fontSize: "10px",
-      color: "#a9beb0",
+      fontSize: "12px",
+      color: "#d9e7db",
       fontStyle: "bold",
       letterSpacing: 3,
     }).setOrigin(0.5, 0);
@@ -482,9 +482,9 @@ class DefenseScene extends Phaser.Scene {
     this.waveText = this.createHudBadge(270, 109, "!", 0x58322e, "EN ATTENTE", "#d8c0b4");
     this.hpText = this.createHudBadge(450, 109, "♥", 0x5c2929, "20 / 20", "#d8aaa6");
     this.energyText = this.createHudBadge(630, 109, "◈", 0x60532c, "60", "#d8c787");
-    this.statusText = this.add.text(WIDTH / 2, 181, "", {
+    this.statusText = this.add.text(WIDTH / 2, 188, "", {
       fontFamily: "Arial",
-      fontSize: "18px",
+      fontSize: "20px",
       color: "#f3f7f3",
       fontStyle: "bold",
       align: "center",
@@ -510,7 +510,7 @@ class DefenseScene extends Phaser.Scene {
     const badge = this.add.circle(x, y, 28, 0x081713, 0.96).setStrokeStyle(2, color, 0.95);
     const symbol = this.add.text(x, y, icon, {
       fontFamily: "Arial",
-      fontSize: "20px",
+      fontSize: "24px",
       color: textColor,
       fontStyle: "bold",
     }).setOrigin(0.5);
@@ -520,7 +520,7 @@ class DefenseScene extends Phaser.Scene {
     symbol.setDepth(3);
     return this.add.text(x, y + 43, initialText, {
       fontFamily: "Arial",
-      fontSize: "13px",
+      fontSize: "16px",
       color: textColor,
       fontStyle: "bold",
       letterSpacing: 0.8,
@@ -670,7 +670,7 @@ class DefenseScene extends Phaser.Scene {
         .setAlpha(available ? 1 : 0.25);
       const title = this.add.text(0, -39, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "14px",
+        fontSize: "16px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -680,7 +680,7 @@ class DefenseScene extends Phaser.Scene {
       const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
       const target = this.add.text(0, 43, detail, {
         fontFamily: "Arial",
-        fontSize: "13px",
+        fontSize: "15px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -1478,7 +1478,7 @@ class DefenseScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, height, color, 0.9).setStrokeStyle(1, 0x71867a, 0.65);
     const text = this.add.text(0, 0, label, {
       fontFamily: "Arial",
-      fontSize: "18px",
+      fontSize: "20px",
       color: "#ffffff",
       fontStyle: "bold",
       stroke: "#111a15",
