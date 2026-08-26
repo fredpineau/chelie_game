@@ -180,6 +180,7 @@ class DefenseScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Container;
   private menuOverlay?: Phaser.GameObjects.Container;
+  private gameGoalOverlay?: Phaser.GameObjects.Container;
   private menuOpen = false;
   private menuOpenedAt = 0;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
@@ -274,6 +275,7 @@ class DefenseScene extends Phaser.Scene {
     this.menuOpen = false;
     this.menuOpenedAt = 0;
     this.menuOverlay = undefined;
+    this.gameGoalOverlay = undefined;
     this.waveRouteWarning = undefined;
   }
 
@@ -769,9 +771,9 @@ class DefenseScene extends Phaser.Scene {
 
     const menu = this.add.container(0, 0).setDepth(40);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.78).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 560, 430, 0x164f59, 0.99)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 560, 520, 0x164f59, 0.99)
       .setStrokeStyle(4, 0x8ddce6, 0.94);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 150, "MENU", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 195, "MENU", {
       fontFamily: "Arial",
       fontSize: "36px",
       color: "#f4fbfc",
@@ -780,15 +782,88 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 4,
     }).setOrigin(0.5);
-    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 62, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
-    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 18, 390, 58, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
+    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 110, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
+    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 - 35, 330, 58, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 40, 390, 58, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
       this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
     });
-    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 98, 330, 58, "ACCUEIL", 0x315968, () => {
+    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 115, 330, 58, "ACCUEIL", 0x315968, () => {
       this.goToHome();
     });
-    menu.add([veil, panel, title, resume, restart, home]);
+    menu.add([veil, panel, title, resume, goal, restart, home]);
     this.menuOverlay = menu;
+  }
+
+  private showGameGoalGuide(page = 0): void {
+    this.gameGoalOverlay?.destroy(true);
+    const guide = this.add.container(0, 0).setDepth(55);
+    const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.94).setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 650, 1080, 0x245d68, 0.995)
+      .setStrokeStyle(4, 0x8ddce6, 0.96);
+    const title = this.add.text(WIDTH / 2, 140, page === 0 ? "BUT DU JEU" : "PROGRESSION", {
+      fontFamily: "Arial",
+      fontSize: "38px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#12353d",
+      strokeThickness: 5,
+      letterSpacing: 2,
+    }).setOrigin(0.5);
+    const pageLabel = this.add.text(WIDTH / 2, 182, `${page + 1} / 2`, {
+      fontFamily: "Arial", fontSize: "18px", color: "#bff5fb", fontStyle: "bold",
+    }).setOrigin(0.5);
+    const firstPage = [
+      "OBJECTIF",
+      "Construisez le chemin avec vos plantes carnivores et empêchez les insectes d’atteindre les sorties. Vous disposez de 20 vies : chaque insecte échappé en retire une.",
+      "",
+      "LES PLANTES",
+      "• Dionée : terrestre, économique, efficace contre les blindés.",
+      "• Sarracénie : grande portée, spécialisée contre les volants.",
+      "• Drosera : polyvalente contre tous les insectes.",
+      "• Népenthès : ralentit les ennemis, surtout les plus rapides.",
+      "",
+      "PLACEMENT ET CHEMIN",
+      "La plante fantôme montre sa case et sa portée. Vert : pose autorisée. Rouge : obstacle, chevauchement, manque de pièces ou chemin bloqué. Les deux entrées et les deux sorties doivent rester accessibles.",
+      "",
+      "VAGUES",
+      "La première vague se lance avec À L’ATTAQUE. Les suivantes partent automatiquement, mais peuvent être déclenchées plus tôt. Le feu rouge annonce l’entrée et la sortie trois secondes avant l’arrivée.",
+    ].join("\n");
+    const secondPage = [
+      "PIÈCES ET NIVEAUX",
+      "Les insectes éliminés rapportent des pièces. Elles servent à acheter et améliorer les plantes jusqu’au niveau 5. Chaque niveau augmente les dégâts, la portée et la cadence. Une plante vendue rembourse 70 % de l’investissement.",
+      "",
+      "GOUTTES PERMANENTES",
+      "Une goutte est gagnée après chaque vague classique et toutes les cinq vagues en mode infini. Elles améliorent définitivement une famille de plantes et sont conservées après une défaite.",
+      "",
+      "ENNEMIS ET TERRAINS",
+      "Affrontez des insectes terrestres, volants, rapides, blindés, régénérateurs et des boss Alpha. Racines, tourbe, spores, glu, parasites et zones fertiles modifient votre stratégie.",
+      "",
+      "CIBLAGE",
+      "Chaque plante peut viser l’ennemi proche de la sortie, le plus robuste ou le plus faible.",
+      "",
+      "PROGRESSION",
+      "Traversez 11 biomes classiques de plus en plus difficiles, améliorez durablement les quatre plantes, puis survivez le plus longtemps possible dans les modes infinis.",
+    ].join("\n");
+    const body = this.add.text(72, 225, page === 0 ? firstPage : secondPage, {
+      fontFamily: "Arial",
+      fontSize: "19px",
+      color: "#effdfb",
+      fontStyle: "bold",
+      lineSpacing: 7,
+      wordWrap: { width: 576 },
+    });
+    const previous = page > 0
+      ? this.makeButton(190, 1110, 220, 54, "PRÉCÉDENT", 0x315968, () => this.showGameGoalGuide(0))
+      : undefined;
+    const next = page === 0
+      ? this.makeButton(210, 1110, 250, 54, "SUIVANT", 0x0f766e, () => this.showGameGoalGuide(1))
+      : undefined;
+    const close = this.makeButton(page > 0 ? 530 : 510, 1110, 220, 54, "FERMER", 0x6b4f25, () => {
+      this.gameGoalOverlay?.destroy(true);
+      this.gameGoalOverlay = undefined;
+    });
+    guide.add([veil, panel, title, pageLabel, body, ...(previous ? [previous] : []), ...(next ? [next] : []), close]);
+    this.gameGoalOverlay = guide;
   }
 
   private closeGameMenu(): void {
@@ -804,7 +879,9 @@ class DefenseScene extends Phaser.Scene {
       if (enemy.slowedUntil > 0) enemy.slowedUntil += pausedDuration;
     });
     this.menuOverlay?.destroy(true);
+    this.gameGoalOverlay?.destroy(true);
     this.menuOverlay = undefined;
+    this.gameGoalOverlay = undefined;
     this.menuOpen = false;
     this.menuOpenedAt = 0;
     this.setStartButtonEnabled(this.levelStarted && !this.waveActive && !this.wavePreparing && this.baseHp > 0);
