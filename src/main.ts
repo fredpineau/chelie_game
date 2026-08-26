@@ -830,7 +830,7 @@ class DefenseScene extends Phaser.Scene {
         card.on("pointerout", () => card.setScale(1));
         card.on("pointerdown", () => this.scene.restart({ levelIndex: index }));
         if (isInfinite && unlocked >= 11) {
-          const nightmare = this.add.text(0, 55, "CAUCHEMAR", {
+          const nightmare = this.add.text(0, 55, "INFINI CAUCHEMAR", {
             fontFamily: "Arial",
             fontSize: "14px",
             color: "#ffe4e6",
@@ -849,7 +849,7 @@ class DefenseScene extends Phaser.Scene {
             event.stopPropagation();
             this.scene.restart({ levelIndex: index, infiniteNightmare: true });
           });
-          threat.setY(35).setText("MODE NORMAL");
+          threat.setY(35).setText("INFINI NORMAL");
           card.add(nightmare);
         }
       }
