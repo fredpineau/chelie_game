@@ -52,6 +52,8 @@ type Enemy = {
   coreDamage: number;
   energyReward: number;
   slowedUntil: number;
+  slowMultiplier: number;
+  swiftSuppressedUntil: number;
   exitCol: number;
   exitRow: number;
   exitX: number;
@@ -959,7 +961,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 3,
     }).setOrigin(0.5);
     const explanation = this.add.text(WIDTH / 2, 275,
-      "Les gouttes améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.", {
+      "Les gouttes améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.\nNépenthès : les niveaux renforcent le contrôle des insectes VIF.", {
         fontFamily: "Arial",
         fontSize: "20px",
         color: "#edf8f7",
@@ -1595,6 +1597,8 @@ class DefenseScene extends Phaser.Scene {
       coreDamage: 1,
       energyReward: this.getEnemyEnergyReward(isBoss),
       slowedUntil: 0,
+      slowMultiplier: 1,
+      swiftSuppressedUntil: 0,
       exitCol,
       exitRow,
       exitX,
@@ -1632,7 +1636,9 @@ class DefenseScene extends Phaser.Scene {
       const enemy = this.enemies[index];
       const exitX = enemy.exitX;
       const exitY = enemy.exitY;
-      const speed = enemy.speed * (time < enemy.slowedUntil ? 0.55 : 1);
+      const slowFactor = time < enemy.slowedUntil ? enemy.slowMultiplier : 1;
+      const swiftFactor = enemy.trait === "swift" && time < enemy.swiftSuppressedUntil ? 1 / 1.42 : 1;
+      const speed = enemy.speed * slowFactor * swiftFactor;
       if (enemy.regeneration > 0 && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
         enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.maxHp * enemy.regeneration * (delta / 1000));
         enemy.healthBar.width = enemy.healthBarWidth * (enemy.hp / enemy.maxHp);
@@ -1698,7 +1704,7 @@ class DefenseScene extends Phaser.Scene {
     const impactY = target.body.y;
 
     if (definition.effect === "slow") {
-      target.slowedUntil = Math.max(target.slowedUntil, this.time.now + (tower.level >= 5 ? 4200 : 2200));
+      this.applyNepenthesSlow(tower, target, impactX, impactY);
     }
     if (definition.effect === "splash" || (tower.level >= 5 && (tower.kind === "flak" || tower.kind === "pulse"))) {
       const victims = this.enemies.filter((enemy) =>
@@ -1713,6 +1719,41 @@ class DefenseScene extends Phaser.Scene {
     if (tower.kind === "harpoon" && target.trait === "armored") directDamage = Math.round(directDamage * 1.4);
     if (tower.kind === "flak" && target.trait === "swift") directDamage = Math.round(directDamage * 1.35);
     this.damageEnemy(target, directDamage, definition.color, tower.level >= 5 && tower.kind === "harpoon");
+  }
+
+  private applyNepenthesSlow(tower: Tower, target: Enemy, impactX: number, impactY: number): void {
+    const mastery = this.plantMastery.cryo;
+    const duration = (tower.level >= 5 ? 4200 : 2200) + (mastery >= 2 ? 500 : 0);
+    const targetMultiplier = mastery >= 3 && target.trait === "swift" ? 0.44 : 0.55;
+    this.applySlowEffect(target, duration, targetMultiplier, mastery >= 5);
+
+    if (mastery < 4) return;
+    const stickyRadius = 82;
+    const stickyZone = this.add.circle(impactX, impactY, stickyRadius, 0x67a3a6, 0.1)
+      .setStrokeStyle(3, 0xa5f3fc, 0.62);
+    this.tweens.add({
+      targets: stickyZone,
+      alpha: 0,
+      scale: 1.12,
+      duration: 520,
+      onComplete: () => stickyZone.destroy(),
+    });
+    this.enemies
+      .filter((enemy) => enemy !== target && enemy.body.active)
+      .filter((enemy) => Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadius)
+      .forEach((enemy) => {
+        const areaMultiplier = mastery >= 3 && enemy.trait === "swift" ? 0.56 : 0.7;
+        this.applySlowEffect(enemy, Math.round(duration * 0.65), areaMultiplier, mastery >= 5);
+      });
+  }
+
+  private applySlowEffect(enemy: Enemy, duration: number, multiplier: number, suppressSwift: boolean): void {
+    if (this.time.now >= enemy.slowedUntil) enemy.slowMultiplier = multiplier;
+    else enemy.slowMultiplier = Math.min(enemy.slowMultiplier, multiplier);
+    enemy.slowedUntil = Math.max(enemy.slowedUntil, this.time.now + duration);
+    if (suppressSwift && enemy.trait === "swift") {
+      enemy.swiftSuppressedUntil = Math.max(enemy.swiftSuppressedUntil, this.time.now + duration);
+    }
   }
 
   private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
