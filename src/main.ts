@@ -1430,7 +1430,9 @@ class DefenseScene extends Phaser.Scene {
     const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
       if (this.selectedTower === null) return;
       const isTouch = pointer.event instanceof TouchEvent;
-      const touchOffset = isTouch ? 52 : 0;
+      // Décale suffisamment l'aperçu au-dessus du doigt sur téléphone afin que
+      // la case verte/rouge reste visible pendant tout le glissement.
+      const touchOffset = isTouch ? 88 : 0;
       this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset, isTouch);
     };
     zone.on("pointermove", previewAtPointer);
@@ -1440,7 +1442,7 @@ class DefenseScene extends Phaser.Scene {
         this.selectNearestTower(pointer.worldX, pointer.worldY);
         return;
       }
-      const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
+      const touchOffset = pointer.event instanceof TouchEvent ? 88 : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset, this.lastPlacementPreview);
     });
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
