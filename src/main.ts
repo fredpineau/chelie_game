@@ -1418,12 +1418,22 @@ class DefenseScene extends Phaser.Scene {
     if (this.energy < TOWERS[kind].cost) {
       return { allowed: false, reason: `${TOWERS[kind].name} coûte ${TOWERS[kind].cost} pièces — solde insuffisant` };
     }
-    const routeOpen = this.getRouteOptions().some((route) =>
-      this.calculatePath(route.entry, route.destination, {
+    const routeStates = this.getRouteOptions().map((route) => ({
+      route,
+      open: this.calculatePath(route.entry, route.destination, {
         col: placement.col, row: placement.row, x: placement.x, y: placement.y,
       }) !== null,
-    );
-    if (!routeOpen) return { allowed: false, reason: "Cette plante fermerait toutes les issues aux insectes" };
+    }));
+    const topEntryOpen = routeStates.some(({ route, open }) => route.top && open);
+    const leftEntryOpen = routeStates.some(({ route, open }) => !route.top && open);
+    const rightExitOpen = routeStates.some(({ route, open }) => route.exit === "right" && open);
+    const bottomExitOpen = routeStates.some(({ route, open }) => route.exit === "bottom" && open);
+    if (!topEntryOpen || !leftEntryOpen) {
+      return { allowed: false, reason: "Chaque entrée doit conserver au moins un passage" };
+    }
+    if (!rightExitOpen || !bottomExitOpen) {
+      return { allowed: false, reason: "Les deux sorties doivent rester accessibles" };
+    }
     if (this.wavePreparing) {
       const warnedRoute = this.getRouteOptions().find((route) =>
         route.top === this.waveEntryTop && route.exit === this.waveExitId,
@@ -2485,10 +2495,9 @@ class DefenseScene extends Phaser.Scene {
       return distanceA - distanceB;
     });
 
-    const exits: Array<{ id: ExitId; col: number; row: number; x: number; y: number }> = [
-      { id: "right" as ExitId, col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW), y: this.gridToWorldY(TOP_EXIT_ROW) },
-      { id: "bottom" as ExitId, col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW), y: this.gridToWorldY(BOTTOM_EXIT_ROW) },
-    ].filter((exit) => !blocked.has(`${exit.col},${exit.row}`));
+    const exits: Array<{ id: ExitId; col: number; row: number; x: number; y: number }> = enemy.exitId === "right"
+      ? [{ id: "right", col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW), y: this.gridToWorldY(TOP_EXIT_ROW) }]
+      : [{ id: "bottom", col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW), y: this.gridToWorldY(BOTTOM_EXIT_ROW) }];
 
     let bestRoute: { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null = null;
     for (const start of candidates) {
