@@ -1243,7 +1243,7 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
     const atLeastOneRouteOpen = this.getRouteOptions().some((route) =>
-      this.calculatePath(route.entry, route.destination, { col, row }) !== null,
+      this.calculatePath(route.entry, route.destination, { col, row, x: towerX, y: towerY }) !== null,
     );
     if (!atLeastOneRouteOpen) {
       this.updateHud("Cette plante fermerait toutes les issues aux insectes");
@@ -1973,7 +1973,7 @@ class DefenseScene extends Phaser.Scene {
   private recalculateEnemyPath(enemy: Enemy): void {
     const approximateRow = Phaser.Math.Clamp(Math.round((enemy.body.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
     const approximateCol = Phaser.Math.Clamp(Math.round((enemy.body.x - GRID_X) / CELL), 0, GRID_COLS - 1);
-    const blocked = new Set(this.towers.map((tower) => `${tower.col},${tower.row}`));
+    const blocked = this.getBlockedPathCells();
     const candidates: { col: number; row: number }[] = [];
 
     for (let radius = 0; radius <= 2; radius += 1) {
@@ -2041,11 +2041,10 @@ class DefenseScene extends Phaser.Scene {
   private calculatePath(
     start: { col: number; row: number },
     end: { col: number; row: number },
-    extraBlocked?: { col: number; row: number },
+    extraBlocked?: { col: number; row: number; x?: number; y?: number },
   ): Phaser.Math.Vector2[] | null {
     const key = (col: number, row: number) => `${col},${row}`;
-    const blocked = new Set(this.towers.map((tower) => key(tower.col, tower.row)));
-    if (extraBlocked) blocked.add(key(extraBlocked.col, extraBlocked.row));
+    const blocked = this.getBlockedPathCells(extraBlocked);
     if (blocked.has(key(start.col, start.row)) || blocked.has(key(end.col, end.row))) return null;
 
     const frontier = [start];
@@ -2098,6 +2097,33 @@ class DefenseScene extends Phaser.Scene {
       }
     }
     return null;
+  }
+
+  private getBlockedPathCells(extraBlocked?: { col: number; row: number; x?: number; y?: number }): Set<string> {
+    const key = (col: number, row: number) => `${col},${row}`;
+    const blockers = this.towers.map((tower) => ({ x: tower.body.x, y: tower.body.y }));
+    if (extraBlocked) {
+      blockers.push({
+        x: extraBlocked.x ?? this.gridToWorldX(extraBlocked.col, extraBlocked.row),
+        y: extraBlocked.y ?? this.gridToWorldY(extraBlocked.row),
+      });
+    }
+
+    const blocked = new Set<string>();
+    const insectClearance = PLANT_FRAME_SIZE / 2 + 5;
+    for (let row = 0; row < GRID_ROWS; row += 1) {
+      for (let col = 0; col < GRID_COLS; col += 1) {
+        const cellX = this.gridToWorldX(col, row);
+        const cellY = this.gridToWorldY(row);
+        if (blockers.some((plant) =>
+          Math.abs(cellX - plant.x) < insectClearance
+          && Math.abs(cellY - plant.y) < insectClearance,
+        )) {
+          blocked.add(key(col, row));
+        }
+      }
+    }
+    return blocked;
   }
 
   private gameOver(): void {
