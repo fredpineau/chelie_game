@@ -1493,13 +1493,28 @@ class DefenseScene extends Phaser.Scene {
     const exitY = this.waveExitId === "right" ? this.gridToWorldY(TOP_EXIT_ROW) : this.gridToWorldY(BOTTOM_EXIT_ROW);
     const container = this.add.container(spawnX, spawnY);
     const scale = isBoss ? 1.15 : 0.72;
-    const shadow = this.add.ellipse(0, 17, 58 * scale, 12 * scale, 0x010403, 0.62);
-    const insectParts: Phaser.GameObjects.GameObject[] = [shadow];
+    const shadow = this.add.ellipse(
+      0,
+      kind === "air" ? 25 : 17,
+      (kind === "air" ? 44 : 58) * scale,
+      (kind === "air" ? 9 : 12) * scale,
+      0x010403,
+      kind === "air" ? 0.3 : 0.62,
+    );
+    const movementMarker = this.add.ellipse(
+      0,
+      kind === "air" ? 15 : 18,
+      (kind === "air" ? 52 : 64) * scale,
+      (kind === "air" ? 15 : 18) * scale,
+      kind === "air" ? 0x8ddce6 : 0x8a6538,
+      0.1,
+    ).setStrokeStyle(2, kind === "air" ? 0xb9f3f7 : 0xb38a52, kind === "air" ? 0.72 : 0.5);
+    const insectParts: Phaser.GameObjects.GameObject[] = [shadow, movementMarker];
     if (kind === "air") {
-      const leftWing = this.add.triangle(-15 * scale, -3 * scale, -3, 7, -31, -2, -8, -19, 0x8a9487, 0.28)
-        .setStrokeStyle(1, 0x303832, 0.7);
-      const rightWing = this.add.triangle(15 * scale, -3 * scale, 3, 7, 31, -2, 8, -19, 0x8a9487, 0.28)
-        .setStrokeStyle(1, 0x303832, 0.7);
+      const leftWing = this.add.triangle(-17 * scale, -4 * scale, -3, 8, -36, -3, -8, -23, 0xb9e8ed, 0.68)
+        .setStrokeStyle(2, 0x5b8f98, 0.95);
+      const rightWing = this.add.triangle(17 * scale, -4 * scale, 3, 8, 36, -3, 8, -23, 0xb9e8ed, 0.68)
+        .setStrokeStyle(2, 0x5b8f98, 0.95);
       const abdomen = this.add.ellipse(0, 5 * scale, 14 * scale, 39 * scale, color).setStrokeStyle(2, 0x171612, 0.95);
       const abdomenRidge = this.add.rectangle(0, 7 * scale, 3 * scale, 31 * scale, 0x171612, 0.8);
       const thorax = this.add.ellipse(0, -10 * scale, 18 * scale, 20 * scale, 0x26251f).setStrokeStyle(2, 0x11110e);
@@ -1532,12 +1547,15 @@ class DefenseScene extends Phaser.Scene {
     const healthY = isBoss ? -45 : -28;
     const healthBg = this.add.rectangle(0, healthY, healthBarWidth, isBoss ? 8 : 5, 0x020617, 0.9);
     const healthBar = this.add.rectangle(-healthBarWidth / 2, healthY, healthBarWidth, isBoss ? 8 : 5, color).setOrigin(0, 0.5);
-    const bossLabel = isBoss ? this.add.text(0, healthY - 15, "ALPHA", {
+    const typeName = kind === "air" ? "VOLANT" : "TERRIEN";
+    const bossLabel = isBoss ? this.add.text(0, healthY - 16, `ALPHA · ${typeName}`, {
       fontFamily: "Arial",
-      fontSize: "10px",
-      color: "#fecaca",
+      fontSize: "12px",
+      color: kind === "air" ? "#d9fbff" : "#ffe1b5",
       fontStyle: "bold",
-      letterSpacing: 2,
+      letterSpacing: 1,
+      backgroundColor: kind === "air" ? "#174b59" : "#594025",
+      padding: { x: 5, y: 2 },
     }).setOrigin(0.5) : null;
     const traitNames: Record<EnemyTrait, string> = {
       normal: "",
@@ -1545,12 +1563,15 @@ class DefenseScene extends Phaser.Scene {
       swift: "VIF",
       regenerator: "RÉGÉN.",
     };
-    const traitLabel = !isBoss && trait !== "normal" ? this.add.text(0, healthY - 12, traitNames[trait], {
+    const traitSuffix = trait === "normal" ? "" : ` · ${traitNames[trait]}`;
+    const traitLabel = !isBoss ? this.add.text(0, healthY - 14, `${typeName}${traitSuffix}`, {
       fontFamily: "Arial",
-      fontSize: "8px",
-      color: trait === "armored" ? "#cbd5d1" : trait === "swift" ? "#d6c49b" : "#b7cba7",
+      fontSize: "11px",
+      color: kind === "air" ? "#d9fbff" : "#ffe1b5",
       fontStyle: "bold",
-      letterSpacing: 1,
+      letterSpacing: 0.5,
+      backgroundColor: kind === "air" ? "#174b59" : "#594025",
+      padding: { x: 4, y: 2 },
     }).setOrigin(0.5) : null;
     container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
 
