@@ -782,16 +782,16 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 4,
     }).setOrigin(0.5);
-    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 150, 350, 56, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
-    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 - 80, 350, 56, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
-    const wateringGuide = this.makeButton(WIDTH / 2, HEIGHT / 2 - 10, 350, 56, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
-    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 60, 410, 56, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
-      this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
-    });
-    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 130, 350, 56, "ACCUEIL", 0x315968, () => {
+    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 - 150, 350, 56, "ACCUEIL", 0x315968, () => {
       this.goToHome();
     });
-    menu.add([veil, panel, title, resume, goal, wateringGuide, restart, home]);
+    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 80, 350, 56, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 - 10, 410, 56, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
+      this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
+    });
+    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 + 60, 350, 56, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
+    const wateringGuide = this.makeButton(WIDTH / 2, HEIGHT / 2 + 130, 350, 56, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
+    menu.add([veil, panel, title, home, resume, restart, goal, wateringGuide]);
     this.menuOverlay = menu;
   }
 
