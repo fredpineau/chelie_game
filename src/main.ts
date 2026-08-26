@@ -958,6 +958,10 @@ class DefenseScene extends Phaser.Scene {
 
   private showLevelSelection(): void {
     const unlocked = this.getUnlockedLevel();
+    const homeCenterX = WIDTH / 2;
+    const cardColumnOffset = 155;
+    const cardRowStart = 390;
+    const cardRowGap = 200;
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)
       .setDepth(30)
       .setInteractive();
@@ -967,7 +971,7 @@ class DefenseScene extends Phaser.Scene {
     const glow = this.add.ellipse(WIDTH / 2, 215, 560, 190, 0x71c4c1, 0.16).setDepth(31);
     this.add.circle(92, 188, 50, 0x91d5c3, 0.12).setDepth(31);
     this.add.circle(630, 1070, 72, 0x173f47, 0.22).setDepth(31);
-    this.add.text(WIDTH / 2, 164, "CHOISISSEZ VOTRE", {
+    this.add.text(homeCenterX, 150, "CHOISISSEZ VOTRE", {
       fontFamily: "Arial",
       fontSize: "24px",
       color: "#efffff",
@@ -976,7 +980,7 @@ class DefenseScene extends Phaser.Scene {
       stroke: "#173943",
       strokeThickness: 3,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 206, "TOURBIÈRE", {
+    this.add.text(homeCenterX, 193, "TOURBIÈRE", {
       fontFamily: "Arial",
       fontSize: "48px",
       color: "#f8fafc",
@@ -985,7 +989,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 5,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 252, "Chaque biome renforce la menace", {
+    this.add.text(homeCenterX, 240, "Chaque biome renforce la menace", {
       fontFamily: "Arial",
       fontSize: "22px",
       color: "#f0fbfa",
@@ -994,10 +998,10 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
 
-    const firstPage = this.makeButton(270, 294, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
+    const firstPage = this.makeButton(homeCenterX - 90, 286, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 0 });
     }).setDepth(32);
-    const secondPage = this.makeButton(450, 294, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
+    const secondPage = this.makeButton(homeCenterX + 90, 286, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 1 });
     }).setDepth(32);
     if (unlocked < 6) secondPage.setAlpha(0.62);
@@ -1011,8 +1015,8 @@ class DefenseScene extends Phaser.Scene {
       const index = pageStart + localIndex;
       const col = localIndex % 2;
       const row = Math.floor(localIndex / 2);
-      const x = 205 + col * 310;
-      const y = 398 + row * 210;
+      const x = homeCenterX + (col === 0 ? -cardColumnOffset : cardColumnOffset);
+      const y = cardRowStart + row * cardRowGap;
       const isFinalInfinite = index === LEVELS.length - 1;
       const hostsFirstInfinite = index === 5 && unlocked >= 6;
       const available = index <= unlocked;
@@ -1112,7 +1116,7 @@ class DefenseScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(WIDTH / 2, 958, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {
+    this.add.text(homeCenterX, 930, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {
       fontFamily: "Arial",
       fontSize: "24px",
       color: "#effdfb",
@@ -1121,7 +1125,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 3,
       letterSpacing: 1.2,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(WIDTH / 2, 986, "Touchez une plante pour l'arroser durablement", {
+    this.add.text(homeCenterX, 962, "Touchez une plante pour l'arroser durablement", {
       fontFamily: "Arial",
       fontSize: "19px",
       color: "#efffff",
@@ -1134,8 +1138,8 @@ class DefenseScene extends Phaser.Scene {
     masteryKinds.forEach((kind, index) => {
       const mastery = this.plantMastery[kind];
       const cost = mastery < MASTERY_COSTS.length ? MASTERY_COSTS[mastery] : null;
-      const x = 90 + index * 180;
-      const button = this.add.container(x, 1040).setDepth(32);
+      const x = homeCenterX - 270 + index * 180;
+      const button = this.add.container(x, 1028).setDepth(32);
       const bg = this.add.circle(0, 0, 45, 0x173f47, 0.98)
         .setStrokeStyle(3, mastery >= MASTERY_COSTS.length ? 0xf0d77a : 0x8ddce6, 0.95);
       const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
@@ -1157,7 +1161,7 @@ class DefenseScene extends Phaser.Scene {
       button.on("pointerdown", () => this.upgradePlantMastery(kind));
     });
 
-    this.makeButton(WIDTH / 2, 1124, 310, 42, "GUIDE DES GOUTTES", 0x245d68, () => {
+    this.makeButton(homeCenterX, 1135, 310, 42, "GUIDE DES GOUTTES", 0x245d68, () => {
       this.showWateringGuide();
     }).setDepth(33);
 
