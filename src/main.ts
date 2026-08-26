@@ -38,6 +38,8 @@ type TrapJawPair = {
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo";
 type TowerEffect = "standard" | "slow" | "splash";
 type FertileZone = { x: number; y: number; radius: number; favoredKind: TowerKind };
+type TerrainKind = "root" | "peat" | "spore" | "sticky" | "parasite";
+type TerrainFeature = { kind: TerrainKind; x: number; y: number; radius: number; cooldownUntil: number };
 
 type Enemy = {
   body: Phaser.GameObjects.Container;
@@ -81,6 +83,7 @@ type Tower = {
   isUpgrading: boolean;
   upgradeReadyAt: number;
   fertile: boolean;
+  parasitized: boolean;
 };
 
 type TowerDefinition = {
@@ -144,6 +147,7 @@ class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private towers: Tower[] = [];
   private fertileZones: FertileZone[] = [];
+  private terrainFeatures: TerrainFeature[] = [];
   private baseHp = 20;
   private energy = 60;
   private wateringCans = 0;
@@ -238,6 +242,7 @@ class DefenseScene extends Phaser.Scene {
     this.enemies = [];
     this.towers = [];
     this.fertileZones = [];
+    this.terrainFeatures = [];
     this.baseHp = 20;
     this.energy = 60;
     this.loadPermanentProgress();
@@ -266,6 +271,7 @@ class DefenseScene extends Phaser.Scene {
 
     this.createMarshAtmosphere();
     this.createFertileZones();
+    this.createTerrainFeatures();
     this.drawMapBoundary();
     this.createCommandDeck();
 
@@ -273,6 +279,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createFertileZones(): void {
+    if (this.levelIndex === LEVELS.length - 1) {
+      this.fertileZones = [];
+      return;
+    }
     const patterns = [
       [[0.22, 0.28], [0.68, 0.42], [0.42, 0.74]],
       [[0.72, 0.22], [0.3, 0.48], [0.7, 0.76]],
@@ -309,6 +319,89 @@ class DefenseScene extends Phaser.Scene {
         strokeThickness: 3,
       }).setOrigin(0.5).setAlpha(0.78);
     });
+  }
+
+  private createTerrainFeatures(): void {
+    const layouts: Array<Array<[TerrainKind, number, number, number]>> = [
+      [],
+      [["root", 0.5, 0.38, 54], ["peat", 0.27, 0.68, 46], ["peat", 0.73, 0.72, 42]],
+      [["spore", 0.25, 0.34, 42], ["spore", 0.7, 0.5, 42], ["spore", 0.43, 0.76, 42]],
+      [["sticky", 0.25, 0.42, 52], ["sticky", 0.7, 0.7, 55], ["root", 0.58, 0.3, 44]],
+      [["parasite", 0.3, 0.3, 58], ["parasite", 0.72, 0.68, 58], ["peat", 0.48, 0.52, 40]],
+      [["root", 0.28, 0.38, 48], ["spore", 0.7, 0.34, 40], ["sticky", 0.52, 0.72, 52]],
+      [["root", 0.7, 0.3, 46], ["peat", 0.3, 0.5, 44], ["parasite", 0.72, 0.72, 54]],
+      [["spore", 0.25, 0.3, 40], ["sticky", 0.68, 0.45, 50], ["parasite", 0.32, 0.75, 54]],
+      [["root", 0.3, 0.3, 46], ["root", 0.7, 0.66, 46], ["spore", 0.52, 0.48, 42]],
+      [["peat", 0.22, 0.4, 43], ["sticky", 0.5, 0.7, 52], ["parasite", 0.76, 0.32, 55], ["spore", 0.72, 0.78, 38]],
+      [["root", 0.25, 0.28, 44], ["peat", 0.72, 0.3, 42], ["sticky", 0.28, 0.72, 50], ["parasite", 0.7, 0.7, 54]],
+      [],
+    ];
+    const mapLeft = GRID_X - CELL / 2;
+    const mapTop = GRID_Y - CELL / 2;
+    const mapWidth = GRID_COLS * CELL;
+    const mapHeight = GRID_ROWS * CELL;
+    let layout = layouts[this.levelIndex] ?? [];
+    if (this.levelIndex === LEVELS.length - 1 && this.infiniteNightmare) {
+      const kinds: TerrainKind[] = ["root", "peat", "spore", "sticky", "parasite"];
+      layout = Array.from({ length: 6 }, (_, index) => [
+        kinds[index % kinds.length],
+        Phaser.Math.FloatBetween(0.18, 0.82),
+        Phaser.Math.FloatBetween(0.2, 0.82),
+        Phaser.Math.Between(38, 54),
+      ] as [TerrainKind, number, number, number]);
+    }
+
+    this.terrainFeatures = layout.map(([kind, ratioX, ratioY, radius]) => ({
+      kind,
+      x: mapLeft + mapWidth * ratioX,
+      y: mapTop + mapHeight * ratioY,
+      radius,
+      cooldownUntil: 0,
+    }));
+    this.terrainFeatures.forEach((feature, index) => this.drawTerrainFeature(feature, index));
+  }
+
+  private drawTerrainFeature(feature: TerrainFeature, index: number): void {
+    const labelColors: Record<TerrainKind, string> = {
+      root: "#ded2b6", peat: "#d5e5db", spore: "#fff0c2", sticky: "#d9fbff", parasite: "#f2d9f7",
+    };
+    const labels: Record<TerrainKind, string> = {
+      root: "RACINE", peat: "TOURBE", spore: "SPORES", sticky: "GLU", parasite: "PARASITE",
+    };
+    if (feature.kind === "root") {
+      this.add.ellipse(feature.x, feature.y, feature.radius * 2, feature.radius * 0.72, 0x544431, 0.92)
+        .setRotation(index % 2 === 0 ? -0.42 : 0.5)
+        .setStrokeStyle(4, 0x30271e, 0.9);
+    } else if (feature.kind === "peat") {
+      this.add.circle(feature.x, feature.y, feature.radius, 0x4d5548, 0.62)
+        .setStrokeStyle(3, 0x26372f, 0.78);
+      this.add.circle(feature.x, feature.y, feature.radius - 9, 0x2f4944, 0.24)
+        .setStrokeStyle(1, 0xa8c4b8, 0.34);
+    } else if (feature.kind === "spore") {
+      this.add.circle(feature.x, feature.y, feature.radius, 0x9b7134, 0.16)
+        .setStrokeStyle(3, 0xd3a851, 0.62);
+      for (let dot = 0; dot < 7; dot += 1) {
+        const angle = (Math.PI * 2 * dot) / 7;
+        this.add.circle(feature.x + Math.cos(angle) * 23, feature.y + Math.sin(angle) * 23, 6, 0x725330, 0.88)
+          .setStrokeStyle(1, 0xe0bd70, 0.72);
+      }
+    } else if (feature.kind === "sticky") {
+      this.add.ellipse(feature.x, feature.y, feature.radius * 2, feature.radius * 1.35, 0x4f9294, 0.2)
+        .setStrokeStyle(3, 0x9ad8d5, 0.62);
+    } else {
+      this.add.circle(feature.x, feature.y, feature.radius, 0x744c72, 0.13)
+        .setStrokeStyle(3, 0xa979a6, 0.55);
+      this.add.circle(feature.x, feature.y, 15, 0x58344f, 0.86)
+        .setStrokeStyle(2, 0xd3a5cb, 0.72);
+    }
+    this.add.text(feature.x, feature.y + feature.radius + 10, labels[feature.kind], {
+      fontFamily: "Arial",
+      fontSize: "12px",
+      color: labelColors[feature.kind],
+      fontStyle: "bold",
+      stroke: "#26332e",
+      strokeThickness: 3,
+    }).setOrigin(0.5);
   }
 
   private drawMapBoundary(): void {
@@ -1287,6 +1380,16 @@ class DefenseScene extends Phaser.Scene {
     const towerY = minTowerY + placementHalfRow * verticalStep;
     const col = Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1);
+    const forbiddenTerrain = this.terrainFeatures.find((feature) =>
+      (feature.kind === "root" || feature.kind === "peat")
+      && Phaser.Math.Distance.Between(feature.x, feature.y, towerX, towerY) < feature.radius + PLANT_FRAME_SIZE / 2,
+    );
+    if (forbiddenTerrain) {
+      this.updateHud(forbiddenTerrain.kind === "root"
+        ? "Les racines empêchent la plante de pousser ici"
+        : "La tourbe est trop profonde pour planter ici");
+      return;
+    }
 
     if (this.towers.some((tower) =>
       Math.abs(tower.body.x - towerX) < PLANT_FRAME_SIZE - 1
@@ -1331,15 +1434,21 @@ class DefenseScene extends Phaser.Scene {
       Phaser.Math.Distance.Between(zone.x, zone.y, towerX, towerY) <= zone.radius,
     );
     const favoredByZone = fertileZone?.favoredKind === selectedKind;
+    const parasiteFeature = this.terrainFeatures.find((feature) =>
+      feature.kind === "parasite"
+      && Phaser.Math.Distance.Between(feature.x, feature.y, towerX, towerY) <= feature.radius,
+    );
     const fertileDamageMultiplier = favoredByZone ? 1.25 : fertileZone ? 1.15 : 1;
     const fertileRangeBonus = favoredByZone ? 18 : fertileZone ? 10 : 0;
     const fertileDelayMultiplier = favoredByZone ? 0.9 : 1;
+    const parasiteRangeMultiplier = parasiteFeature ? 0.82 : 1;
+    const parasiteDelayMultiplier = parasiteFeature ? 1.15 : 1;
     const tower: Tower = {
       body: towerBody,
       kind: selectedKind,
-      range: definition.range + this.plantMastery[selectedKind] * 6 + fertileRangeBonus,
+      range: Math.round((definition.range + this.plantMastery[selectedKind] * 6 + fertileRangeBonus) * parasiteRangeMultiplier),
       damage: Math.round(definition.damage * (1 + this.plantMastery[selectedKind] * 0.12) * fertileDamageMultiplier),
-      fireDelay: Math.max(260, Math.round(definition.fireDelay * (1 - this.plantMastery[selectedKind] * 0.04) * fertileDelayMultiplier)),
+      fireDelay: Math.max(260, Math.round(definition.fireDelay * (1 - this.plantMastery[selectedKind] * 0.04) * fertileDelayMultiplier * parasiteDelayMultiplier)),
       lastShot: 0,
       col,
       row,
@@ -1350,6 +1459,7 @@ class DefenseScene extends Phaser.Scene {
       isUpgrading: false,
       upgradeReadyAt: 0,
       fertile: Boolean(fertileZone),
+      parasitized: Boolean(parasiteFeature),
     };
     towerBody.setSize(PLANT_FRAME_SIZE, PLANT_FRAME_SIZE).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
@@ -1683,14 +1793,47 @@ class DefenseScene extends Phaser.Scene {
     return Math.min(10, 1 + waveTier + worldTier);
   }
 
+  private triggerTerrainTraps(enemy: Enemy, time: number): boolean {
+    if (enemy.kind === "air") return true;
+    const spore = this.terrainFeatures.find((feature) =>
+      feature.kind === "spore"
+      && time >= feature.cooldownUntil
+      && Phaser.Math.Distance.Between(feature.x, feature.y, enemy.body.x, enemy.body.y) <= feature.radius,
+    );
+    if (!spore) return true;
+    spore.cooldownUntil = time + 4500;
+    const pulse = this.add.circle(spore.x, spore.y, spore.radius, 0xd6a957, 0.34)
+      .setStrokeStyle(4, 0xffe3a1, 0.85);
+    this.tweens.add({
+      targets: pulse,
+      scale: 1.45,
+      alpha: 0,
+      duration: 420,
+      onComplete: () => pulse.destroy(),
+    });
+    const trapDamage = Math.max(1, Math.round(enemy.maxHp * (enemy.isBoss ? 0.08 : 0.18)));
+    this.damageEnemy(enemy, trapDamage, 0xd6a957, true);
+    return enemy.body.active;
+  }
+
+  private getTerrainSpeedFactor(enemy: Enemy): number {
+    if (enemy.kind === "air") return 1;
+    const inStickyPool = this.terrainFeatures.some((feature) =>
+      feature.kind === "sticky"
+      && Phaser.Math.Distance.Between(feature.x, feature.y, enemy.body.x, enemy.body.y) <= feature.radius,
+    );
+    return inStickyPool ? 0.68 : 1;
+  }
+
   private moveEnemies(time: number, delta: number): void {
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
+      if (!this.triggerTerrainTraps(enemy, time)) continue;
       const exitX = enemy.exitX;
       const exitY = enemy.exitY;
       const slowFactor = time < enemy.slowedUntil ? enemy.slowMultiplier : 1;
       const swiftFactor = enemy.trait === "swift" && time < enemy.swiftSuppressedUntil ? 1 / 1.42 : 1;
-      const speed = enemy.speed * slowFactor * swiftFactor;
+      const speed = enemy.speed * slowFactor * swiftFactor * this.getTerrainSpeedFactor(enemy);
       if (enemy.regeneration > 0 && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
         enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.maxHp * enemy.regeneration * (delta / 1000));
         enemy.healthBar.width = enemy.healthBarWidth * (enemy.hp / enemy.maxHp);
@@ -1979,7 +2122,8 @@ class DefenseScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x94cbd0, 0.92)
       .setInteractive();
     const fertileLabel = tower.fertile ? " · TERRE RICHE" : "";
-    const towerTitle = this.add.text(0, -82, `${this.getTowerName(tower).toUpperCase()} · NIVEAU ${tower.level}/${MAX_TOWER_LEVEL}${fertileLabel}`, {
+    const parasiteLabel = tower.parasitized ? " · PARASITÉE" : "";
+    const towerTitle = this.add.text(0, -82, `${this.getTowerName(tower).toUpperCase()} · NIVEAU ${tower.level}/${MAX_TOWER_LEVEL}${fertileLabel}${parasiteLabel}`, {
       fontFamily: "Arial",
       fontSize: "19px",
       color: "#f4faf6",
@@ -2286,14 +2430,19 @@ class DefenseScene extends Phaser.Scene {
 
     const blocked = new Set<string>();
     const insectClearance = PLANT_FRAME_SIZE / 2 + 5;
+    const roots = this.terrainFeatures.filter((feature) => feature.kind === "root");
     for (let row = 0; row < GRID_ROWS; row += 1) {
       for (let col = 0; col < GRID_COLS; col += 1) {
         const cellX = this.gridToWorldX(col, row);
         const cellY = this.gridToWorldY(row);
-        if (blockers.some((plant) =>
+        const blockedByPlant = blockers.some((plant) =>
           Math.abs(cellX - plant.x) < insectClearance
           && Math.abs(cellY - plant.y) < insectClearance,
-        )) {
+        );
+        const blockedByRoot = roots.some((root) =>
+          Phaser.Math.Distance.Between(cellX, cellY, root.x, root.y) < root.radius + 5,
+        );
+        if (blockedByPlant || blockedByRoot) {
           blocked.add(key(col, row));
         }
       }
