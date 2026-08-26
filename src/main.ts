@@ -1210,20 +1210,30 @@ class DefenseScene extends Phaser.Scene {
     }
     const selectedKind = this.selectedTower;
     const definition = TOWERS[selectedKind];
-    const mapSpanX = (GRID_COLS - 1) * CELL;
-    const mapSpanY = (GRID_ROWS - 1) * CELL;
+    const mapLeft = GRID_X - CELL / 2;
+    const mapTop = GRID_Y - CELL / 2;
+    const mapRight = mapLeft + GRID_COLS * CELL;
+    const mapBottom = mapTop + GRID_ROWS * CELL;
+    const minTowerX = mapLeft + PLANT_FRAME_SIZE / 2;
+    const maxTowerX = mapRight - PLANT_FRAME_SIZE / 2;
+    const minTowerY = mapTop + PLANT_FRAME_SIZE / 2;
+    const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2;
+    const placementHalfColumns = Math.floor((maxTowerX - minTowerX) / PLANT_HALF_STEP);
+    const placementRows = Math.round((maxTowerY - minTowerY) / PLANT_FRAME_SIZE);
+    const horizontalStep = (maxTowerX - minTowerX) / placementHalfColumns;
+    const verticalStep = (maxTowerY - minTowerY) / placementRows;
     const placementHalfCol = Phaser.Math.Clamp(
-      Math.round((x - GRID_X) / PLANT_HALF_STEP),
+      Math.round((x - minTowerX) / horizontalStep),
       0,
-      Math.floor(mapSpanX / PLANT_HALF_STEP),
+      placementHalfColumns,
     );
     const placementRow = Phaser.Math.Clamp(
-      Math.round((y - GRID_Y) / PLANT_FRAME_SIZE),
+      Math.round((y - minTowerY) / verticalStep),
       0,
-      Math.floor(mapSpanY / PLANT_FRAME_SIZE),
+      placementRows,
     );
-    const towerX = GRID_X + placementHalfCol * PLANT_HALF_STEP;
-    const towerY = GRID_Y + placementRow * PLANT_FRAME_SIZE;
+    const towerX = minTowerX + placementHalfCol * horizontalStep;
+    const towerY = minTowerY + placementRow * verticalStep;
     const col = Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1);
 
