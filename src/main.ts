@@ -1214,10 +1214,13 @@ class DefenseScene extends Phaser.Scene {
     const mapTop = GRID_Y - CELL / 2;
     const mapRight = mapLeft + GRID_COLS * CELL;
     const mapBottom = mapTop + GRID_ROWS * CELL;
+    // Le contour horizontal fait 4 px : ce retrait place le bord visuel du
+    // cadre de la plante contre sa face intérieure, comme sur les côtés.
+    const verticalBorderInset = 4;
     const minTowerX = mapLeft + PLANT_FRAME_SIZE / 2;
     const maxTowerX = mapRight - PLANT_FRAME_SIZE / 2;
-    const minTowerY = mapTop + PLANT_FRAME_SIZE / 2;
-    const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2;
+    const minTowerY = mapTop + PLANT_FRAME_SIZE / 2 + verticalBorderInset;
+    const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2 - verticalBorderInset;
     const placementHalfColumns = Math.floor((maxTowerX - minTowerX) / PLANT_HALF_STEP);
     const placementRows = Math.round((maxTowerY - minTowerY) / PLANT_FRAME_SIZE);
     const horizontalStep = (maxTowerX - minTowerX) / placementHalfColumns;
