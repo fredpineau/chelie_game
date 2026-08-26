@@ -191,6 +191,8 @@ class DefenseScene extends Phaser.Scene {
   private placementPreviewRange?: Phaser.GameObjects.Arc;
   private placementPreviewFrame?: Phaser.GameObjects.Rectangle;
   private placementPreviewPrice?: Phaser.GameObjects.Text;
+  private lastPlacementPreviewKey = "";
+  private lastPlacementPreviewAllowed?: boolean;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
@@ -277,6 +279,8 @@ class DefenseScene extends Phaser.Scene {
     this.menuOverlay = undefined;
     this.gameGoalOverlay = undefined;
     this.waveRouteWarning = undefined;
+    this.lastPlacementPreviewKey = "";
+    this.lastPlacementPreviewAllowed = undefined;
   }
 
   private drawWorld(): void {
@@ -758,8 +762,8 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    this.makeButton(76, HEIGHT - 50, 126, 64, "MENU", 0x315968, () => this.showGameMenu());
-    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 310, 64, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.makeButton(78, HEIGHT - 50, 150, 84, "MENU", 0x315968, () => this.showGameMenu());
+    this.startButton = this.makeButton(WIDTH / 2 + 18, HEIGHT - 50, 330, 84, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private showGameMenu(): void {
@@ -1366,7 +1370,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const dockY = HEIGHT - 138;
+    const dockY = HEIGHT - 152;
     const kinds = Object.keys(TOWERS) as TowerKind[];
     const positions = [90, 270, 450, 630];
     kinds.forEach((kind, index) => {
@@ -1378,15 +1382,15 @@ class DefenseScene extends Phaser.Scene {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
       const button = this.add.container(x, y);
-      const bg = this.add.circle(0, 0, 41, 0x052e2b, 0.98)
+      const bg = this.add.circle(0, 0, 50, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(0, 3)
-        .setScale(0.88)
+        .setScale(1.02)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(0, -51, definition.name.toUpperCase(), {
+      const title = this.add.text(0, -61, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "18px",
+        fontSize: "20px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -1394,16 +1398,16 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const targetLabel = definition.target === "sea" ? "SOL" : definition.target === "air" ? "AIR" : "TOUS";
       const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
-      const target = this.add.text(0, 43, detail, {
+      const target = this.add.text(0, 54, detail, {
         fontFamily: "Arial",
-        fontSize: "17px",
+        fontSize: "19px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
         strokeThickness: 2,
       }).setOrigin(0.5);
       button.add([bg, plantPreview, title, target]);
-      button.setSize(100, 104).setInteractive({ useHandCursor: true });
+      button.setSize(132, 136).setInteractive({ useHandCursor: true });
       button.on("pointerover", () => bg.setScale(1.08));
       button.on("pointerout", () => bg.setScale(1));
       button.on("pointerdown", () => this.selectTower(kind));
@@ -1422,19 +1426,33 @@ class DefenseScene extends Phaser.Scene {
     ).setInteractive({ useHandCursor: true });
     const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
       if (this.selectedTower === null) return;
-      const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
-      this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset);
+      const isTouch = pointer.event instanceof TouchEvent;
+      const touchOffset = isTouch ? 88 : 0;
+      this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset, isTouch);
     };
     zone.on("pointermove", previewAtPointer);
     zone.on("pointerdown", previewAtPointer);
     zone.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (this.selectedTower === null) return;
-      const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
+      if (this.selectedTower === null) {
+        this.selectNearestTower(pointer.worldX, pointer.worldY);
+        return;
+      }
+      const touchOffset = pointer.event instanceof TouchEvent ? 88 : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset);
     });
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) this.hidePlacementPreview();
     });
+  }
+
+  private selectNearestTower(x: number, y: number): void {
+    const nearest = this.towers
+      .map((tower) => ({ tower, distance: Phaser.Math.Distance.Between(x, y, tower.body.x, tower.body.y) }))
+      .filter(({ distance }) => distance <= 60)
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (!nearest) return;
+    this.showTowerActions(nearest.tower);
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
   }
 
   private selectTower(kind: TowerKind): void {
@@ -1530,16 +1548,18 @@ class DefenseScene extends Phaser.Scene {
 
   private createPlacementPreview(kind: TowerKind): void {
     this.hidePlacementPreview(true);
+    this.lastPlacementPreviewKey = "";
+    this.lastPlacementPreviewAllowed = undefined;
     const definition = TOWERS[kind];
     const preview = this.add.container(0, 0).setDepth(18).setVisible(false);
     const range = this.add.circle(0, 0, definition.range, 0x4ade80, 0.055)
       .setStrokeStyle(2, 0x4ade80, 0.72);
-    const frame = this.add.rectangle(0, 0, PLANT_FRAME_SIZE, PLANT_FRAME_SIZE, 0x3f8f58, 0.48)
-      .setStrokeStyle(3, 0x82f5a0, 1);
+    const frame = this.add.rectangle(0, 0, PLANT_FRAME_SIZE, PLANT_FRAME_SIZE, 0x3f8f58, 0.58)
+      .setStrokeStyle(5, 0x82f5a0, 1);
     const scale = kind === "flak" ? 0.62 : 0.72;
     const plant = this.createPlantVisual(kind, definition.color).setPosition(0, 1).setScale(scale).setAlpha(0.72);
     const price = this.add.text(0, PLANT_FRAME_SIZE / 2 + 13, `${definition.cost} ◈`, {
-      fontFamily: "Arial", fontSize: "15px", color: "#ffffff", fontStyle: "bold",
+      fontFamily: "Arial", fontSize: "18px", color: "#ffffff", fontStyle: "bold",
       stroke: "#10231b", strokeThickness: 4,
     }).setOrigin(0.5);
     preview.add([range, frame, plant, price]);
@@ -1549,15 +1569,21 @@ class DefenseScene extends Phaser.Scene {
     this.placementPreviewPrice = price;
   }
 
-  private updatePlacementPreview(x: number, y: number): void {
+  private updatePlacementPreview(x: number, y: number, haptic = false): void {
     if (this.selectedTower === null || !this.placementPreview) return;
     const placement = this.getTowerPlacement(x, y);
     const check = this.checkTowerPlacement(placement, this.selectedTower);
     const color = check.allowed ? 0x55c878 : 0xe35b5b;
     this.placementPreview.setPosition(placement.x, placement.y).setVisible(true);
-    this.placementPreviewFrame?.setFillStyle(color, 0.5).setStrokeStyle(3, color, 1);
-    this.placementPreviewRange?.setFillStyle(color, 0.05).setStrokeStyle(2, color, 0.72);
+    this.placementPreviewFrame?.setFillStyle(color, 0.58).setStrokeStyle(5, color, 1);
+    this.placementPreviewRange?.setFillStyle(color, 0.07).setStrokeStyle(3, color, 0.82);
     this.placementPreviewPrice?.setColor(check.allowed ? "#ffffff" : "#ffd6d6");
+    const previewKey = `${placement.x.toFixed(1)},${placement.y.toFixed(1)}`;
+    if (haptic && previewKey !== this.lastPlacementPreviewKey && typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(this.lastPlacementPreviewAllowed !== undefined && this.lastPlacementPreviewAllowed !== check.allowed ? 20 : 7);
+    }
+    this.lastPlacementPreviewKey = previewKey;
+    this.lastPlacementPreviewAllowed = check.allowed;
   }
 
   private hidePlacementPreview(destroy = false): void {
@@ -1567,6 +1593,8 @@ class DefenseScene extends Phaser.Scene {
       this.placementPreviewRange = undefined;
       this.placementPreviewFrame = undefined;
       this.placementPreviewPrice = undefined;
+      this.lastPlacementPreviewKey = "";
+      this.lastPlacementPreviewAllowed = undefined;
     } else {
       this.placementPreview?.setVisible(false);
     }
