@@ -1206,7 +1206,9 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const base = this.add.rectangle(0, 0, CELL + 4, CELL + 4, TEMP_LEVEL_COLORS[0])
+    const baseHeight = selectedKind === "flak" ? CELL + 22 : CELL + 4;
+    const baseY = selectedKind === "flak" ? -4 : 0;
+    const base = this.add.rectangle(0, baseY, CELL + 4, baseHeight, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(2, 0x4d7c0f, 0.9);
     const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 1).setScale(0.72);
     const levelBadge = this.add.text(10, 10, "", {
@@ -1237,7 +1239,7 @@ class DefenseScene extends Phaser.Scene {
       isUpgrading: false,
       upgradeReadyAt: 0,
     };
-    towerBody.setSize(CELL - 4, CELL - 4).setInteractive({ useHandCursor: true });
+    towerBody.setSize(CELL + 4, baseHeight).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
       _pointer: Phaser.Input.Pointer,
       _localX: number,
@@ -1732,7 +1734,9 @@ class DefenseScene extends Phaser.Scene {
     this.closeTowerActions();
     if (!tower.body.active || !this.towers.includes(tower)) return;
 
-    this.towerSelectionGlow = this.add.rectangle(tower.body.x, tower.body.y, CELL + 8, CELL + 8, 0xfff2a8, 0.12)
+    const highlightHeight = tower.kind === "flak" ? CELL + 26 : CELL + 8;
+    const highlightY = tower.kind === "flak" ? tower.body.y - 4 : tower.body.y;
+    this.towerSelectionGlow = this.add.rectangle(tower.body.x, highlightY, CELL + 8, highlightHeight, 0xfff2a8, 0.12)
       .setStrokeStyle(4, 0xffe36e, 1)
       .setDepth(12);
     this.tweens.add({
