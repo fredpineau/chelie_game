@@ -126,6 +126,7 @@ const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 40, 100, 220, 450];
 const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
 const MASTERY_COSTS = [100, 200, 300, 400, 500];
+const SELL_REFUND_RATE = 0.7;
 const TEMP_LEVEL_COLORS = [0x7a3038, 0x315d86, 0x3f7049, 0x644a7e, 0x8a7435];
 
 const LEVELS: LevelDefinition[] = [
@@ -2113,7 +2114,7 @@ class DefenseScene extends Phaser.Scene {
     });
 
     const definition = TOWERS[tower.kind];
-    const refund = Math.floor(tower.investedCost / 2);
+    const refund = Math.floor(tower.investedCost * SELL_REFUND_RATE);
     const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
     const panelX = WIDTH / 2;
     const panelY = HEIGHT - 115;
@@ -2172,7 +2173,7 @@ class DefenseScene extends Phaser.Scene {
   private removeTower(tower: Tower): void {
     const index = this.towers.indexOf(tower);
     if (index === -1) return;
-    const refund = Math.floor(tower.investedCost / 2);
+    const refund = Math.floor(tower.investedCost * SELL_REFUND_RATE);
     const name = this.getTowerName(tower);
     this.energy += refund;
     tower.body.destroy();
