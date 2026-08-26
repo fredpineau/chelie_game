@@ -1764,6 +1764,13 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
 
+    const upgradeLock = this.getTowerUpgradeLock(tower);
+    if (upgradeLock) {
+      this.updateHud(upgradeLock.message);
+      this.createUpgradePulse(tower, 0xf59e0b);
+      return;
+    }
+
     const cost = UPGRADE_COSTS[tower.level];
     if (this.energy < cost) {
       this.updateHud(`Amélioration niveau ${tower.level + 1} : ${cost} pièces requises`);
@@ -1778,6 +1785,31 @@ class DefenseScene extends Phaser.Scene {
     tower.levelBadge.setText(`${Math.ceil(UPGRADE_DURATIONS[tower.level] / 1000)}s`).setVisible(true);
     this.createUpgradePulse(tower, TOWERS[tower.kind].color);
     this.updateHud("");
+  }
+
+  private getTowerUpgradeLock(tower: Tower): { label: string; message: string } | null {
+    const nextLevel = tower.level + 1;
+    const requiredWave = nextLevel === 2 ? 2
+      : nextLevel === 3 ? 4
+        : nextLevel === 4 ? 7
+          : nextLevel === 5 ? 10
+            : 0;
+    const requiredWorldIndex = nextLevel === 4 ? 1 : nextLevel === 5 ? 2 : 0;
+
+    if (this.levelIndex < requiredWorldIndex) {
+      const requiredWorld = requiredWorldIndex + 1;
+      return {
+        label: `MONDE ${requiredWorld} REQUIS`,
+        message: `Le niveau ${nextLevel} des plantes se débloque dans le monde ${requiredWorld}`,
+      };
+    }
+    if (this.wave < requiredWave) {
+      return {
+        label: `VAGUE ${requiredWave} REQUISE`,
+        message: `Le niveau ${nextLevel} des plantes se débloque à la vague ${requiredWave}`,
+      };
+    }
+    return null;
   }
 
   private updateTowerUpgrades(time: number): void {
@@ -1869,10 +1901,12 @@ class DefenseScene extends Phaser.Scene {
       1,
     ).setStrokeStyle(2, index < tower.level ? 0xdde9d7 : 0x52645c, 0.85));
     const remainingSeconds = tower.isUpgrading ? Math.ceil((tower.upgradeReadyAt - this.time.now) / 1000) : 0;
+    const upgradeLock = nextUpgradeCost === null ? null : this.getTowerUpgradeLock(tower);
     const upgradeLabel = tower.isUpgrading
       ? `ÉVOLUTION · ${Math.max(1, remainingSeconds)}s`
-      : nextUpgradeCost === null ? "NIVEAU MAX" : `AMÉLIORER · ${nextUpgradeCost}`;
-    const upgradeButton = this.makeButton(-220, -8, 200, 54, upgradeLabel, 0x315c45, () => {
+      : nextUpgradeCost === null ? "NIVEAU MAX"
+        : upgradeLock?.label ?? `AMÉLIORER · ${nextUpgradeCost}`;
+    const upgradeButton = this.makeButton(-220, -8, 200, 54, upgradeLabel, upgradeLock ? 0x4b5563 : 0x315c45, () => {
       if (tower.isUpgrading) return;
       if (nextUpgradeCost === null) {
         this.updateHud(`${this.getTowerName(tower)} est déjà au niveau maximal`);
