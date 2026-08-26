@@ -1214,29 +1214,26 @@ class DefenseScene extends Phaser.Scene {
     const mapTop = GRID_Y - CELL / 2;
     const mapRight = mapLeft + GRID_COLS * CELL;
     const mapBottom = mapTop + GRID_ROWS * CELL;
-    // Le contour horizontal fait 4 px : ce retrait place le bord visuel du
-    // cadre de la plante contre sa face intérieure, comme sur les côtés.
-    const verticalBorderInset = 4;
     const minTowerX = mapLeft + PLANT_FRAME_SIZE / 2;
     const maxTowerX = mapRight - PLANT_FRAME_SIZE / 2;
-    const minTowerY = mapTop + PLANT_FRAME_SIZE / 2 + verticalBorderInset;
-    const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2 - verticalBorderInset;
+    const minTowerY = mapTop + PLANT_FRAME_SIZE / 2;
+    const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2;
     const placementHalfColumns = Math.floor((maxTowerX - minTowerX) / PLANT_HALF_STEP);
-    const placementRows = Math.round((maxTowerY - minTowerY) / PLANT_FRAME_SIZE);
+    const placementHalfRows = Math.floor((maxTowerY - minTowerY) / PLANT_HALF_STEP);
     const horizontalStep = (maxTowerX - minTowerX) / placementHalfColumns;
-    const verticalStep = (maxTowerY - minTowerY) / placementRows;
+    const verticalStep = (maxTowerY - minTowerY) / placementHalfRows;
     const placementHalfCol = Phaser.Math.Clamp(
       Math.round((x - minTowerX) / horizontalStep),
       0,
       placementHalfColumns,
     );
-    const placementRow = Phaser.Math.Clamp(
+    const placementHalfRow = Phaser.Math.Clamp(
       Math.round((y - minTowerY) / verticalStep),
       0,
-      placementRows,
+      placementHalfRows,
     );
     const towerX = minTowerX + placementHalfCol * horizontalStep;
-    const towerY = minTowerY + placementRow * verticalStep;
+    const towerY = minTowerY + placementHalfRow * verticalStep;
     const col = Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1);
     const row = Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1);
 
