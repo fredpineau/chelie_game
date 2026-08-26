@@ -1217,12 +1217,11 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const frameWidth = CELL + 10;
-    const baseHeight = selectedKind === "flak" ? CELL + 26 : CELL + 10;
-    const baseY = selectedKind === "flak" ? -4 : 0;
-    const base = this.add.rectangle(0, baseY, frameWidth, baseHeight, TEMP_LEVEL_COLORS[0])
+    const frameSize = CELL + 14;
+    const base = this.add.rectangle(0, 0, frameSize, frameSize, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(3, 0x4d7c0f, 0.95);
-    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 1).setScale(0.72);
+    const initialPlantScale = selectedKind === "flak" ? 0.62 : 0.72;
+    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 1).setScale(initialPlantScale);
     const levelBadge = this.add.text(10, 10, "", {
       fontFamily: "Arial",
       fontSize: "10px",
@@ -1251,7 +1250,7 @@ class DefenseScene extends Phaser.Scene {
       isUpgrading: false,
       upgradeReadyAt: 0,
     };
-    towerBody.setSize(frameWidth, baseHeight).setInteractive({ useHandCursor: true });
+    towerBody.setSize(frameSize, frameSize).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
       _pointer: Phaser.Input.Pointer,
       _localX: number,
@@ -1732,7 +1731,10 @@ class DefenseScene extends Phaser.Scene {
     base.setStrokeStyle(tower.level >= 5 ? 3 : 2, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setAlpha(1).setScale(0.72 + (tower.level - 1) * 0.04);
+    const plantScale = tower.kind === "flak"
+      ? 0.62 + (tower.level - 1) * 0.02
+      : 0.72 + (tower.level - 1) * 0.04;
+    plant.setAlpha(1).setScale(plantScale);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
@@ -1753,10 +1755,8 @@ class DefenseScene extends Phaser.Scene {
       TOWERS[tower.kind].color,
       0.08,
     ).setStrokeStyle(3, TOWERS[tower.kind].color, 0.72).setDepth(10);
-    const highlightWidth = CELL + 14;
-    const highlightHeight = tower.kind === "flak" ? CELL + 30 : CELL + 14;
-    const highlightY = tower.kind === "flak" ? tower.body.y - 4 : tower.body.y;
-    this.towerSelectionGlow = this.add.rectangle(tower.body.x, highlightY, highlightWidth, highlightHeight, 0xfff2a8, 0.12)
+    const highlightSize = CELL + 18;
+    this.towerSelectionGlow = this.add.rectangle(tower.body.x, tower.body.y, highlightSize, highlightSize, 0xfff2a8, 0.12)
       .setStrokeStyle(4, 0xffe36e, 1)
       .setDepth(12);
     this.tweens.add({
