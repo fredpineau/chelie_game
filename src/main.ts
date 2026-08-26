@@ -159,6 +159,8 @@ class DefenseScene extends Phaser.Scene {
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
   private waveActive = false;
+  private wavePreparing = false;
+  private waveStartsAt = 0;
   private selectedTower: TowerKind | null = null;
   private nextSpawnAt = 0;
   private nextWaveAt = 0;
@@ -188,6 +190,7 @@ class DefenseScene extends Phaser.Scene {
   private placementPreviewRange?: Phaser.GameObjects.Arc;
   private placementPreviewFrame?: Phaser.GameObjects.Rectangle;
   private placementPreviewPrice?: Phaser.GameObjects.Text;
+  private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
   constructor() {
@@ -257,6 +260,8 @@ class DefenseScene extends Phaser.Scene {
     this.enemiesToSpawn = 0;
     this.spawnedThisWave = 0;
     this.waveActive = false;
+    this.wavePreparing = false;
+    this.waveStartsAt = 0;
     this.levelStarted = false;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
@@ -269,6 +274,7 @@ class DefenseScene extends Phaser.Scene {
     this.menuOpen = false;
     this.menuOpenedAt = 0;
     this.menuOverlay = undefined;
+    this.waveRouteWarning = undefined;
   }
 
   private drawWorld(): void {
@@ -789,6 +795,7 @@ class DefenseScene extends Phaser.Scene {
     const pausedDuration = Math.max(0, this.time.now - this.menuOpenedAt);
     if (this.nextSpawnAt > 0) this.nextSpawnAt += pausedDuration;
     if (this.nextWaveAt > 0) this.nextWaveAt += pausedDuration;
+    if (this.waveStartsAt > 0) this.waveStartsAt += pausedDuration;
     this.towers.forEach((tower) => {
       tower.lastShot += pausedDuration;
       if (tower.isUpgrading) tower.upgradeReadyAt += pausedDuration;
@@ -800,7 +807,7 @@ class DefenseScene extends Phaser.Scene {
     this.menuOverlay = undefined;
     this.menuOpen = false;
     this.menuOpenedAt = 0;
-    this.setStartButtonEnabled(this.levelStarted && !this.waveActive && this.baseHp > 0);
+    this.setStartButtonEnabled(this.levelStarted && !this.waveActive && !this.wavePreparing && this.baseHp > 0);
   }
 
   private goToHome(): void {
@@ -1417,6 +1424,16 @@ class DefenseScene extends Phaser.Scene {
       }) !== null,
     );
     if (!routeOpen) return { allowed: false, reason: "Cette plante fermerait toutes les issues aux insectes" };
+    if (this.wavePreparing) {
+      const warnedRoute = this.getRouteOptions().find((route) =>
+        route.top === this.waveEntryTop && route.exit === this.waveExitId,
+      );
+      if (warnedRoute && this.calculatePath(warnedRoute.entry, warnedRoute.destination, {
+        col: placement.col, row: placement.row, x: placement.x, y: placement.y,
+      }) === null) {
+        return { allowed: false, reason: "Cette plante bloquerait le trajet annoncé pour la prochaine vague" };
+      }
+    }
     return { allowed: true, reason: "Emplacement disponible" };
   }
 
@@ -1657,21 +1674,32 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private startWave(): void {
-    if (!this.levelStarted || this.waveActive || this.baseHp <= 0) return;
+    if (!this.levelStarted || this.waveActive || this.wavePreparing || this.baseHp <= 0) return;
     const level = this.getActiveLevel();
     if (level.waves !== null && this.wave >= level.waves) return;
     this.wave += 1;
     this.selectWaveRoute();
     this.enemiesToSpawn = 6 + this.wave * 3 + level.swarmBonus;
     this.spawnedThisWave = 0;
-    this.waveActive = true;
+    this.wavePreparing = true;
+    this.waveStartsAt = this.time.now + 3_000;
     this.nextSpawnAt = 0;
     this.nextWaveAt = 0;
     this.setStartButtonEnabled(false);
+    this.showWaveRouteWarning();
     const origin = this.isTopWave() ? "NORD" : "OUEST";
     this.updateHud(this.isBossWave()
       ? `ALERTE ${origin} — insecte alpha détecté`
       : `Vague ${this.wave} en approche par le ${origin}`);
+  }
+
+  private activatePreparedWave(): void {
+    if (!this.wavePreparing || !this.levelStarted || this.baseHp <= 0) return;
+    this.wavePreparing = false;
+    this.waveStartsAt = 0;
+    this.waveActive = true;
+    this.nextSpawnAt = 0;
+    this.clearWaveRouteWarning();
   }
 
   private scheduleNextWave(delay: number): void {
@@ -1680,10 +1708,72 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private updateAutoWave(time: number): void {
-    if (this.waveActive || this.nextWaveAt <= 0 || !this.levelStarted) return;
-    if (time >= this.nextWaveAt) {
+    if (!this.levelStarted) return;
+    if (this.wavePreparing) {
+      if (time >= this.waveStartsAt) this.activatePreparedWave();
+      return;
+    }
+    if (this.waveActive || this.nextWaveAt <= 0) return;
+    if (time >= this.nextWaveAt - 3_000) {
       this.startWave();
     }
+  }
+
+  private showWaveRouteWarning(): void {
+    this.clearWaveRouteWarning();
+    const entryX = this.waveEntryTop
+      ? this.gridToWorldX(TOP_ENTRY_COL, TOP_ENTRY_ROW)
+      : GRID_X - CELL / 2 - GATE_OUTSET;
+    const entryY = this.waveEntryTop
+      ? GRID_Y - CELL / 2 - GATE_OUTSET
+      : this.gridToWorldY(BOTTOM_ENTRY_ROW);
+    const exitX = this.waveExitId === "right"
+      ? this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW) + CELL / 2 + GATE_OUTSET
+      : this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW);
+    const exitY = this.waveExitId === "right"
+      ? this.gridToWorldY(TOP_EXIT_ROW)
+      : this.gridToWorldY(BOTTOM_EXIT_ROW) + CELL / 2 + GATE_OUTSET;
+    const warning = this.add.container(0, 0).setDepth(19);
+    warning.add([this.createWildfireMarker(entryX, entryY), this.createWildfireMarker(exitX, exitY)]);
+    this.waveRouteWarning = warning;
+  }
+
+  private createWildfireMarker(x: number, y: number): Phaser.GameObjects.Container {
+    const marker = this.add.container(x, y);
+    const halo = this.add.circle(0, 0, 38, 0xef2929, 0.12).setStrokeStyle(4, 0xff3b30, 0.9);
+    const core = this.add.circle(0, 7, 17, 0x991b1b, 0.82);
+    const flames: Phaser.GameObjects.Triangle[] = [];
+    [-18, 0, 18].forEach((offset, index) => {
+      const flame = this.add.triangle(offset, -7, -10, 16, 0, -22 - index * 5, 10, 16, index === 1 ? 0xff2d2d : 0xc91432, 0.95);
+      flame.setStrokeStyle(2, 0x7f1010, 0.85);
+      flames.push(flame);
+      this.tweens.add({
+        targets: flame,
+        scaleY: 1.2 + index * 0.08,
+        alpha: 0.62,
+        y: flame.y - 5,
+        yoyo: true,
+        repeat: -1,
+        duration: 280 + index * 90,
+      });
+    });
+    marker.add([halo, core, ...flames]);
+    this.tweens.add({ targets: halo, scale: 1.28, alpha: 0.03, yoyo: true, repeat: -1, duration: 520 });
+    this.tweens.add({ targets: marker, angle: 3, yoyo: true, repeat: -1, duration: 170 });
+    return marker;
+  }
+
+  private clearWaveRouteWarning(): void {
+    if (!this.waveRouteWarning) return;
+    this.tweens.killTweensOf(this.waveRouteWarning);
+    this.waveRouteWarning.list.forEach((child) => {
+      this.tweens.killTweensOf(child);
+      if (child instanceof Phaser.GameObjects.Container) {
+        child.list.forEach((part) => this.tweens.killTweensOf(part));
+      }
+    });
+    this.waveRouteWarning.destroy(true);
+    this.waveRouteWarning = undefined;
   }
 
   private spawnWaveEnemies(time: number): void {
