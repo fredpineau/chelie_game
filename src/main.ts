@@ -771,9 +771,9 @@ class DefenseScene extends Phaser.Scene {
 
     const menu = this.add.container(0, 0).setDepth(40);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.78).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 560, 520, 0x164f59, 0.99)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 580, 600, 0x164f59, 0.99)
       .setStrokeStyle(4, 0x8ddce6, 0.94);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 195, "MENU", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 235, "MENU", {
       fontFamily: "Arial",
       fontSize: "36px",
       color: "#f4fbfc",
@@ -782,15 +782,16 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 4,
     }).setOrigin(0.5);
-    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 110, 330, 58, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
-    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 - 35, 330, 58, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
-    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 40, 390, 58, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
+    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 150, 350, 56, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
+    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 - 80, 350, 56, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
+    const wateringGuide = this.makeButton(WIDTH / 2, HEIGHT / 2 - 10, 350, 56, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 + 60, 410, 56, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
       this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
     });
-    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 115, 330, 58, "ACCUEIL", 0x315968, () => {
+    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 130, 350, 56, "ACCUEIL", 0x315968, () => {
       this.goToHome();
     });
-    menu.add([veil, panel, title, resume, goal, restart, home]);
+    menu.add([veil, panel, title, resume, goal, wateringGuide, restart, home]);
     this.menuOverlay = menu;
   }
 
@@ -965,7 +966,7 @@ class DefenseScene extends Phaser.Scene {
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)
       .setDepth(30)
       .setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 660, 1010, 0x326f77, 0.98)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 680, 1080, 0x326f77, 0.98)
       .setStrokeStyle(3, 0xb9d8df, 0.85)
       .setDepth(31);
     const glow = this.add.ellipse(WIDTH / 2, 215, 560, 190, 0x71c4c1, 0.16).setDepth(31);
@@ -1160,10 +1161,6 @@ class DefenseScene extends Phaser.Scene {
       button.on("pointerout", () => bg.setScale(1));
       button.on("pointerdown", () => this.upgradePlantMastery(kind));
     });
-
-    this.makeButton(homeCenterX, 1135, 310, 42, "GUIDE DES GOUTTES", 0x245d68, () => {
-      this.showWateringGuide();
-    }).setDepth(33);
 
     overlay.on("pointerdown", () => undefined);
     panel.setInteractive().on("pointerdown", () => undefined);
