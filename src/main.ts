@@ -102,10 +102,10 @@ type LevelDefinition = {
 };
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
-  harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 24, range: 205, fireDelay: 820, effect: "standard", unlockLevel: 0 },
-  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 250, fireDelay: 520, effect: "standard", unlockLevel: 0 },
-  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 11, range: 220, fireDelay: 700, effect: "standard", unlockLevel: 0 },
-  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 190, fireDelay: 1050, effect: "slow", unlockLevel: 0 },
+  harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 24, range: 190, fireDelay: 820, effect: "standard", unlockLevel: 0 },
+  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 270, fireDelay: 520, effect: "standard", unlockLevel: 0 },
+  pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 11, range: 230, fireDelay: 700, effect: "standard", unlockLevel: 0 },
+  cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 150, fireDelay: 1050, effect: "slow", unlockLevel: 0 },
 };
 
 const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
