@@ -40,6 +40,8 @@ type TowerEffect = "standard" | "slow" | "splash";
 type FertileZone = { x: number; y: number; radius: number; favoredKind: TowerKind };
 type TerrainKind = "root" | "peat" | "spore" | "sticky" | "parasite";
 type TerrainFeature = { kind: TerrainKind; x: number; y: number; radius: number; cooldownUntil: number };
+type TowerPlacement = { x: number; y: number; col: number; row: number };
+type PlacementCheck = { allowed: boolean; reason: string };
 
 type Enemy = {
   body: Phaser.GameObjects.Container;
@@ -182,6 +184,10 @@ class DefenseScene extends Phaser.Scene {
   private towerActionPanel?: Phaser.GameObjects.Container;
   private towerSelectionGlow?: Phaser.GameObjects.Rectangle;
   private towerRangeIndicator?: Phaser.GameObjects.Arc;
+  private placementPreview?: Phaser.GameObjects.Container;
+  private placementPreviewRange?: Phaser.GameObjects.Arc;
+  private placementPreviewFrame?: Phaser.GameObjects.Rectangle;
+  private placementPreviewPrice?: Phaser.GameObjects.Text;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
   constructor() {
@@ -1326,8 +1332,20 @@ class DefenseScene extends Phaser.Scene {
       GRID_COLS * CELL,
       GRID_ROWS * CELL,
     ).setInteractive({ useHandCursor: true });
-    zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      this.placeTower(pointer.worldX, pointer.worldY);
+    const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
+      if (this.selectedTower === null) return;
+      const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
+      this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset);
+    };
+    zone.on("pointermove", previewAtPointer);
+    zone.on("pointerdown", previewAtPointer);
+    zone.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+      if (this.selectedTower === null) return;
+      const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
+      this.placeTower(pointer.worldX, pointer.worldY - touchOffset);
+    });
+    zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) this.hidePlacementPreview();
     });
   }
 
@@ -1338,6 +1356,7 @@ class DefenseScene extends Phaser.Scene {
     }
     this.selectedTower = kind;
     this.closeTowerActions();
+    this.createPlacementPreview(kind);
     this.towerButtons.forEach((buttons, buttonKind) => {
       buttons.forEach((button) => {
         const bg = button.getAt(0) as Phaser.GameObjects.Arc;
@@ -1347,14 +1366,7 @@ class DefenseScene extends Phaser.Scene {
     this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : ${UPGRADE_COSTS.slice(1).join(" / ")} pièces`);
   }
 
-  private placeTower(x: number, y: number): void {
-    this.closeTowerActions();
-    if (this.selectedTower === null) {
-      this.updateHud("Sélectionnez une plante dans l'herbier avant de la poser");
-      return;
-    }
-    const selectedKind = this.selectedTower;
-    const definition = TOWERS[selectedKind];
+  private getTowerPlacement(x: number, y: number): TowerPlacement {
     const mapLeft = GRID_X - CELL / 2;
     const mapTop = GRID_Y - CELL / 2;
     const mapRight = mapLeft + GRID_COLS * CELL;
@@ -1367,50 +1379,107 @@ class DefenseScene extends Phaser.Scene {
     const placementHalfRows = Math.floor((maxTowerY - minTowerY) / PLANT_HALF_STEP);
     const horizontalStep = (maxTowerX - minTowerX) / placementHalfColumns;
     const verticalStep = (maxTowerY - minTowerY) / placementHalfRows;
-    const placementHalfCol = Phaser.Math.Clamp(
-      Math.round((x - minTowerX) / horizontalStep),
-      0,
-      placementHalfColumns,
-    );
-    const placementHalfRow = Phaser.Math.Clamp(
-      Math.round((y - minTowerY) / verticalStep),
-      0,
-      placementHalfRows,
-    );
+    const placementHalfCol = Phaser.Math.Clamp(Math.round((x - minTowerX) / horizontalStep), 0, placementHalfColumns);
+    const placementHalfRow = Phaser.Math.Clamp(Math.round((y - minTowerY) / verticalStep), 0, placementHalfRows);
     const towerX = minTowerX + placementHalfCol * horizontalStep;
     const towerY = minTowerY + placementHalfRow * verticalStep;
-    const col = Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1);
-    const row = Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1);
+    return {
+      x: towerX,
+      y: towerY,
+      col: Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1),
+      row: Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1),
+    };
+  }
+
+  private checkTowerPlacement(placement: TowerPlacement, kind: TowerKind): PlacementCheck {
     const forbiddenTerrain = this.terrainFeatures.find((feature) =>
       (feature.kind === "root" || feature.kind === "peat")
-      && Phaser.Math.Distance.Between(feature.x, feature.y, towerX, towerY) < feature.radius + PLANT_FRAME_SIZE / 2,
+      && Phaser.Math.Distance.Between(feature.x, feature.y, placement.x, placement.y) < feature.radius + PLANT_FRAME_SIZE / 2,
     );
     if (forbiddenTerrain) {
-      this.updateHud(forbiddenTerrain.kind === "root"
-        ? "Les racines empêchent la plante de pousser ici"
-        : "La tourbe est trop profonde pour planter ici");
-      return;
+      return {
+        allowed: false,
+        reason: forbiddenTerrain.kind === "root"
+          ? "Les racines empêchent la plante de pousser ici"
+          : "La tourbe est trop profonde pour planter ici",
+      };
     }
-
     if (this.towers.some((tower) =>
-      Math.abs(tower.body.x - towerX) < PLANT_FRAME_SIZE - 1
-      && Math.abs(tower.body.y - towerY) < PLANT_FRAME_SIZE - 1,
-    )) {
-      this.updateHud("Cet emplacement est déjà occupé");
-      return;
+      Math.abs(tower.body.x - placement.x) < PLANT_FRAME_SIZE - 1
+      && Math.abs(tower.body.y - placement.y) < PLANT_FRAME_SIZE - 1,
+    )) return { allowed: false, reason: "Cet emplacement est déjà occupé" };
+    if (this.energy < TOWERS[kind].cost) {
+      return { allowed: false, reason: `${TOWERS[kind].name} coûte ${TOWERS[kind].cost} pièces — solde insuffisant` };
     }
-    if (this.energy < definition.cost) {
-      this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
-      return;
-    }
-    const atLeastOneRouteOpen = this.getRouteOptions().some((route) =>
-      this.calculatePath(route.entry, route.destination, { col, row, x: towerX, y: towerY }) !== null,
+    const routeOpen = this.getRouteOptions().some((route) =>
+      this.calculatePath(route.entry, route.destination, {
+        col: placement.col, row: placement.row, x: placement.x, y: placement.y,
+      }) !== null,
     );
-    if (!atLeastOneRouteOpen) {
-      this.updateHud("Cette plante fermerait toutes les issues aux insectes");
+    if (!routeOpen) return { allowed: false, reason: "Cette plante fermerait toutes les issues aux insectes" };
+    return { allowed: true, reason: "Emplacement disponible" };
+  }
+
+  private createPlacementPreview(kind: TowerKind): void {
+    this.hidePlacementPreview(true);
+    const definition = TOWERS[kind];
+    const preview = this.add.container(0, 0).setDepth(18).setVisible(false);
+    const range = this.add.circle(0, 0, definition.range, 0x4ade80, 0.055)
+      .setStrokeStyle(2, 0x4ade80, 0.72);
+    const frame = this.add.rectangle(0, 0, PLANT_FRAME_SIZE, PLANT_FRAME_SIZE, 0x3f8f58, 0.48)
+      .setStrokeStyle(3, 0x82f5a0, 1);
+    const scale = kind === "flak" ? 0.62 : 0.72;
+    const plant = this.createPlantVisual(kind, definition.color).setPosition(0, 1).setScale(scale).setAlpha(0.72);
+    const price = this.add.text(0, PLANT_FRAME_SIZE / 2 + 13, `${definition.cost} ◈`, {
+      fontFamily: "Arial", fontSize: "15px", color: "#ffffff", fontStyle: "bold",
+      stroke: "#10231b", strokeThickness: 4,
+    }).setOrigin(0.5);
+    preview.add([range, frame, plant, price]);
+    this.placementPreview = preview;
+    this.placementPreviewRange = range;
+    this.placementPreviewFrame = frame;
+    this.placementPreviewPrice = price;
+  }
+
+  private updatePlacementPreview(x: number, y: number): void {
+    if (this.selectedTower === null || !this.placementPreview) return;
+    const placement = this.getTowerPlacement(x, y);
+    const check = this.checkTowerPlacement(placement, this.selectedTower);
+    const color = check.allowed ? 0x55c878 : 0xe35b5b;
+    this.placementPreview.setPosition(placement.x, placement.y).setVisible(true);
+    this.placementPreviewFrame?.setFillStyle(color, 0.5).setStrokeStyle(3, color, 1);
+    this.placementPreviewRange?.setFillStyle(color, 0.05).setStrokeStyle(2, color, 0.72);
+    this.placementPreviewPrice?.setColor(check.allowed ? "#ffffff" : "#ffd6d6");
+  }
+
+  private hidePlacementPreview(destroy = false): void {
+    if (destroy) {
+      this.placementPreview?.destroy(true);
+      this.placementPreview = undefined;
+      this.placementPreviewRange = undefined;
+      this.placementPreviewFrame = undefined;
+      this.placementPreviewPrice = undefined;
+    } else {
+      this.placementPreview?.setVisible(false);
+    }
+  }
+
+  private placeTower(x: number, y: number): void {
+    this.closeTowerActions();
+    if (this.selectedTower === null) {
+      this.updateHud("Sélectionnez une plante dans l'herbier avant de la poser");
+      return;
+    }
+    const selectedKind = this.selectedTower;
+    const definition = TOWERS[selectedKind];
+    const placement = this.getTowerPlacement(x, y);
+    const placementCheck = this.checkTowerPlacement(placement, selectedKind);
+    if (!placementCheck.allowed) {
+      this.updateHud(placementCheck.reason);
       this.cameras.main.shake(120, 0.002);
       return;
     }
+    const { x: towerX, y: towerY, col, row } = placement;
 
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
@@ -1475,6 +1544,7 @@ class DefenseScene extends Phaser.Scene {
     this.towers.push(tower);
     this.recalculateEnemyPaths();
     this.selectedTower = null;
+    this.hidePlacementPreview(true);
     this.towerButtons.forEach((buttons) => {
       buttons.forEach((button) => {
         const bg = button.getAt(0) as Phaser.GameObjects.Arc;
