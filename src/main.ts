@@ -762,8 +762,8 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    this.makeButton(78, HEIGHT - 50, 150, 84, "MENU", 0x315968, () => this.showGameMenu());
-    this.startButton = this.makeButton(WIDTH / 2 + 18, HEIGHT - 50, 330, 84, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.makeButton(76, HEIGHT - 50, 132, 68, "MENU", 0x315968, () => this.showGameMenu());
+    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 300, 68, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
   private showGameMenu(): void {
@@ -1370,7 +1370,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createTowerPalette(): void {
-    const dockY = HEIGHT - 152;
+    const dockY = HEIGHT - 140;
     const kinds = Object.keys(TOWERS) as TowerKind[];
     const positions = [90, 270, 450, 630];
     kinds.forEach((kind, index) => {
@@ -1382,15 +1382,15 @@ class DefenseScene extends Phaser.Scene {
       const definition = TOWERS[kind];
       const available = this.levelIndex >= definition.unlockLevel;
       const button = this.add.container(x, y);
-      const bg = this.add.circle(0, 0, 50, 0x052e2b, 0.98)
+      const bg = this.add.circle(0, 0, 44, 0x052e2b, 0.98)
         .setStrokeStyle(2, available && kind === this.selectedTower ? definition.color : 0x28665e, 1);
       const plantPreview = this.createPlantVisual(kind, definition.color)
         .setPosition(0, 3)
-        .setScale(1.02)
+        .setScale(0.92)
         .setAlpha(available ? 1 : 0.25);
-      const title = this.add.text(0, -61, definition.name.toUpperCase(), {
+      const title = this.add.text(0, -54, definition.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "20px",
+        fontSize: "18px",
         color: available ? "#f8fafc" : "#64748b",
         fontStyle: "bold",
         stroke: "#08100c",
@@ -1398,9 +1398,9 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const targetLabel = definition.target === "sea" ? "SOL" : definition.target === "air" ? "AIR" : "TOUS";
       const detail = available ? `${definition.cost} ◈ · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
-      const target = this.add.text(0, 54, detail, {
+      const target = this.add.text(0, 47, detail, {
         fontFamily: "Arial",
-        fontSize: "19px",
+        fontSize: "17px",
         color: available ? "#cbd5e1" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
