@@ -116,7 +116,7 @@ const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
 const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 40, 100, 220, 450];
 const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
-const MASTERY_COSTS = [1, 2, 3, 5, 8];
+const MASTERY_COSTS = [100, 200, 300, 400, 500];
 const TEMP_LEVEL_COLORS = [0x7a3038, 0x315d86, 0x3f7049, 0x644a7e, 0x8a7435];
 
 const LEVELS: LevelDefinition[] = [
@@ -737,14 +737,16 @@ class DefenseScene extends Phaser.Scene {
     this.add.circle(630, 1070, 72, 0x173f47, 0.22).setDepth(31);
     this.add.text(WIDTH / 2, 164, "CHOISISSEZ VOTRE", {
       fontFamily: "Arial",
-      fontSize: "16px",
-      color: "#cde9e7",
+      fontSize: "20px",
+      color: "#efffff",
       fontStyle: "bold",
       letterSpacing: 4,
+      stroke: "#173943",
+      strokeThickness: 3,
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 206, "TOURBIÈRE", {
       fontFamily: "Arial",
-      fontSize: "40px",
+      fontSize: "44px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#173943",
@@ -753,9 +755,11 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 252, "Chaque biome renforce la menace", {
       fontFamily: "Arial",
-      fontSize: "16px",
-      color: "#d9edeb",
+      fontSize: "19px",
+      color: "#f0fbfa",
       fontStyle: "bold",
+      stroke: "#173943",
+      strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
 
     const firstPage = this.makeButton(270, 294, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
@@ -795,14 +799,16 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const code = this.add.text(0, -6, available ? level.code : "VERROUILLÉ", {
         fontFamily: "Arial",
-        fontSize: "12px",
-        color: available ? "#e2efeb" : "#789095",
+        fontSize: "15px",
+        color: available ? "#f2fffb" : "#91aaaf",
         fontStyle: "bold",
         letterSpacing: 2,
+        stroke: "#203a35",
+        strokeThickness: 2,
       }).setOrigin(0.5);
       const name = this.add.text(0, 22, level.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "17px",
+        fontSize: "20px",
         color: available ? "#ffffff" : "#71888d",
         fontStyle: "bold",
         stroke: available ? "#203a35" : "#253b40",
@@ -810,10 +816,12 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const threat = this.add.text(0, 53, available ? waveLabel : level.code, {
         fontFamily: "Arial",
-        fontSize: "10px",
-        color: available ? "#d9e8df" : "#617a7f",
+        fontSize: "13px",
+        color: available ? "#f0fbf5" : "#789399",
         fontStyle: "bold",
         letterSpacing: 1,
+        stroke: "#203a35",
+        strokeThickness: 2,
       }).setOrigin(0.5);
       card.add([background, iconHalo, icon, code, name, threat]);
       if (available) {
@@ -824,7 +832,7 @@ class DefenseScene extends Phaser.Scene {
         if (isInfinite && unlocked >= 11) {
           const nightmare = this.add.text(0, 55, "CAUCHEMAR", {
             fontFamily: "Arial",
-            fontSize: "11px",
+            fontSize: "14px",
             color: "#ffe4e6",
             backgroundColor: "#7f1d2d",
             padding: { x: 11, y: 5 },
@@ -849,7 +857,7 @@ class DefenseScene extends Phaser.Scene {
 
     this.add.text(WIDTH / 2, 958, `SERRE PERMANENTE  ·  ${this.wateringCans} ARROSOIR${this.wateringCans > 1 ? "S" : ""}`, {
       fontFamily: "Arial",
-      fontSize: "18px",
+      fontSize: "21px",
       color: "#effdfb",
       fontStyle: "bold",
       stroke: "#173943",
@@ -858,9 +866,11 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 986, "Touchez une plante pour l'arroser durablement", {
       fontFamily: "Arial",
-      fontSize: "13px",
-      color: "#cde9e7",
+      fontSize: "16px",
+      color: "#efffff",
       fontStyle: "bold",
+      stroke: "#173943",
+      strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
 
     const masteryKinds = Object.keys(TOWERS) as TowerKind[];
@@ -874,7 +884,7 @@ class DefenseScene extends Phaser.Scene {
       const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
       const costText = this.add.text(0, 55, cost === null ? "MAX" : `💧 ${cost}`, {
         fontFamily: "Arial",
-        fontSize: "15px",
+        fontSize: "18px",
         color: cost === null ? "#ffe89a" : this.wateringCans >= cost ? "#e6fbff" : "#86aeb3",
         fontStyle: "bold",
         stroke: "#173943",
@@ -965,7 +975,7 @@ class DefenseScene extends Phaser.Scene {
       rows.push(rowBg, rowText);
     });
     const total = this.add.text(WIDTH / 2, 915,
-      "19 arrosoirs pour maximiser une plante · 76 pour les quatre", {
+      "1 500 gouttes pour maximiser une plante · 6 000 pour les quatre", {
         fontFamily: "Arial",
         fontSize: "16px",
         color: "#ffe7a3",
