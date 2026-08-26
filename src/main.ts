@@ -1249,10 +1249,6 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud("Cet emplacement est déjà occupé");
       return;
     }
-    if (this.enemies.some((enemy) => Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, towerX, towerY) < PLANT_FRAME_SIZE * 0.68)) {
-      this.updateHud("Un insecte traverse cette zone — attendez qu'il soit passé");
-      return;
-    }
     if (this.energy < definition.cost) {
       this.updateHud(`${definition.name} coûte ${definition.cost} pièces — solde insuffisant`);
       return;
