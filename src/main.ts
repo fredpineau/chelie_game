@@ -117,7 +117,7 @@ const MAX_TOWER_LEVEL = 5;
 const UPGRADE_COSTS = [0, 40, 100, 220, 450];
 const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
 const MASTERY_COSTS = [1, 2, 3, 5, 8];
-const TEMP_LEVEL_COLORS = [0x29210f, 0x3f6f4b, 0x397f78, 0x79684a, 0x8f4e59];
+const TEMP_LEVEL_COLORS = [0x7a3038, 0x315d86, 0x3f7049, 0x644a7e, 0x8a7435];
 
 const LEVELS: LevelDefinition[] = [
   { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
@@ -169,6 +169,7 @@ class DefenseScene extends Phaser.Scene {
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
   private towerActionPanel?: Phaser.GameObjects.Container;
   private towerSelectionGlow?: Phaser.GameObjects.Rectangle;
+  private towerRangeIndicator?: Phaser.GameObjects.Arc;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
   constructor() {
@@ -1734,6 +1735,13 @@ class DefenseScene extends Phaser.Scene {
     this.closeTowerActions();
     if (!tower.body.active || !this.towers.includes(tower)) return;
 
+    this.towerRangeIndicator = this.add.circle(
+      tower.body.x,
+      tower.body.y,
+      tower.range,
+      TOWERS[tower.kind].color,
+      0.08,
+    ).setStrokeStyle(3, TOWERS[tower.kind].color, 0.72).setDepth(10);
     const highlightHeight = tower.kind === "flak" ? CELL + 26 : CELL + 8;
     const highlightY = tower.kind === "flak" ? tower.body.y - 4 : tower.body.y;
     this.towerSelectionGlow = this.add.rectangle(tower.body.x, highlightY, CELL + 8, highlightHeight, 0xfff2a8, 0.12)
@@ -1823,6 +1831,8 @@ class DefenseScene extends Phaser.Scene {
       this.towerSelectionGlow.destroy();
       this.towerSelectionGlow = undefined;
     }
+    this.towerRangeIndicator?.destroy();
+    this.towerRangeIndicator = undefined;
   }
 
   private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
