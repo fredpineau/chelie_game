@@ -965,7 +965,7 @@ class DefenseScene extends Phaser.Scene {
     const unlocked = this.getUnlockedLevel();
     const homeCenterX = WIDTH / 2;
     const cardColumnOffset = 155;
-    const cardRowStart = 415;
+    const cardRowStart = 427;
     const cardRowGap = 200;
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)
       .setDepth(30)
