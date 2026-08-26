@@ -965,7 +965,7 @@ class DefenseScene extends Phaser.Scene {
     const unlocked = this.getUnlockedLevel();
     const homeCenterX = WIDTH / 2;
     const cardColumnOffset = 155;
-    const cardRowStart = 390;
+    const cardRowStart = 415;
     const cardRowGap = 200;
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)
       .setDepth(30)
@@ -1003,10 +1003,10 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
 
-    const firstPage = this.makeButton(homeCenterX - 90, 286, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
+    const firstPage = this.makeButton(homeCenterX - 90, 306, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 0 });
     }).setDepth(32);
-    const secondPage = this.makeButton(homeCenterX + 90, 286, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
+    const secondPage = this.makeButton(homeCenterX + 90, 306, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 1 });
     }).setDepth(32);
     if (unlocked < 6) secondPage.setAlpha(0.62);
@@ -1121,7 +1121,7 @@ class DefenseScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(homeCenterX, 930, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {
+    this.add.text(homeCenterX, 960, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {
       fontFamily: "Arial",
       fontSize: "24px",
       color: "#effdfb",
@@ -1130,7 +1130,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 3,
       letterSpacing: 1.2,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(homeCenterX, 962, "Touchez une plante pour l'arroser durablement", {
+    this.add.text(homeCenterX, 994, "Touchez une plante pour l'arroser durablement", {
       fontFamily: "Arial",
       fontSize: "19px",
       color: "#efffff",
@@ -1144,7 +1144,7 @@ class DefenseScene extends Phaser.Scene {
       const mastery = this.plantMastery[kind];
       const cost = mastery < MASTERY_COSTS.length ? MASTERY_COSTS[mastery] : null;
       const x = homeCenterX - 270 + index * 180;
-      const button = this.add.container(x, 1028).setDepth(32);
+      const button = this.add.container(x, 1060).setDepth(32);
       const bg = this.add.circle(0, 0, 45, 0x173f47, 0.98)
         .setStrokeStyle(3, mastery >= MASTERY_COSTS.length ? 0xf0d77a : 0x8ddce6, 0.95);
       const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
