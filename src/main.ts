@@ -194,6 +194,7 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementPreviewKey = "";
   private lastPlacementPreviewAllowed?: boolean;
   private pathRecalculationVersion = 0;
+  private placementPointerActive = false;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
@@ -283,6 +284,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
     this.pathRecalculationVersion = 0;
+    this.placementPointerActive = false;
   }
 
   private drawWorld(): void {
@@ -1433,17 +1435,35 @@ class DefenseScene extends Phaser.Scene {
       this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset, isTouch);
     };
     zone.on("pointermove", previewAtPointer);
-    zone.on("pointerdown", previewAtPointer);
+    zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (this.selectedTower === null) return;
+      this.placementPointerActive = true;
+      previewAtPointer(pointer);
+    });
     zone.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (this.selectedTower === null) {
+      if (this.selectedTower === null && !this.placementPointerActive) {
         this.selectNearestTower(pointer.worldX, pointer.worldY);
+      }
+    });
+    zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) this.hidePlacementPreview();
+    });
+    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+      if (!this.placementPointerActive) return;
+      this.placementPointerActive = false;
+      if (this.selectedTower === null) return;
+      const mapLeft = GRID_X - CELL / 2;
+      const mapTop = GRID_Y - CELL / 2;
+      const mapRight = mapLeft + GRID_COLS * CELL;
+      const mapBottom = mapTop + GRID_ROWS * CELL;
+      const releasedOnMap = pointer.worldX >= mapLeft && pointer.worldX <= mapRight
+        && pointer.worldY >= mapTop && pointer.worldY <= mapBottom;
+      if (!releasedOnMap) {
+        this.hidePlacementPreview();
         return;
       }
       const touchOffset = pointer.event instanceof TouchEvent ? 88 : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset);
-    });
-    zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.isDown) this.hidePlacementPreview();
     });
   }
 
