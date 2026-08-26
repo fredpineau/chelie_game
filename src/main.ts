@@ -739,7 +739,7 @@ class DefenseScene extends Phaser.Scene {
     this.add.circle(630, 1070, 72, 0x173f47, 0.22).setDepth(31);
     this.add.text(WIDTH / 2, 164, "CHOISISSEZ VOTRE", {
       fontFamily: "Arial",
-      fontSize: "20px",
+      fontSize: "24px",
       color: "#efffff",
       fontStyle: "bold",
       letterSpacing: 4,
@@ -748,7 +748,7 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 206, "TOURBIÈRE", {
       fontFamily: "Arial",
-      fontSize: "44px",
+      fontSize: "48px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#173943",
@@ -757,7 +757,7 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 252, "Chaque biome renforce la menace", {
       fontFamily: "Arial",
-      fontSize: "19px",
+      fontSize: "22px",
       color: "#f0fbfa",
       fontStyle: "bold",
       stroke: "#173943",
@@ -781,7 +781,7 @@ class DefenseScene extends Phaser.Scene {
       const index = pageStart + localIndex;
       const col = localIndex % 2;
       const row = Math.floor(localIndex / 2);
-      const x = 225 + col * 270;
+      const x = 205 + col * 310;
       const y = 398 + row * 210;
       const isFinalInfinite = index === LEVELS.length - 1;
       const hostsFirstInfinite = index === 5 && unlocked >= 6;
@@ -790,19 +790,19 @@ class DefenseScene extends Phaser.Scene {
       const card = this.add.container(x, y).setDepth(32);
       const background = this.add.graphics();
       background.fillStyle(available ? biomeColors[index] : 0x29464b, available ? 1 : 0.76);
-      background.fillRoundedRect(-116, -76, 232, 152, 18);
+      background.fillRoundedRect(-135, -82, 270, 164, 18);
       background.lineStyle(available ? 3 : 2, available ? biomeAccents[index] : 0x557176, available ? 0.92 : 0.6);
-      background.strokeRoundedRect(-116, -76, 232, 152, 18);
+      background.strokeRoundedRect(-135, -82, 270, 164, 18);
       const iconHalo = this.add.circle(0, -39, 29, available ? biomeAccents[index] : 0x496469, available ? 0.24 : 0.16);
       const icon = this.add.text(0, -40, available ? biomeIcons[index] : "×", {
         fontFamily: "Arial",
-        fontSize: "29px",
+        fontSize: "33px",
         color: available ? "#f7fbf5" : "#769095",
         fontStyle: "bold",
       }).setOrigin(0.5);
       const code = this.add.text(0, -6, available ? level.code : "VERROUILLÉ", {
         fontFamily: "Arial",
-        fontSize: "15px",
+        fontSize: "18px",
         color: available ? "#f2fffb" : "#91aaaf",
         fontStyle: "bold",
         letterSpacing: 2,
@@ -811,15 +811,16 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       const name = this.add.text(0, 22, level.name.toUpperCase(), {
         fontFamily: "Arial",
-        fontSize: "20px",
+        fontSize: "23px",
         color: available ? "#ffffff" : "#71888d",
         fontStyle: "bold",
         stroke: available ? "#203a35" : "#253b40",
         strokeThickness: 3,
       }).setOrigin(0.5);
+      if (name.width > 244) name.setScale(244 / name.width);
       const threat = this.add.text(0, 53, available ? waveLabel : level.code, {
         fontFamily: "Arial",
-        fontSize: "13px",
+        fontSize: "16px",
         color: available ? "#f0fbf5" : "#789399",
         fontStyle: "bold",
         letterSpacing: 1,
@@ -828,14 +829,14 @@ class DefenseScene extends Phaser.Scene {
       }).setOrigin(0.5);
       card.add([background, iconHalo, icon, code, name, threat]);
       if (available) {
-        card.setSize(232, 152).setInteractive({ useHandCursor: true });
+        card.setSize(270, 164).setInteractive({ useHandCursor: true });
         card.on("pointerover", () => card.setScale(1.035));
         card.on("pointerout", () => card.setScale(1));
         card.on("pointerdown", () => this.scene.restart({ levelIndex: index }));
         if (hostsFirstInfinite) {
           const firstInfinite = this.add.text(0, 55, "INFINI ÉVOLUTIF", {
             fontFamily: "Arial",
-            fontSize: "14px",
+            fontSize: "16px",
             color: "#e8feff",
             backgroundColor: "#155e75",
             padding: { x: 11, y: 5 },
@@ -858,7 +859,7 @@ class DefenseScene extends Phaser.Scene {
         if (isFinalInfinite && unlocked >= 11) {
           const nightmare = this.add.text(0, 55, "INFINI CAUCHEMAR", {
             fontFamily: "Arial",
-            fontSize: "14px",
+            fontSize: "16px",
             color: "#ffe4e6",
             backgroundColor: "#7f1d2d",
             padding: { x: 11, y: 5 },
@@ -881,9 +882,9 @@ class DefenseScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(WIDTH / 2, 958, `SERRE PERMANENTE  ·  ${this.wateringCans} ARROSOIR${this.wateringCans > 1 ? "S" : ""}`, {
+    this.add.text(WIDTH / 2, 958, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {
       fontFamily: "Arial",
-      fontSize: "21px",
+      fontSize: "24px",
       color: "#effdfb",
       fontStyle: "bold",
       stroke: "#173943",
@@ -892,7 +893,7 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
     this.add.text(WIDTH / 2, 986, "Touchez une plante pour l'arroser durablement", {
       fontFamily: "Arial",
-      fontSize: "16px",
+      fontSize: "19px",
       color: "#efffff",
       fontStyle: "bold",
       stroke: "#173943",
@@ -910,7 +911,7 @@ class DefenseScene extends Phaser.Scene {
       const plant = this.createPlantVisual(kind, TOWERS[kind].color).setScale(0.78).setPosition(0, -3);
       const costText = this.add.text(0, 55, cost === null ? "MAX" : `💧 ${cost}`, {
         fontFamily: "Arial",
-        fontSize: "18px",
+        fontSize: "21px",
         color: cost === null ? "#ffe89a" : this.wateringCans >= cost ? "#e6fbff" : "#86aeb3",
         fontStyle: "bold",
         stroke: "#173943",
@@ -926,7 +927,7 @@ class DefenseScene extends Phaser.Scene {
       button.on("pointerdown", () => this.upgradePlantMastery(kind));
     });
 
-    this.makeButton(WIDTH / 2, 1124, 290, 36, "GUIDE DES ARROSOIRS", 0x245d68, () => {
+    this.makeButton(WIDTH / 2, 1124, 310, 42, "GUIDE DES GOUTTES", 0x245d68, () => {
       this.showWateringGuide();
     }).setDepth(33);
 
@@ -940,9 +941,9 @@ class DefenseScene extends Phaser.Scene {
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.9).setInteractive();
     const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 640, 1040, 0x245d68, 0.995)
       .setStrokeStyle(4, 0x8ddce6, 0.96);
-    const title = this.add.text(WIDTH / 2, 155, "GUIDE DES ARROSOIRS", {
+    const title = this.add.text(WIDTH / 2, 155, "GUIDE DES GOUTTES", {
       fontFamily: "Arial",
-      fontSize: "30px",
+      fontSize: "36px",
       color: "#effdff",
       fontStyle: "bold",
       stroke: "#12353d",
@@ -951,16 +952,16 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5);
     const balance = this.add.text(WIDTH / 2, 205, `VOTRE RÉSERVE  💧 ${this.wateringCans}`, {
       fontFamily: "Arial",
-      fontSize: "20px",
+      fontSize: "24px",
       color: "#bff5fb",
       fontStyle: "bold",
       stroke: "#12353d",
       strokeThickness: 3,
     }).setOrigin(0.5);
     const explanation = this.add.text(WIDTH / 2, 275,
-      "Les arrosoirs améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.", {
+      "Les gouttes améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.", {
         fontFamily: "Arial",
-        fontSize: "17px",
+        fontSize: "20px",
         color: "#edf8f7",
         fontStyle: "bold",
         align: "center",
@@ -968,16 +969,16 @@ class DefenseScene extends Phaser.Scene {
         wordWrap: { width: 550 },
       }).setOrigin(0.5);
     const rewards = this.add.text(86, 350,
-      "COMMENT EN GAGNER\n\n• Mondes classiques : 1 après chaque vague\n• Mode infini : 1 toutes les 5 vagues\n• Les arrosoirs sont conservés après une défaite", {
+      "COMMENT EN GAGNER\n\n• Mondes classiques : 1 après chaque vague\n• Mode infini : 1 toutes les 5 vagues\n• Les gouttes sont conservées après une défaite", {
         fontFamily: "Arial",
-        fontSize: "17px",
+        fontSize: "20px",
         color: "#d9f4f2",
         fontStyle: "bold",
         lineSpacing: 8,
       });
     const levelsTitle = this.add.text(WIDTH / 2, 515, "NIVEAUX PERMANENTS", {
       fontFamily: "Arial",
-      fontSize: "21px",
+      fontSize: "25px",
       color: "#ffffff",
       fontStyle: "bold",
       stroke: "#12353d",
@@ -992,29 +993,33 @@ class DefenseScene extends Phaser.Scene {
       const rowBg = this.add.rectangle(WIDTH / 2, y, 540, 50, index % 2 === 0 ? 0x184b55 : 0x1d535c, 0.95)
         .setStrokeStyle(1, 0x70bec6, 0.45);
       const rowText = this.add.text(WIDTH / 2, y,
-        `NIVEAU ${level}   💧 ${cost}   ·   +${level * 12}% dégâts   +${level * 6} portée   −${level * 4}% délai`, {
+        `N${level}  ·  💧 ${cost}  ·  +${level * 12}% DÉG.  ·  +${level * 6} PORTÉE  ·  −${level * 4}% DÉLAI`, {
           fontFamily: "Arial",
-          fontSize: "15px",
+          fontSize: "18px",
           color: "#effdff",
           fontStyle: "bold",
         }).setOrigin(0.5);
       rows.push(rowBg, rowText);
     });
     const total = this.add.text(WIDTH / 2, 915,
-      "1 500 gouttes pour maximiser une plante · 6 000 pour les quatre", {
+      "1 500 gouttes par plante\n6 000 gouttes pour les quatre", {
         fontFamily: "Arial",
-        fontSize: "16px",
+        fontSize: "20px",
         color: "#ffe7a3",
         fontStyle: "bold",
         stroke: "#3d3520",
         strokeThickness: 2,
+        align: "center",
+        lineSpacing: 4,
       }).setOrigin(0.5);
     const distinction = this.add.text(WIDTH / 2, 965,
       "Les pièces améliorent seulement les plantes de la partie en cours.", {
         fontFamily: "Arial",
-        fontSize: "15px",
+        fontSize: "18px",
         color: "#cfe9e7",
         fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: 570 },
       }).setOrigin(0.5);
     const close = this.makeButton(WIDTH / 2, 1050, 240, 54, "FERMER", 0x0f766e, () => guide.destroy(true));
     guide.add([veil, panel, title, balance, explanation, rewards, levelsTitle, ...rows, total, distinction, close]);
