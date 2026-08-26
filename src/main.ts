@@ -37,6 +37,7 @@ type TrapJawPair = {
 };
 type TowerKind = "harpoon" | "flak" | "pulse" | "cryo";
 type TowerEffect = "standard" | "slow" | "splash";
+type FertileZone = { x: number; y: number; radius: number; favoredKind: TowerKind };
 
 type Enemy = {
   body: Phaser.GameObjects.Container;
@@ -79,6 +80,7 @@ type Tower = {
   priority: TargetPriority;
   isUpgrading: boolean;
   upgradeReadyAt: number;
+  fertile: boolean;
 };
 
 type TowerDefinition = {
@@ -141,6 +143,7 @@ const LEVELS: LevelDefinition[] = [
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private towers: Tower[] = [];
+  private fertileZones: FertileZone[] = [];
   private baseHp = 20;
   private energy = 60;
   private wateringCans = 0;
@@ -234,6 +237,7 @@ class DefenseScene extends Phaser.Scene {
   private resetState(): void {
     this.enemies = [];
     this.towers = [];
+    this.fertileZones = [];
     this.baseHp = 20;
     this.energy = 60;
     this.loadPermanentProgress();
@@ -261,10 +265,50 @@ class DefenseScene extends Phaser.Scene {
     background.fillRect(0, 0, WIDTH, HEIGHT);
 
     this.createMarshAtmosphere();
+    this.createFertileZones();
     this.drawMapBoundary();
     this.createCommandDeck();
 
     this.createGates();
+  }
+
+  private createFertileZones(): void {
+    const patterns = [
+      [[0.22, 0.28], [0.68, 0.42], [0.42, 0.74]],
+      [[0.72, 0.22], [0.3, 0.48], [0.7, 0.76]],
+      [[0.45, 0.2], [0.2, 0.68], [0.78, 0.56]],
+      [[0.18, 0.32], [0.5, 0.58], [0.8, 0.8]],
+      [[0.76, 0.3], [0.24, 0.54], [0.55, 0.82]],
+      [[0.5, 0.26], [0.78, 0.62], [0.26, 0.78]],
+    ];
+    const kinds = Object.keys(TOWERS) as TowerKind[];
+    const favoredKind = kinds[this.levelIndex % kinds.length];
+    const mapLeft = GRID_X - CELL / 2;
+    const mapTop = GRID_Y - CELL / 2;
+    const mapWidth = GRID_COLS * CELL;
+    const mapHeight = GRID_ROWS * CELL;
+    const pattern = patterns[this.levelIndex % patterns.length];
+
+    this.fertileZones = pattern.map(([ratioX, ratioY]) => ({
+      x: mapLeft + mapWidth * ratioX,
+      y: mapTop + mapHeight * ratioY,
+      radius: 58,
+      favoredKind,
+    }));
+    this.fertileZones.forEach((zone) => {
+      this.add.circle(zone.x, zone.y, zone.radius, TOWERS[zone.favoredKind].color, 0.1)
+        .setStrokeStyle(3, TOWERS[zone.favoredKind].color, 0.48);
+      this.add.circle(zone.x, zone.y, zone.radius - 10, 0xe4f4c9, 0.035)
+        .setStrokeStyle(1, 0xf0ffe0, 0.28);
+      this.add.text(zone.x, zone.y, `${TOWERS[zone.favoredKind].name.toUpperCase()} +`, {
+        fontFamily: "Arial",
+        fontSize: "13px",
+        color: "#28483a",
+        fontStyle: "bold",
+        stroke: "#e7f3d5",
+        strokeThickness: 3,
+      }).setOrigin(0.5).setAlpha(0.78);
+    });
   }
 
   private drawMapBoundary(): void {
@@ -1283,12 +1327,19 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setVisible(false);
     towerBody.add([base, plant, levelBadge]);
 
+    const fertileZone = this.fertileZones.find((zone) =>
+      Phaser.Math.Distance.Between(zone.x, zone.y, towerX, towerY) <= zone.radius,
+    );
+    const favoredByZone = fertileZone?.favoredKind === selectedKind;
+    const fertileDamageMultiplier = favoredByZone ? 1.25 : fertileZone ? 1.15 : 1;
+    const fertileRangeBonus = favoredByZone ? 18 : fertileZone ? 10 : 0;
+    const fertileDelayMultiplier = favoredByZone ? 0.9 : 1;
     const tower: Tower = {
       body: towerBody,
       kind: selectedKind,
-      range: definition.range + this.plantMastery[selectedKind] * 6,
-      damage: Math.round(definition.damage * (1 + this.plantMastery[selectedKind] * 0.12)),
-      fireDelay: Math.max(260, Math.round(definition.fireDelay * (1 - this.plantMastery[selectedKind] * 0.04))),
+      range: definition.range + this.plantMastery[selectedKind] * 6 + fertileRangeBonus,
+      damage: Math.round(definition.damage * (1 + this.plantMastery[selectedKind] * 0.12) * fertileDamageMultiplier),
+      fireDelay: Math.max(260, Math.round(definition.fireDelay * (1 - this.plantMastery[selectedKind] * 0.04) * fertileDelayMultiplier)),
       lastShot: 0,
       col,
       row,
@@ -1298,6 +1349,7 @@ class DefenseScene extends Phaser.Scene {
       priority: "first",
       isUpgrading: false,
       upgradeReadyAt: 0,
+      fertile: Boolean(fertileZone),
     };
     towerBody.setSize(PLANT_FRAME_SIZE, PLANT_FRAME_SIZE).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
@@ -1926,7 +1978,8 @@ class DefenseScene extends Phaser.Scene {
     const background = this.add.rectangle(0, 0, 680, 210, 0x163f49, 0.985)
       .setStrokeStyle(3, 0x94cbd0, 0.92)
       .setInteractive();
-    const towerTitle = this.add.text(0, -82, `${this.getTowerName(tower).toUpperCase()} · NIVEAU ${tower.level}/${MAX_TOWER_LEVEL}`, {
+    const fertileLabel = tower.fertile ? " · TERRE RICHE" : "";
+    const towerTitle = this.add.text(0, -82, `${this.getTowerName(tower).toUpperCase()} · NIVEAU ${tower.level}/${MAX_TOWER_LEVEL}${fertileLabel}`, {
       fontFamily: "Arial",
       fontSize: "19px",
       color: "#f4faf6",
@@ -2049,9 +2102,17 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private selectWaveRoute(): void {
-    const routes = this.getRouteOptions().filter((route) => this.calculatePath(route.entry, route.destination) !== null);
+    const routeOrders = [
+      [0, 1], [2, 3], [0, 2, 1], [3, 1, 2],
+      [0, 3, 1, 2], [2, 1, 3, 0], [1, 3, 0], [2, 0, 3],
+      [3, 2, 1], [1, 0, 2, 3], [2, 3, 0, 1], [3, 0, 1, 2],
+    ];
+    const allRoutes = this.getRouteOptions();
+    const routes = routeOrders[this.levelIndex % routeOrders.length]
+      .map((routeIndex) => allRoutes[routeIndex])
+      .filter((route) => this.calculatePath(route.entry, route.destination) !== null);
     if (routes.length === 0) return;
-    const route = routes[(this.wave - 1 + this.levelIndex) % routes.length];
+    const route = routes[(this.wave - 1) % routes.length];
     this.waveEntryTop = route.top;
     this.waveExitId = route.exit;
     this.waveRouteGuide = route.guide;
