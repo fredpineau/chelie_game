@@ -193,6 +193,7 @@ class DefenseScene extends Phaser.Scene {
   private placementPreviewPrice?: Phaser.GameObjects.Text;
   private lastPlacementPreviewKey = "";
   private lastPlacementPreviewAllowed?: boolean;
+  private pathRecalculationVersion = 0;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
@@ -281,6 +282,7 @@ class DefenseScene extends Phaser.Scene {
     this.waveRouteWarning = undefined;
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
+    this.pathRecalculationVersion = 0;
   }
 
   private drawWorld(): void {
@@ -1517,11 +1519,11 @@ class DefenseScene extends Phaser.Scene {
     if (this.energy < TOWERS[kind].cost) {
       return { allowed: false, reason: `${TOWERS[kind].name} coûte ${TOWERS[kind].cost} pièces — solde insuffisant` };
     }
+    const extraBlocked = { col: placement.col, row: placement.row, x: placement.x, y: placement.y };
+    const blockedCells = this.getBlockedPathCells(extraBlocked);
     const routeStates = this.getRouteOptions().map((route) => ({
       route,
-      open: this.calculatePath(route.entry, route.destination, {
-        col: placement.col, row: placement.row, x: placement.x, y: placement.y,
-      }) !== null,
+      open: this.hasGridPath(route.entry, route.destination, blockedCells),
     }));
     const topEntryOpen = routeStates.some(({ route, open }) => route.top && open);
     const leftEntryOpen = routeStates.some(({ route, open }) => !route.top && open);
@@ -1537,9 +1539,7 @@ class DefenseScene extends Phaser.Scene {
       const warnedRoute = this.getRouteOptions().find((route) =>
         route.top === this.waveEntryTop && route.exit === this.waveExitId,
       );
-      if (warnedRoute && this.calculatePath(warnedRoute.entry, warnedRoute.destination, {
-        col: placement.col, row: placement.row, x: placement.x, y: placement.y,
-      }) === null) {
+      if (warnedRoute && !this.hasGridPath(warnedRoute.entry, warnedRoute.destination, blockedCells)) {
         return { allowed: false, reason: "Cette plante bloquerait le trajet annoncé pour la prochaine vague" };
       }
     }
@@ -1572,13 +1572,14 @@ class DefenseScene extends Phaser.Scene {
   private updatePlacementPreview(x: number, y: number, haptic = false): void {
     if (this.selectedTower === null || !this.placementPreview) return;
     const placement = this.getTowerPlacement(x, y);
+    const previewKey = `${placement.x.toFixed(1)},${placement.y.toFixed(1)}`;
+    if (previewKey === this.lastPlacementPreviewKey && this.placementPreview.visible) return;
     const check = this.checkTowerPlacement(placement, this.selectedTower);
     const color = check.allowed ? 0x55c878 : 0xe35b5b;
     this.placementPreview.setPosition(placement.x, placement.y).setVisible(true);
     this.placementPreviewFrame?.setFillStyle(color, 0.58).setStrokeStyle(5, color, 1);
     this.placementPreviewRange?.setFillStyle(color, 0.07).setStrokeStyle(3, color, 0.82);
     this.placementPreviewPrice?.setColor(check.allowed ? "#ffffff" : "#ffd6d6");
-    const previewKey = `${placement.x.toFixed(1)},${placement.y.toFixed(1)}`;
     if (haptic && previewKey !== this.lastPlacementPreviewKey && typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(this.lastPlacementPreviewAllowed !== undefined && this.lastPlacementPreviewAllowed !== check.allowed ? 20 : 7);
     }
@@ -2566,7 +2567,43 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private recalculateEnemyPaths(): void {
-    this.enemies.forEach((enemy) => this.recalculateEnemyPath(enemy));
+    const version = ++this.pathRecalculationVersion;
+    const activeEnemies = [...this.enemies];
+    const enemiesPerFrame = 8;
+    activeEnemies.forEach((enemy, index) => {
+      const delay = Math.floor(index / enemiesPerFrame) * 16;
+      const recalculate = (): void => {
+        if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;
+        this.recalculateEnemyPath(enemy);
+      };
+      if (delay === 0) recalculate();
+      else this.time.delayedCall(delay, recalculate);
+    });
+  }
+
+  private hasGridPath(
+    start: { col: number; row: number },
+    end: { col: number; row: number },
+    blocked: Set<string>,
+  ): boolean {
+    const key = (col: number, row: number) => `${col},${row}`;
+    if (blocked.has(key(start.col, start.row)) || blocked.has(key(end.col, end.row))) return false;
+    const frontier = [start];
+    const visited = new Set<string>([key(start.col, start.row)]);
+    for (let index = 0; index < frontier.length; index += 1) {
+      const current = frontier[index];
+      if (current.col === end.col && current.row === end.row) return true;
+      for (const [colOffset, rowOffset] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const col = current.col + colOffset;
+        const row = current.row + rowOffset;
+        const nextKey = key(col, row);
+        if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) continue;
+        if (blocked.has(nextKey) || visited.has(nextKey)) continue;
+        visited.add(nextKey);
+        frontier.push({ col, row });
+      }
+    }
+    return false;
   }
 
   private recalculateEnemyPath(enemy: Enemy): void {
