@@ -1426,7 +1426,13 @@ class DefenseScene extends Phaser.Scene {
       GRID_Y + ((GRID_ROWS - 1) * CELL) / 2,
       GRID_COLS * CELL,
       GRID_ROWS * CELL,
-    ).setInteractive({ useHandCursor: true });
+    )
+      // La zone reste au-dessus des plantes déjà posées : sur téléphone, le
+      // doigt peut recouvrir une ancienne plante alors que l'aperçu décalé se
+      // trouve sur la prochaine case. La carte doit continuer à recevoir le
+      // glissement et le relâchement dans ce cas.
+      .setDepth(17)
+      .setInteractive({ useHandCursor: true });
     const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
       if (this.selectedTower === null) return;
       const isTouch = pointer.event instanceof TouchEvent;
