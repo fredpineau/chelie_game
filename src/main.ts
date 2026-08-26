@@ -1170,9 +1170,10 @@ class DefenseScene extends Phaser.Scene {
   private showWateringGuide(): void {
     const guide = this.add.container(0, 0).setDepth(50);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.9).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 640, 1040, 0x245d68, 0.995)
+    const guideCenterX = WIDTH / 2;
+    const panel = this.add.rectangle(guideCenterX, HEIGHT / 2, 680, 1120, 0x245d68, 0.995)
       .setStrokeStyle(4, 0x8ddce6, 0.96);
-    const title = this.add.text(WIDTH / 2, 155, "GUIDE DES GOUTTES", {
+    const title = this.add.text(guideCenterX, 130, "GUIDE DES GOUTTES", {
       fontFamily: "Arial",
       fontSize: "36px",
       color: "#effdff",
@@ -1181,7 +1182,7 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 2,
     }).setOrigin(0.5);
-    const balance = this.add.text(WIDTH / 2, 205, `VOTRE RÉSERVE  💧 ${this.wateringCans}`, {
+    const balance = this.add.text(guideCenterX, 185, `VOTRE RÉSERVE  💧 ${this.wateringCans}`, {
       fontFamily: "Arial",
       fontSize: "24px",
       color: "#bff5fb",
@@ -1189,7 +1190,7 @@ class DefenseScene extends Phaser.Scene {
       stroke: "#12353d",
       strokeThickness: 3,
     }).setOrigin(0.5);
-    const explanation = this.add.text(WIDTH / 2, 275,
+    const explanation = this.add.text(guideCenterX, 270,
       "Les gouttes améliorent définitivement une famille de plantes.\nLe bonus reste actif dans tous les mondes et toutes les parties.\nNépenthès : les niveaux renforcent le contrôle des insectes VIF.", {
         fontFamily: "Arial",
         fontSize: "20px",
@@ -1197,17 +1198,19 @@ class DefenseScene extends Phaser.Scene {
         fontStyle: "bold",
         align: "center",
         lineSpacing: 9,
-        wordWrap: { width: 550 },
+        wordWrap: { width: 590 },
       }).setOrigin(0.5);
-    const rewards = this.add.text(86, 350,
+    const rewards = this.add.text(guideCenterX, 350,
       "COMMENT EN GAGNER\n\n• Mondes classiques : 1 après chaque vague\n• Mode infini : 1 toutes les 5 vagues\n• Les gouttes sont conservées après une défaite", {
         fontFamily: "Arial",
         fontSize: "20px",
         color: "#d9f4f2",
         fontStyle: "bold",
         lineSpacing: 8,
-      });
-    const levelsTitle = this.add.text(WIDTH / 2, 515, "NIVEAUX PERMANENTS", {
+        align: "center",
+        wordWrap: { width: 590 },
+      }).setOrigin(0.5, 0);
+    const levelsTitle = this.add.text(guideCenterX, 525, "NIVEAUX PERMANENTS", {
       fontFamily: "Arial",
       fontSize: "25px",
       color: "#ffffff",
@@ -1220,10 +1223,10 @@ class DefenseScene extends Phaser.Scene {
     const rows: Phaser.GameObjects.GameObject[] = [];
     MASTERY_COSTS.forEach((cost, index) => {
       const level = index + 1;
-      const y = 570 + index * 65;
-      const rowBg = this.add.rectangle(WIDTH / 2, y, 540, 50, index % 2 === 0 ? 0x184b55 : 0x1d535c, 0.95)
+      const y = 580 + index * 65;
+      const rowBg = this.add.rectangle(guideCenterX, y, 570, 50, index % 2 === 0 ? 0x184b55 : 0x1d535c, 0.95)
         .setStrokeStyle(1, 0x70bec6, 0.45);
-      const rowText = this.add.text(WIDTH / 2, y,
+      const rowText = this.add.text(guideCenterX, y,
         `N${level}  ·  💧 ${cost}  ·  +${level * 12}% DÉG.  ·  +${level * 6} PORTÉE  ·  −${level * 4}% DÉLAI`, {
           fontFamily: "Arial",
           fontSize: "18px",
@@ -1232,7 +1235,7 @@ class DefenseScene extends Phaser.Scene {
         }).setOrigin(0.5);
       rows.push(rowBg, rowText);
     });
-    const total = this.add.text(WIDTH / 2, 915,
+    const total = this.add.text(guideCenterX, 930,
       "1 500 gouttes par plante\n6 000 gouttes pour les quatre", {
         fontFamily: "Arial",
         fontSize: "20px",
@@ -1243,16 +1246,16 @@ class DefenseScene extends Phaser.Scene {
         align: "center",
         lineSpacing: 4,
       }).setOrigin(0.5);
-    const distinction = this.add.text(WIDTH / 2, 965,
+    const distinction = this.add.text(guideCenterX, 990,
       "Les pièces améliorent seulement les plantes de la partie en cours.", {
         fontFamily: "Arial",
         fontSize: "18px",
         color: "#cfe9e7",
         fontStyle: "bold",
         align: "center",
-        wordWrap: { width: 570 },
+        wordWrap: { width: 600 },
       }).setOrigin(0.5);
-    const close = this.makeButton(WIDTH / 2, 1050, 240, 54, "FERMER", 0x0f766e, () => guide.destroy(true));
+    const close = this.makeButton(guideCenterX, 1125, 260, 56, "FERMER", 0x0f766e, () => guide.destroy(true));
     guide.add([veil, panel, title, balance, explanation, rewards, levelsTitle, ...rows, total, distinction, close]);
   }
 
