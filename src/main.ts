@@ -8,6 +8,8 @@ const GRID_X = 55;
 const GRID_Y = 116;
 const GRID_COLS = 22;
 const GRID_ROWS = 30;
+const PLANT_FRAME_SIZE = CELL + 14;
+const PLANT_HALF_STEP = PLANT_FRAME_SIZE / 2;
 const MAP_CENTER_X = GRID_X + ((GRID_COLS - 1) * CELL) / 2;
 const MAP_CENTER_Y = GRID_Y + ((GRID_ROWS - 1) * CELL) / 2;
 const TOP_ENTRY_COL = Math.floor(GRID_COLS / 2);
@@ -1208,20 +1210,31 @@ class DefenseScene extends Phaser.Scene {
     }
     const selectedKind = this.selectedTower;
     const definition = TOWERS[selectedKind];
-    const row = Phaser.Math.Clamp(Math.round((y - GRID_Y) / CELL), 0, GRID_ROWS - 1);
-    const halfCol = Phaser.Math.Clamp(Math.round((x - GRID_X) / (CELL / 2)), 0, (GRID_COLS - 1) * 2);
-    const col = Phaser.Math.Clamp(Math.round(halfCol / 2), 0, GRID_COLS - 1);
-    const towerX = GRID_X + halfCol * (CELL / 2);
-    const towerY = this.gridToWorldY(row);
+    const mapSpanX = (GRID_COLS - 1) * CELL;
+    const mapSpanY = (GRID_ROWS - 1) * CELL;
+    const placementHalfCol = Phaser.Math.Clamp(
+      Math.round((x - GRID_X) / PLANT_HALF_STEP),
+      0,
+      Math.floor(mapSpanX / PLANT_HALF_STEP),
+    );
+    const placementRow = Phaser.Math.Clamp(
+      Math.round((y - GRID_Y) / PLANT_FRAME_SIZE),
+      0,
+      Math.floor(mapSpanY / PLANT_FRAME_SIZE),
+    );
+    const towerX = GRID_X + placementHalfCol * PLANT_HALF_STEP;
+    const towerY = GRID_Y + placementRow * PLANT_FRAME_SIZE;
+    const col = Phaser.Math.Clamp(Math.round((towerX - GRID_X) / CELL), 0, GRID_COLS - 1);
+    const row = Phaser.Math.Clamp(Math.round((towerY - GRID_Y) / CELL), 0, GRID_ROWS - 1);
 
     if (this.towers.some((tower) =>
-      Math.abs(tower.body.x - towerX) < CELL - 1
-      && Math.abs(tower.body.y - towerY) < CELL - 1,
+      Math.abs(tower.body.x - towerX) < PLANT_FRAME_SIZE - 1
+      && Math.abs(tower.body.y - towerY) < PLANT_FRAME_SIZE - 1,
     )) {
       this.updateHud("Cet emplacement est déjà occupé");
       return;
     }
-    if (this.enemies.some((enemy) => Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, towerX, towerY) < CELL * 0.72)) {
+    if (this.enemies.some((enemy) => Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, towerX, towerY) < PLANT_FRAME_SIZE * 0.68)) {
       this.updateHud("Un insecte traverse cette zone — attendez qu'il soit passé");
       return;
     }
@@ -1241,8 +1254,7 @@ class DefenseScene extends Phaser.Scene {
     this.energy -= definition.cost;
     const towerBody = this.add.container(towerX, towerY);
 
-    const frameSize = CELL + 14;
-    const base = this.add.rectangle(0, 0, frameSize, frameSize, TEMP_LEVEL_COLORS[0])
+    const base = this.add.rectangle(0, 0, PLANT_FRAME_SIZE, PLANT_FRAME_SIZE, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(3, 0x4d7c0f, 0.95);
     const initialPlantScale = selectedKind === "flak" ? 0.62 : 0.72;
     const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 1).setScale(initialPlantScale);
@@ -1274,7 +1286,7 @@ class DefenseScene extends Phaser.Scene {
       isUpgrading: false,
       upgradeReadyAt: 0,
     };
-    towerBody.setSize(frameSize, frameSize).setInteractive({ useHandCursor: true });
+    towerBody.setSize(PLANT_FRAME_SIZE, PLANT_FRAME_SIZE).setInteractive({ useHandCursor: true });
     towerBody.on("pointerdown", (
       _pointer: Phaser.Input.Pointer,
       _localX: number,
@@ -1779,7 +1791,7 @@ class DefenseScene extends Phaser.Scene {
       TOWERS[tower.kind].color,
       0.08,
     ).setStrokeStyle(3, TOWERS[tower.kind].color, 0.72).setDepth(10);
-    const highlightSize = CELL + 18;
+    const highlightSize = PLANT_FRAME_SIZE + 4;
     this.towerSelectionGlow = this.add.rectangle(tower.body.x, tower.body.y, highlightSize, highlightSize, 0xfff2a8, 0.12)
       .setStrokeStyle(4, 0xffe36e, 1)
       .setDepth(12);
