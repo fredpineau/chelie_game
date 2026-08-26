@@ -1576,7 +1576,7 @@ class DefenseScene extends Phaser.Scene {
       pathIndex: 1,
       isBoss,
       coreDamage: 1,
-      energyReward: isBoss ? 80 + this.wave * 4 : 8 + Math.ceil(this.wave / 3),
+      energyReward: this.getEnemyEnergyReward(isBoss),
       slowedUntil: 0,
       exitCol,
       exitRow,
@@ -1601,6 +1601,13 @@ class DefenseScene extends Phaser.Scene {
 
   private getWaveProfile(): number {
     return (this.wave - 1 + this.levelIndex) % 4;
+  }
+
+  private getEnemyEnergyReward(isBoss: boolean): number {
+    if (isBoss) return 20 + this.wave * 2 + this.levelIndex * 3;
+    const waveTier = Math.floor((this.wave - 1) / 3);
+    const worldTier = Math.floor(this.levelIndex / 4);
+    return Math.min(10, 1 + waveTier + worldTier);
   }
 
   private moveEnemies(time: number, delta: number): void {
