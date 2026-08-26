@@ -1003,10 +1003,10 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
 
-    const firstPage = this.makeButton(homeCenterX - 90, 306, 168, 36, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
+    const firstPage = this.makeButton(homeCenterX - 110, 306, 200, 46, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 0 });
     }).setDepth(32);
-    const secondPage = this.makeButton(homeCenterX + 90, 306, 168, 36, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
+    const secondPage = this.makeButton(homeCenterX + 110, 306, 200, 46, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 1 });
     }).setDepth(32);
     if (unlocked < 6) secondPage.setAlpha(0.62);
