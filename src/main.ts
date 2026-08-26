@@ -193,6 +193,7 @@ class DefenseScene extends Phaser.Scene {
   private placementPreviewPrice?: Phaser.GameObjects.Text;
   private lastPlacementPreviewKey = "";
   private lastPlacementPreviewAllowed?: boolean;
+  private lastPlacementPreview?: TowerPlacement;
   private pathRecalculationVersion = 0;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
@@ -1440,7 +1441,7 @@ class DefenseScene extends Phaser.Scene {
         return;
       }
       const touchOffset = pointer.event instanceof TouchEvent ? 52 : 0;
-      this.placeTower(pointer.worldX, pointer.worldY - touchOffset);
+      this.placeTower(pointer.worldX, pointer.worldY - touchOffset, this.lastPlacementPreview);
     });
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) this.hidePlacementPreview();
@@ -1550,6 +1551,7 @@ class DefenseScene extends Phaser.Scene {
     this.hidePlacementPreview(true);
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
+    this.lastPlacementPreview = undefined;
     const definition = TOWERS[kind];
     const preview = this.add.container(0, 0).setDepth(18).setVisible(false);
     const range = this.add.circle(0, 0, definition.range, 0x4ade80, 0.055)
@@ -1572,6 +1574,7 @@ class DefenseScene extends Phaser.Scene {
   private updatePlacementPreview(x: number, y: number, haptic = false): void {
     if (this.selectedTower === null || !this.placementPreview) return;
     const placement = this.getTowerPlacement(x, y);
+    this.lastPlacementPreview = placement;
     const previewKey = `${placement.x.toFixed(1)},${placement.y.toFixed(1)}`;
     if (previewKey === this.lastPlacementPreviewKey && this.placementPreview.visible) return;
     const check = this.checkTowerPlacement(placement, this.selectedTower);
@@ -1596,12 +1599,13 @@ class DefenseScene extends Phaser.Scene {
       this.placementPreviewPrice = undefined;
       this.lastPlacementPreviewKey = "";
       this.lastPlacementPreviewAllowed = undefined;
+      this.lastPlacementPreview = undefined;
     } else {
       this.placementPreview?.setVisible(false);
     }
   }
 
-  private placeTower(x: number, y: number): void {
+  private placeTower(x: number, y: number, previewPlacement?: TowerPlacement): void {
     this.closeTowerActions();
     if (this.selectedTower === null) {
       this.updateHud("Sélectionnez une plante dans l'herbier avant de la poser");
@@ -1609,7 +1613,10 @@ class DefenseScene extends Phaser.Scene {
     }
     const selectedKind = this.selectedTower;
     const definition = TOWERS[selectedKind];
-    const placement = this.getTowerPlacement(x, y);
+    // Sur mobile, le relâchement du doigt peut se décaler de quelques pixels,
+    // surtout lors d'un glissement du bas vers le haut. On pose donc la plante
+    // exactement sur la dernière case prévisualisée par le joueur.
+    const placement = previewPlacement ?? this.getTowerPlacement(x, y);
     const placementCheck = this.checkTowerPlacement(placement, selectedKind);
     if (!placementCheck.allowed) {
       this.updateHud(placementCheck.reason);
