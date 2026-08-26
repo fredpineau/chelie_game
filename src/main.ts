@@ -168,6 +168,7 @@ class DefenseScene extends Phaser.Scene {
   private menuOpenedAt = 0;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
   private towerActionPanel?: Phaser.GameObjects.Container;
+  private towerSelectionGlow?: Phaser.GameObjects.Rectangle;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
   constructor() {
@@ -1207,7 +1208,7 @@ class DefenseScene extends Phaser.Scene {
 
     const base = this.add.rectangle(0, 0, CELL, CELL, TEMP_LEVEL_COLORS[0])
       .setStrokeStyle(2, 0x4d7c0f, 0.9);
-    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 3).setScale(0.64);
+    const plant = this.createPlantVisual(selectedKind, definition.color).setPosition(0, 3).setScale(0.72);
     const levelBadge = this.add.text(10, 10, "", {
       fontFamily: "Arial",
       fontSize: "10px",
@@ -1717,7 +1718,7 @@ class DefenseScene extends Phaser.Scene {
     base.setStrokeStyle(tower.level >= 5 ? 3 : 2, tower.level >= 5 ? 0xf4d35e : definition.color, 0.95);
 
     const plant = tower.body.getAt(1) as Phaser.GameObjects.Container;
-    plant.setAlpha(1).setScale(0.64 + (tower.level - 1) * 0.04);
+    plant.setAlpha(1).setScale(0.72 + (tower.level - 1) * 0.04);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
     const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
@@ -1730,6 +1731,19 @@ class DefenseScene extends Phaser.Scene {
   private showTowerActions(tower: Tower): void {
     this.closeTowerActions();
     if (!tower.body.active || !this.towers.includes(tower)) return;
+
+    this.towerSelectionGlow = this.add.rectangle(tower.body.x, tower.body.y, CELL + 8, CELL + 8, 0xfff2a8, 0.12)
+      .setStrokeStyle(4, 0xffe36e, 1)
+      .setDepth(12);
+    this.tweens.add({
+      targets: this.towerSelectionGlow,
+      alpha: 0.42,
+      scale: 1.08,
+      yoyo: true,
+      repeat: -1,
+      duration: 620,
+      ease: "Sine.easeInOut",
+    });
 
     const definition = TOWERS[tower.kind];
     const refund = Math.floor(tower.investedCost / 2);
@@ -1800,6 +1814,11 @@ class DefenseScene extends Phaser.Scene {
   private closeTowerActions(): void {
     this.towerActionPanel?.destroy(true);
     this.towerActionPanel = undefined;
+    if (this.towerSelectionGlow) {
+      this.tweens.killTweensOf(this.towerSelectionGlow);
+      this.towerSelectionGlow.destroy();
+      this.towerSelectionGlow = undefined;
+    }
   }
 
   private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
