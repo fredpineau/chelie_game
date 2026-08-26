@@ -781,8 +781,9 @@ class DefenseScene extends Phaser.Scene {
       const row = Math.floor(localIndex / 2);
       const x = 225 + col * 270;
       const y = 398 + row * 210;
-      const isInfinite = index === LEVELS.length - 1;
-      const available = index <= unlocked || (isInfinite && unlocked >= 6);
+      const isFinalInfinite = index === LEVELS.length - 1;
+      const hostsFirstInfinite = index === 5 && unlocked >= 6;
+      const available = index <= unlocked;
       const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";
       const card = this.add.container(x, y).setDepth(32);
       const background = this.add.graphics();
@@ -829,7 +830,30 @@ class DefenseScene extends Phaser.Scene {
         card.on("pointerover", () => card.setScale(1.035));
         card.on("pointerout", () => card.setScale(1));
         card.on("pointerdown", () => this.scene.restart({ levelIndex: index }));
-        if (isInfinite && unlocked >= 11) {
+        if (hostsFirstInfinite) {
+          const firstInfinite = this.add.text(0, 55, "INFINI ÉVOLUTIF", {
+            fontFamily: "Arial",
+            fontSize: "14px",
+            color: "#e8feff",
+            backgroundColor: "#155e75",
+            padding: { x: 11, y: 5 },
+            fontStyle: "bold",
+            stroke: "#0b3542",
+            strokeThickness: 2,
+          }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+          firstInfinite.on("pointerdown", (
+            _pointer: Phaser.Input.Pointer,
+            _localX: number,
+            _localY: number,
+            event: Phaser.Types.Input.EventData,
+          ) => {
+            event.stopPropagation();
+            this.scene.restart({ levelIndex: LEVELS.length - 1 });
+          });
+          threat.setY(35).setText("MODE CLASSIQUE");
+          card.add(firstInfinite);
+        }
+        if (isFinalInfinite && unlocked >= 11) {
           const nightmare = this.add.text(0, 55, "INFINI CAUCHEMAR", {
             fontFamily: "Arial",
             fontSize: "14px",
