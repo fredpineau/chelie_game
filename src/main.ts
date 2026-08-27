@@ -791,43 +791,46 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    const pauseButton = this.add.container(WIDTH - 55, HEIGHT - 50);
-    const pauseShadow = this.add.circle(2, 4, 37, 0x071a20, 0.42);
-    const pauseHalo = this.add.circle(0, 0, 38, 0x75d5c7, 0.1).setStrokeStyle(1, 0xb7eee5, 0.45);
-    const pauseBackground = this.add.circle(0, 0, 33, 0x0b3538, 0.99).setStrokeStyle(3, 0x69bdb7, 0.95);
-    const pauseCore = this.add.circle(0, 0, 25, 0x173f42, 0.72).setStrokeStyle(1, 0x9bd8d2, 0.28);
-    const pauseIcon = this.add.text(0, -6, "Ⅱ", {
-      fontFamily: "Arial", fontSize: "25px", color: "#eafffb", fontStyle: "bold",
-    }).setOrigin(0.5);
-    const pauseLabel = this.add.text(0, 19, "PAUSE", {
-      fontFamily: "Arial", fontSize: "10px", color: "#aee2dc", fontStyle: "bold", letterSpacing: 1,
-    }).setOrigin(0.5);
-    pauseButton.add([pauseShadow, pauseHalo, pauseBackground, pauseCore, pauseIcon, pauseLabel]);
-    pauseButton.setSize(76, 76).setInteractive({ useHandCursor: true });
-    pauseButton.on("pointerover", () => pauseButton.setScale(1.06));
-    pauseButton.on("pointerout", () => pauseButton.setScale(1));
-    pauseButton.on("pointerdown", () => this.showGameMenu());
-    this.tweens.add({ targets: pauseHalo, alpha: 0.2, scale: 1.08, yoyo: true, repeat: -1, duration: 1800 });
-
     const attackButton = this.add.container(WIDTH / 2, HEIGHT - 42);
     const attackShadow = this.add.graphics();
     attackShadow.fillStyle(0x071a20, 0.4);
-    attackShadow.fillRoundedRect(-152, -31, 304, 68, 30);
+    attackShadow.fillRoundedRect(-187, -31, 374, 68, 30);
     const attackBackground = this.add.graphics();
     attackBackground.fillStyle(0x123f3b, 1);
-    attackBackground.fillRoundedRect(-150, -34, 300, 68, 30);
+    attackBackground.fillRoundedRect(-185, -34, 370, 68, 30);
     attackBackground.lineStyle(3, 0x70c9ae, 0.98);
-    attackBackground.strokeRoundedRect(-150, -34, 300, 68, 30);
+    attackBackground.strokeRoundedRect(-185, -34, 370, 68, 30);
     attackBackground.lineStyle(1, 0xc0f1dc, 0.3);
-    attackBackground.strokeRoundedRect(-143, -27, 286, 54, 25);
-    const leftLeaf = this.add.ellipse(-118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(-0.68);
-    const rightLeaf = this.add.ellipse(118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(0.68);
-    const attackText = this.add.text(0, 0, "À L’ATTAQUE", {
+    attackBackground.strokeRoundedRect(-178, -27, 356, 54, 25);
+    attackBackground.lineStyle(2, 0x70c9ae, 0.58);
+    attackBackground.beginPath();
+    attackBackground.moveTo(110, -26);
+    attackBackground.lineTo(110, 26);
+    attackBackground.strokePath();
+    const leftLeaf = this.add.ellipse(-150, 0, 17, 31, 0x5cae7b, 0.75).setRotation(-0.68);
+    const rightLeaf = this.add.ellipse(76, 0, 17, 31, 0x5cae7b, 0.75).setRotation(0.68);
+    const attackText = this.add.text(-35, 0, "À L’ATTAQUE", {
       fontFamily: "Arial", fontSize: "24px", color: "#f3fff8", fontStyle: "bold",
       stroke: "#0a2925", strokeThickness: 4, letterSpacing: 1.5,
     }).setOrigin(0.5);
-    attackButton.add([attackShadow, attackBackground, leftLeaf, rightLeaf, attackText]);
-    attackButton.setSize(310, 76).setInteractive({ useHandCursor: true });
+    const pauseIcon = this.add.text(147, -7, "Ⅱ", {
+      fontFamily: "Arial", fontSize: "23px", color: "#eafffb", fontStyle: "bold",
+    }).setOrigin(0.5);
+    const pauseLabel = this.add.text(147, 18, "PAUSE", {
+      fontFamily: "Arial", fontSize: "10px", color: "#aee2dc", fontStyle: "bold", letterSpacing: 1,
+    }).setOrigin(0.5);
+    const pauseZone = this.add.zone(147, 0, 74, 76).setInteractive({ useHandCursor: true });
+    pauseZone.on("pointerdown", (
+      _pointer: Phaser.Input.Pointer,
+      _localX: number,
+      _localY: number,
+      event: Phaser.Types.Input.EventData,
+    ) => {
+      event.stopPropagation();
+      this.showGameMenu();
+    });
+    attackButton.add([attackShadow, attackBackground, leftLeaf, rightLeaf, attackText, pauseIcon, pauseLabel, pauseZone]);
+    attackButton.setInteractive(new Phaser.Geom.Rectangle(-185, -38, 295, 76), Phaser.Geom.Rectangle.Contains);
     attackButton.on("pointerover", () => attackButton.setScale(1.025));
     attackButton.on("pointerout", () => attackButton.setScale(1));
     attackButton.on("pointerdown", () => this.startWave());
@@ -3101,7 +3104,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private setStartButtonEnabled(enabled: boolean): void {
-    this.startButton.setAlpha(enabled ? 1 : 0.45);
+    // Le compartiment Pause partage désormais le même bloc visuel et doit
+    // rester lisible lorsque le lancement anticipé de la vague est désactivé.
+    this.startButton.setAlpha(enabled ? 1 : 0.68);
     const hitArea = this.startButton.input;
     if (hitArea) hitArea.enabled = enabled;
   }
