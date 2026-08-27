@@ -204,6 +204,8 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementPreviewAllowed?: boolean;
   private lastPlacementPreview?: TowerPlacement;
   private lastPlacementHapticAt = 0;
+  private placementDragActive = false;
+  private placementDragStartedAt = 0;
   private pathRecalculationVersion = 0;
   private blockedPathCache?: Set<string>;
   private waveRouteWarning?: Phaser.GameObjects.Container;
@@ -238,6 +240,7 @@ class DefenseScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (!this.levelStarted || this.baseHp <= 0 || this.menuOpen) return;
+    if (this.placementDragActive) return;
 
     this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
@@ -312,6 +315,8 @@ class DefenseScene extends Phaser.Scene {
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
     this.lastPlacementHapticAt = 0;
+    this.placementDragActive = false;
+    this.placementDragStartedAt = 0;
     this.pathRecalculationVersion = 0;
     this.blockedPathCache = undefined;
   }
@@ -1719,18 +1724,52 @@ class DefenseScene extends Phaser.Scene {
       this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset, isTouch);
     };
     zone.on("pointermove", previewAtPointer);
-    zone.on("pointerdown", previewAtPointer);
+    zone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (this.selectedTower !== null) this.beginPlacementDrag();
+      previewAtPointer(pointer);
+    });
     zone.on("pointerup", (pointer: Phaser.Input.Pointer) => {
       if (this.selectedTower === null) {
+        this.endPlacementDrag();
         this.selectNearestTower(pointer.worldX, pointer.worldY);
         return;
       }
       const touchOffset = pointer.event instanceof TouchEvent ? 88 : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset, this.lastPlacementPreview);
+      this.endPlacementDrag();
     });
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) this.hidePlacementPreview();
     });
+    this.input.on("pointerup", () => {
+      if (this.placementDragActive) this.time.delayedCall(0, () => this.endPlacementDrag());
+    });
+  }
+
+  private beginPlacementDrag(): void {
+    if (this.placementDragActive) return;
+    this.placementDragActive = true;
+    this.placementDragStartedAt = this.time.now;
+    this.tweens.pauseAll();
+  }
+
+  private endPlacementDrag(): void {
+    if (!this.placementDragActive) return;
+    const pausedDuration = Math.max(0, this.time.now - this.placementDragStartedAt);
+    if (this.nextSpawnAt > 0) this.nextSpawnAt += pausedDuration;
+    if (this.nextWaveAt > 0) this.nextWaveAt += pausedDuration;
+    if (this.waveStartsAt > 0) this.waveStartsAt += pausedDuration;
+    this.towers.forEach((tower) => {
+      tower.lastShot += pausedDuration;
+      if (tower.isUpgrading) tower.upgradeReadyAt += pausedDuration;
+    });
+    this.enemies.forEach((enemy) => {
+      if (enemy.slowedUntil > 0) enemy.slowedUntil += pausedDuration;
+      if (enemy.swiftSuppressedUntil > 0) enemy.swiftSuppressedUntil += pausedDuration;
+    });
+    this.placementDragActive = false;
+    this.placementDragStartedAt = 0;
+    this.tweens.resumeAll();
   }
 
   private selectNearestTower(x: number, y: number): void {
@@ -2884,15 +2923,14 @@ class DefenseScene extends Phaser.Scene {
   private recalculateEnemyPaths(): void {
     const version = ++this.pathRecalculationVersion;
     const activeEnemies = [...this.enemies];
-    const enemiesPerFrame = 8;
+    const enemiesPerFrame = 6;
     activeEnemies.forEach((enemy, index) => {
-      const delay = Math.floor(index / enemiesPerFrame) * 16;
+      const delay = 1 + Math.floor(index / enemiesPerFrame) * 16;
       const recalculate = (): void => {
         if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;
         this.recalculateEnemyPath(enemy);
       };
-      if (delay === 0) recalculate();
-      else this.time.delayedCall(delay, recalculate);
+      this.time.delayedCall(delay, recalculate);
     });
   }
 
