@@ -1921,7 +1921,17 @@ class DefenseScene extends Phaser.Scene {
     // si le joueur vise juste à côté. Dans ce cas, cherche automatiquement la
     // position libre la plus proche où les cadres peuvent réellement se toucher.
     if (overlapsTower(snappedPosition.x, snappedPosition.y)) {
-      const nearby: Array<{ halfCol: number; halfRow: number; x: number; y: number; distance: number }> = [];
+      const anchor = this.towers
+        .filter((tower) =>
+          Math.abs(tower.body.x - snappedPosition.x) < PLANT_FRAME_SIZE - 1
+          && Math.abs(tower.body.y - snappedPosition.y) < PLANT_FRAME_SIZE - 1,
+        )
+        .map((tower) => ({ tower, distance: Phaser.Math.Distance.Squared(x, y, tower.body.x, tower.body.y) }))
+        .sort((a, b) => a.distance - b.distance)[0]?.tower;
+      const desiredX = anchor ? x - anchor.body.x : 0;
+      const desiredY = anchor ? y - anchor.body.y : 0;
+      const directionThreshold = 5;
+      const nearby: Array<{ halfCol: number; halfRow: number; x: number; y: number; score: number }> = [];
       for (let rowOffset = -2; rowOffset <= 2; rowOffset += 1) {
         for (let colOffset = -2; colOffset <= 2; colOffset += 1) {
           const halfCol = placementHalfCol + colOffset;
@@ -1929,16 +1939,25 @@ class DefenseScene extends Phaser.Scene {
           if (halfCol < 0 || halfCol > placementHalfColumns || halfRow < 0 || halfRow > placementHalfRows) continue;
           const candidate = positionFor(halfCol, halfRow);
           if (overlapsTower(candidate.x, candidate.y)) continue;
+          const candidateX = anchor ? candidate.x - anchor.body.x : 0;
+          const candidateY = anchor ? candidate.y - anchor.body.y : 0;
+          let directionPenalty = 0;
+          if (Math.abs(desiredX) > directionThreshold && Math.sign(candidateX) !== Math.sign(desiredX)) {
+            directionPenalty += 100_000;
+          }
+          if (Math.abs(desiredY) > directionThreshold && Math.sign(candidateY) !== Math.sign(desiredY)) {
+            directionPenalty += 100_000;
+          }
           nearby.push({
             halfCol,
             halfRow,
             x: candidate.x,
             y: candidate.y,
-            distance: Phaser.Math.Distance.Squared(x, y, candidate.x, candidate.y),
+            score: Phaser.Math.Distance.Squared(x, y, candidate.x, candidate.y) + directionPenalty,
           });
         }
       }
-      nearby.sort((a, b) => a.distance - b.distance);
+      nearby.sort((a, b) => a.score - b.score);
       const nearest = nearby[0];
       if (nearest) {
         placementHalfCol = nearest.halfCol;
