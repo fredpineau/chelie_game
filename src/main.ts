@@ -125,7 +125,12 @@ const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
 };
 
 const MAX_TOWER_LEVEL = 5;
-const UPGRADE_COSTS = [0, 40, 100, 220, 450];
+const UPGRADE_COSTS: Record<TowerKind, number[]> = {
+  harpoon: [0, 25, 60, 130, 270],
+  flak: [0, 35, 80, 175, 360],
+  pulse: [0, 45, 110, 240, 490],
+  cryo: [0, 60, 140, 300, 600],
+};
 const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
 const MASTERY_COSTS = [100, 200, 300, 400, 500];
 const SELL_REFUND_RATE = 0.7;
@@ -1480,7 +1485,7 @@ class DefenseScene extends Phaser.Scene {
         bg.setStrokeStyle(2, buttonKind === kind ? TOWERS[buttonKind].color : 0x28665e, 1);
       });
     });
-    this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : ${UPGRADE_COSTS.slice(1).join(" / ")} pièces`);
+    this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : ${UPGRADE_COSTS[kind].slice(1).join(" / ")} pièces`);
   }
 
   private getTowerPlacement(x: number, y: number): TowerPlacement {
@@ -2303,7 +2308,7 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
 
-    const cost = UPGRADE_COSTS[tower.level];
+    const cost = UPGRADE_COSTS[tower.kind][tower.level];
     if (this.energy < cost) {
       this.updateHud(`Amélioration niveau ${tower.level + 1} : ${cost} pièces requises`);
       this.createUpgradePulse(tower, 0xef4444);
@@ -2376,7 +2381,7 @@ class DefenseScene extends Phaser.Scene {
     plant.setAlpha(1).setScale(plantScale);
     this.evolveTowerVisual(tower);
     this.createUpgradePulse(tower, definition.color);
-    const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
+    const nextCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.kind][tower.level] : null;
     const evolvedName = this.getTowerName(tower);
     this.updateHud(nextCost === null
       ? `${evolvedName} niveau ${tower.level} — forme ultime atteinte`
@@ -2410,7 +2415,7 @@ class DefenseScene extends Phaser.Scene {
 
     const definition = TOWERS[tower.kind];
     const refund = Math.floor(tower.investedCost * SELL_REFUND_RATE);
-    const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.level] : null;
+    const nextUpgradeCost = tower.level < MAX_TOWER_LEVEL ? UPGRADE_COSTS[tower.kind][tower.level] : null;
     const panelX = WIDTH / 2;
     const panelY = HEIGHT - 115;
     const panel = this.add.container(panelX, panelY).setDepth(18);
