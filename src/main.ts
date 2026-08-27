@@ -3233,7 +3233,10 @@ class DefenseScene extends Phaser.Scene {
 
   private getBlockedPathCells(extraBlocked?: { col: number; row: number; x?: number; y?: number }): Set<string> {
     const key = (col: number, row: number) => `${col},${row}`;
-    const insectClearance = PLANT_FRAME_SIZE / 2 + 5;
+    // Le cadre de la plante constitue déjà sa limite physique. L'ancienne
+    // marge invisible de 5 px s'additionnait entre deux rangées et obligeait
+    // parfois le placement à sauter une position complète.
+    const insectClearance = PLANT_FRAME_SIZE / 2;
     if (!this.blockedPathCache) {
       const blocked = new Set<string>();
       const blockers = this.towers.map((tower) => ({ x: tower.body.x, y: tower.body.y }));
