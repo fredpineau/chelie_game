@@ -791,18 +791,48 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    const pauseButton = this.add.container(45, HEIGHT - 50);
-    const pauseBackground = this.add.circle(0, 0, 34, 0x315968, 0.98).setStrokeStyle(2, 0x8ddce6, 0.9);
-    const pauseIcon = this.add.text(0, -5, "Ⅱ", {
-      fontFamily: "Arial", fontSize: "26px", color: "#ffffff", fontStyle: "bold",
+    const pauseButton = this.add.container(55, HEIGHT - 50);
+    const pauseShadow = this.add.circle(2, 4, 37, 0x071a20, 0.42);
+    const pauseHalo = this.add.circle(0, 0, 38, 0x75d5c7, 0.1).setStrokeStyle(1, 0xb7eee5, 0.45);
+    const pauseBackground = this.add.circle(0, 0, 33, 0x0b3538, 0.99).setStrokeStyle(3, 0x69bdb7, 0.95);
+    const pauseCore = this.add.circle(0, 0, 25, 0x173f42, 0.72).setStrokeStyle(1, 0x9bd8d2, 0.28);
+    const pauseIcon = this.add.text(0, -6, "Ⅱ", {
+      fontFamily: "Arial", fontSize: "25px", color: "#eafffb", fontStyle: "bold",
     }).setOrigin(0.5);
     const pauseLabel = this.add.text(0, 19, "PAUSE", {
-      fontFamily: "Arial", fontSize: "10px", color: "#dff7f8", fontStyle: "bold",
+      fontFamily: "Arial", fontSize: "10px", color: "#aee2dc", fontStyle: "bold", letterSpacing: 1,
     }).setOrigin(0.5);
-    pauseButton.add([pauseBackground, pauseIcon, pauseLabel]);
+    pauseButton.add([pauseShadow, pauseHalo, pauseBackground, pauseCore, pauseIcon, pauseLabel]);
     pauseButton.setSize(76, 76).setInteractive({ useHandCursor: true });
+    pauseButton.on("pointerover", () => pauseButton.setScale(1.06));
+    pauseButton.on("pointerout", () => pauseButton.setScale(1));
     pauseButton.on("pointerdown", () => this.showGameMenu());
-    this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 300, 68, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
+    this.tweens.add({ targets: pauseHalo, alpha: 0.2, scale: 1.08, yoyo: true, repeat: -1, duration: 1800 });
+
+    const attackButton = this.add.container(WIDTH / 2, HEIGHT - 50);
+    const attackShadow = this.add.graphics();
+    attackShadow.fillStyle(0x071a20, 0.4);
+    attackShadow.fillRoundedRect(-152, -31, 304, 68, 30);
+    const attackBackground = this.add.graphics();
+    attackBackground.fillStyle(0x123f3b, 1);
+    attackBackground.fillRoundedRect(-150, -34, 300, 68, 30);
+    attackBackground.lineStyle(3, 0x70c9ae, 0.98);
+    attackBackground.strokeRoundedRect(-150, -34, 300, 68, 30);
+    attackBackground.lineStyle(1, 0xc0f1dc, 0.3);
+    attackBackground.strokeRoundedRect(-143, -27, 286, 54, 25);
+    const leftLeaf = this.add.ellipse(-118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(-0.68);
+    const rightLeaf = this.add.ellipse(118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(0.68);
+    const attackText = this.add.text(0, 0, "À L’ATTAQUE", {
+      fontFamily: "Arial", fontSize: "24px", color: "#f3fff8", fontStyle: "bold",
+      stroke: "#0a2925", strokeThickness: 4, letterSpacing: 1.5,
+    }).setOrigin(0.5);
+    attackButton.add([attackShadow, attackBackground, leftLeaf, rightLeaf, attackText]);
+    attackButton.setSize(310, 76).setInteractive({ useHandCursor: true });
+    attackButton.on("pointerover", () => attackButton.setScale(1.025));
+    attackButton.on("pointerout", () => attackButton.setScale(1));
+    attackButton.on("pointerdown", () => this.startWave());
+    this.tweens.add({ targets: [leftLeaf, rightLeaf], scaleY: 1.12, yoyo: true, repeat: -1, duration: 1450 });
+    this.startButton = attackButton;
   }
 
   private showGameMenu(): void {
