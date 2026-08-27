@@ -1984,20 +1984,18 @@ class DefenseScene extends Phaser.Scene {
     }));
     const topEntryOpen = routeStates.some(({ route, open }) => route.top && open);
     const leftEntryOpen = routeStates.some(({ route, open }) => !route.top && open);
-    const rightExitOpen = routeStates.some(({ route, open }) => route.exit === "right" && open);
-    const bottomExitOpen = routeStates.some(({ route, open }) => route.exit === "bottom" && open);
     if (!topEntryOpen || !leftEntryOpen) {
       return { allowed: false, reason: "Chaque entrée doit conserver au moins un passage" };
     }
-    if (!rightExitOpen || !bottomExitOpen) {
-      return { allowed: false, reason: "Les deux sorties doivent rester accessibles" };
-    }
-    if (this.wavePreparing) {
+    // Une entrée doit toujours pouvoir rejoindre au moins une sortie, mais il
+    // n'est pas nécessaire de réserver simultanément les quatre combinaisons.
+    // Le trajet réellement annoncé ou utilisé reste, lui, obligatoirement ouvert.
+    if (this.wavePreparing || this.waveActive) {
       const warnedRoute = this.getRouteOptions().find((route) =>
         route.top === this.waveEntryTop && route.exit === this.waveExitId,
       );
       if (warnedRoute && !this.hasGridPath(warnedRoute.entry, warnedRoute.destination, blockedCells)) {
-        return { allowed: false, reason: "Cette plante bloquerait le trajet annoncé pour la prochaine vague" };
+        return { allowed: false, reason: "Cette plante bloquerait le trajet de la vague" };
       }
     }
     return { allowed: true, reason: "Emplacement disponible" };
