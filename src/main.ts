@@ -3,6 +3,7 @@ import "./style.css";
 
 const WIDTH = 720;
 const HEIGHT = 1280;
+const BETA_VERSION = "0.2.0-beta.1";
 const CELL = 29;
 const GRID_X = 55;
 const GRID_Y = 116;
@@ -188,6 +189,7 @@ class DefenseScene extends Phaser.Scene {
   private startButton!: Phaser.GameObjects.Container;
   private menuOverlay?: Phaser.GameObjects.Container;
   private gameGoalOverlay?: Phaser.GameObjects.Container;
+  private betaOverlay?: Phaser.GameObjects.Container;
   private menuOpen = false;
   private menuOpenedAt = 0;
   private towerButtons = new Map<TowerKind, Phaser.GameObjects.Container[]>();
@@ -303,6 +305,7 @@ class DefenseScene extends Phaser.Scene {
     this.menuOpenedAt = 0;
     this.menuOverlay = undefined;
     this.gameGoalOverlay = undefined;
+    this.betaOverlay = undefined;
     this.waveRouteWarning = undefined;
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
@@ -801,7 +804,7 @@ class DefenseScene extends Phaser.Scene {
 
     const menu = this.add.container(0, 0).setDepth(40);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.78).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 580, 600, 0x164f59, 0.99)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 580, 720, 0x164f59, 0.99)
       .setStrokeStyle(4, 0x8ddce6, 0.94);
     const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 235, "MENU", {
       fontFamily: "Arial",
@@ -821,8 +824,174 @@ class DefenseScene extends Phaser.Scene {
     });
     const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 + 60, 350, 56, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
     const wateringGuide = this.makeButton(WIDTH / 2, HEIGHT / 2 + 130, 350, 56, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
-    menu.add([veil, panel, title, home, resume, restart, goal, wateringGuide]);
+    const beta = this.makeButton(WIDTH / 2, HEIGHT / 2 + 200, 350, 56, "ESPACE BÊTA", 0x6b4c78, () => this.showBetaTools());
+    const version = this.add.text(WIDTH / 2, HEIGHT / 2 + 278, `VERSION ${BETA_VERSION}`, {
+      fontFamily: "Arial", fontSize: "18px", color: "#bfe7ea", fontStyle: "bold", letterSpacing: 1,
+    }).setOrigin(0.5);
+    menu.add([veil, panel, title, home, resume, restart, goal, wateringGuide, beta, version]);
     this.menuOverlay = menu;
+  }
+
+  private showBetaTools(): void {
+    this.betaOverlay?.destroy(true);
+    const overlay = this.add.container(0, 0).setDepth(55);
+    const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.94).setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 650, 930, 0x245d68, 0.995)
+      .setStrokeStyle(4, 0xb28bc2, 0.96);
+    const title = this.add.text(WIDTH / 2, 235, "ESPACE BÊTA", {
+      fontFamily: "Arial", fontSize: "38px", color: "#ffffff", fontStyle: "bold",
+      stroke: "#12353d", strokeThickness: 5, letterSpacing: 3,
+    }).setOrigin(0.5);
+    const version = this.add.text(WIDTH / 2, 285, `VERSION ${BETA_VERSION}`, {
+      fontFamily: "Arial", fontSize: "20px", color: "#dfc8e9", fontStyle: "bold", letterSpacing: 1,
+    }).setOrigin(0.5);
+    const explanation = this.add.text(WIDTH / 2, 345,
+      "Aidez-nous à améliorer la tourbière.\nLes retours peuvent être partagés ou copiés depuis votre téléphone.", {
+        fontFamily: "Arial", fontSize: "20px", color: "#edf8f7", fontStyle: "bold",
+        align: "center", lineSpacing: 7, wordWrap: { width: 570 },
+      }).setOrigin(0.5);
+    const report = this.makeButton(WIDTH / 2, 455, 480, 62, "SIGNALER UN PROBLÈME", 0x7a3945, () => this.createBugReport());
+    const survey = this.makeButton(WIDTH / 2, 535, 480, 62, "QUESTIONNAIRE DE TEST", 0x6b4c78, () => this.createBetaSurvey());
+    const exportSave = this.makeButton(WIDTH / 2, 640, 480, 62, "EXPORTER LA SAUVEGARDE", 0x315968, () => this.exportSave());
+    const importSave = this.makeButton(WIDTH / 2, 720, 480, 62, "IMPORTER UNE SAUVEGARDE", 0x315968, () => this.importSave());
+    const saveHelp = this.add.text(WIDTH / 2, 800,
+      "L’export crée un petit fichier contenant uniquement votre progression.\nL’import permet de la restaurer ou de la transférer sur un autre appareil.", {
+        fontFamily: "Arial", fontSize: "18px", color: "#cfe9e7", fontStyle: "bold",
+        align: "center", lineSpacing: 6, wordWrap: { width: 570 },
+      }).setOrigin(0.5);
+    const close = this.makeButton(WIDTH / 2, 930, 300, 58, "FERMER", 0x0f766e, () => {
+      overlay.destroy(true);
+      this.betaOverlay = undefined;
+    });
+    overlay.add([veil, panel, title, version, explanation, report, survey, exportSave, importSave, saveHelp, close]);
+    this.betaOverlay = overlay;
+  }
+
+  private createBugReport(): void {
+    const problem = window.prompt("Décrivez brièvement le problème rencontré :");
+    if (!problem?.trim()) return;
+    const steps = window.prompt("Que faisiez-vous juste avant le problème ?", "");
+    const expected = window.prompt("Que devait-il se passer normalement ?", "");
+    const report = [
+      "CHELIE CARNIVORE GARDEN · RAPPORT DE BUG",
+      `Version : ${BETA_VERSION}`,
+      `Date : ${new Date().toLocaleString("fr-FR")}`,
+      `Biome : ${this.levelStarted ? LEVELS[this.levelIndex].name : "Accueil"}`,
+      `Vague : ${this.wave}`,
+      `Appareil : ${navigator.userAgent}`,
+      `Écran : ${window.innerWidth} × ${window.innerHeight}`,
+      "",
+      `Problème : ${problem.trim()}`,
+      `Étapes : ${steps?.trim() || "Non précisées"}`,
+      `Résultat attendu : ${expected?.trim() || "Non précisé"}`,
+    ].join("\n");
+    void this.shareBetaText("rapport-bug-chelie.txt", "Rapport de bug Chelie", report);
+  }
+
+  private createBetaSurvey(): void {
+    const enjoyment = window.prompt("Sur 5, quel plaisir avez-vous pris à jouer ?", "4");
+    if (enjoyment === null) return;
+    const difficulty = window.prompt("La difficulté est-elle trop facile, équilibrée ou trop difficile ?", "Équilibrée");
+    const placement = window.prompt("Sur 5, la pose des plantes est-elle confortable sur votre appareil ?", "4");
+    const favorite = window.prompt("Quelle plante ou mécanique avez-vous préférée ?", "");
+    const improvement = window.prompt("Quelle amélioration vous paraît prioritaire ?", "");
+    const answers = [
+      "CHELIE CARNIVORE GARDEN · QUESTIONNAIRE BÊTA",
+      `Version : ${BETA_VERSION}`,
+      `Date : ${new Date().toLocaleString("fr-FR")}`,
+      `Appareil : ${navigator.userAgent}`,
+      "",
+      `Plaisir de jeu /5 : ${enjoyment.trim() || "Non répondu"}`,
+      `Difficulté : ${difficulty?.trim() || "Non répondu"}`,
+      `Confort de placement /5 : ${placement?.trim() || "Non répondu"}`,
+      `Élément préféré : ${favorite?.trim() || "Non répondu"}`,
+      `Amélioration prioritaire : ${improvement?.trim() || "Non répondu"}`,
+    ].join("\n");
+    void this.shareBetaText("questionnaire-beta-chelie.txt", "Questionnaire bêta Chelie", answers);
+  }
+
+  private async shareBetaText(filename: string, title: string, content: string): Promise<void> {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: content });
+        return;
+      }
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(content);
+        window.alert("Le retour a été copié. Vous pouvez maintenant l’envoyer au créateur du jeu.");
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+    this.downloadTextFile(filename, content, "text/plain");
+  }
+
+  private exportSave(): void {
+    const save = {
+      game: "chelie-carnivore-garden",
+      version: BETA_VERSION,
+      exportedAt: new Date().toISOString(),
+      progress: {
+        wateringCans: this.wateringCans,
+        plantMastery: this.plantMastery,
+        unlockedLevel: this.getUnlockedLevel(),
+        waveDropRecords: this.waveDropRecords,
+      },
+    };
+    this.downloadTextFile(
+      `chelie-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(save, null, 2),
+      "application/json",
+    );
+  }
+
+  private importSave(): void {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result)) as {
+            game?: string;
+            progress?: {
+              wateringCans?: number;
+              plantMastery?: Partial<Record<TowerKind, number>>;
+              unlockedLevel?: number;
+              waveDropRecords?: Record<string, number>;
+            };
+          };
+          if (parsed.game !== "chelie-carnivore-garden" || !parsed.progress) throw new Error("invalid-save");
+          const mastery: Record<TowerKind, number> = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
+          (Object.keys(TOWERS) as TowerKind[]).forEach((kind) => {
+            mastery[kind] = Phaser.Math.Clamp(Number(parsed.progress?.plantMastery?.[kind] ?? 0), 0, MASTERY_COSTS.length);
+          });
+          localStorage.setItem("chelie-watering-cans", String(Math.max(0, Number(parsed.progress.wateringCans ?? 0))));
+          localStorage.setItem("chelie-plant-mastery", JSON.stringify(mastery));
+          localStorage.setItem("chelie-unlocked-level", String(Phaser.Math.Clamp(Number(parsed.progress.unlockedLevel ?? 0), 0, LEVELS.length - 1)));
+          localStorage.setItem("chelie-wave-drop-records", JSON.stringify(parsed.progress.waveDropRecords ?? {}));
+          window.alert("Sauvegarde importée. La progression va être rechargée.");
+          this.scene.restart({ home: true });
+        } catch {
+          window.alert("Ce fichier n’est pas une sauvegarde Chelie valide.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  private downloadTextFile(filename: string, content: string, mimeType: string): void {
+    const url = URL.createObjectURL(new Blob([content], { type: `${mimeType};charset=utf-8` }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   private showGameGoalGuide(page = 0): void {
@@ -1028,6 +1197,16 @@ class DefenseScene extends Phaser.Scene {
       stroke: "#173943",
       strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
+    const betaAccess = this.add.text(homeCenterX, 270, `BÊTA · ${BETA_VERSION} · RETOURS`, {
+      fontFamily: "Arial",
+      fontSize: "16px",
+      color: "#ccecef",
+      fontStyle: "bold",
+      letterSpacing: 1.5,
+      stroke: "#173943",
+      strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(32).setInteractive({ useHandCursor: true });
+    betaAccess.on("pointerdown", () => this.showBetaTools());
 
     const firstPage = this.makeButton(homeCenterX - 110, 306, 200, 46, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 0 });
