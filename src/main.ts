@@ -1720,11 +1720,16 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createPlacementZone(): void {
+    const mapTop = GRID_Y - CELL / 2;
+    const commandDeckTop = HEIGHT - 270;
+    // La bande libre entre la carte et le panneau inférieur prolonge la zone
+    // tactile. Elle permet d'atteindre la dernière ligne avec l'aperçu encore
+    // nettement visible au-dessus du doigt.
     const zone = this.add.zone(
       GRID_X + ((GRID_COLS - 1) * CELL) / 2,
-      GRID_Y + ((GRID_ROWS - 1) * CELL) / 2,
+      mapTop + (commandDeckTop - mapTop) / 2,
       GRID_COLS * CELL,
-      GRID_ROWS * CELL,
+      commandDeckTop - mapTop,
     )
       // La zone reste au-dessus des plantes déjà posées : sur téléphone, le
       // doigt peut recouvrir une ancienne plante alors que l'aperçu décalé se
@@ -1773,7 +1778,9 @@ class DefenseScene extends Phaser.Scene {
     const mapBottom = GRID_Y - CELL / 2 + GRID_ROWS * CELL;
     const fadeHeight = 150;
     const remainingSpace = mapBottom - pointerY;
-    return 88 * Phaser.Math.Clamp(remainingSpace / fadeHeight, 0, 1);
+    // L'aide ne descend jamais sous 60 px : la plante reste visible même sur
+    // la dernière ligne. La zone tactile prolongée fournit l'espace manquant.
+    return 60 + 28 * Phaser.Math.Clamp(remainingSpace / fadeHeight, 0, 1);
   }
 
   private beginPlacementDrag(): void {
