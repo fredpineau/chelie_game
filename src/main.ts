@@ -1733,8 +1733,9 @@ class DefenseScene extends Phaser.Scene {
       if (this.selectedTower === null) return;
       const isTouch = pointer.event instanceof TouchEvent;
       // Décale suffisamment l'aperçu au-dessus du doigt sur téléphone afin que
-      // la case verte/rouge reste visible pendant tout le glissement.
-      const touchOffset = isTouch ? 88 : 0;
+      // la case reste visible. Près du bas, le décalage diminue progressivement
+      // pour que la dernière rangée reste atteignable sans sortir de la carte.
+      const touchOffset = isTouch ? this.getPlacementTouchOffset(pointer.worldY) : 0;
       this.updatePlacementPreview(pointer.worldX, pointer.worldY - touchOffset, isTouch);
     };
     zone.on("pointermove", previewAtPointer);
@@ -1748,7 +1749,7 @@ class DefenseScene extends Phaser.Scene {
         this.selectNearestTower(pointer.worldX, pointer.worldY);
         return;
       }
-      const touchOffset = pointer.event instanceof TouchEvent ? 88 : 0;
+      const touchOffset = pointer.event instanceof TouchEvent ? this.getPlacementTouchOffset(pointer.worldY) : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset, this.lastPlacementPreview);
       this.endPlacementDrag();
     });
@@ -1763,6 +1764,13 @@ class DefenseScene extends Phaser.Scene {
         this.time.delayedCall(0, () => this.endPlacementDrag());
       }
     });
+  }
+
+  private getPlacementTouchOffset(pointerY: number): number {
+    const mapBottom = GRID_Y - CELL / 2 + GRID_ROWS * CELL;
+    const fadeHeight = 150;
+    const remainingSpace = mapBottom - pointerY;
+    return 88 * Phaser.Math.Clamp(remainingSpace / fadeHeight, 0, 1);
   }
 
   private beginPlacementDrag(): void {
