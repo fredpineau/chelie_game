@@ -2,9 +2,10 @@ name: Apply staggered placement fix
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - '.github/workflows/fix-staggered-placement.yml'
+      - .github/workflows/fix-staggered-placement.yml
 
 permissions:
   contents: write
@@ -13,22 +14,20 @@ jobs:
   fix-placement:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: '22'
 
       - name: Patch placement collision
-        shell: python
         run: |
+          python3 - <<'PY'
           from pathlib import Path
-
-          path = Path('src/main.ts')
-          text = path.read_text(encoding='utf-8')
+          path = Path("src/main.ts")
+          text = path.read_text(encoding="utf-8")
           old = '''    if (this.towers.some((tower) =>
       Math.abs(tower.body.x - placement.x) < PLANT_FRAME_SIZE - 1
       && Math.abs(tower.body.y - placement.y) < PLANT_FRAME_SIZE - 1,
@@ -39,27 +38,29 @@ jobs:
       const axisTolerance = PLANT_HALF_STEP * 0.75;
       const fullSpacing = PLANT_FRAME_SIZE - 1;
 
-      // Sur la grille au demi-pas, une plante ne peut pas être glissée à
-      // moitié directement à droite/gauche ou au-dessus/dessous d'une autre.
-      // En revanche, le demi-pas sur les DEUX axes forme le quinconce voulu :
-      // les coins des cadres se croisent sans empêcher cette pose diagonale.
+      // Interdit le demi-pas sur un seul axe, mais autorise le quinconce :
+      // un demi-pas horizontal ET vertical peut donc être posé à droite
+      // comme à gauche d'une plante voisine.
       const tooCloseOnSameColumn = deltaX < axisTolerance && deltaY < fullSpacing;
       const tooCloseOnSameRow = deltaY < axisTolerance && deltaX < fullSpacing;
       return tooCloseOnSameColumn || tooCloseOnSameRow;
     });
     if (occupied) return { allowed: false, reason: "Cet emplacement est déjà occupé" };'''
           if old not in text:
-              raise SystemExit('Expected placement collision block not found; refusing to modify the file.')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              raise SystemExit("Expected placement collision block not found")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
 
-      - run: npm ci
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Commit fix and remove temporary workflow
+      - name: Build
+        run: npm run build
+
+      - name: Commit fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/fix-staggered-placement.yml
           git add src/main.ts
           git commit -m "fix: allow diagonal half-step plant placement"
           git push
