@@ -274,7 +274,10 @@ class DefenseScene extends Phaser.Scene {
         }
       } else {
         const achievedTier = perfectWave ? (this.isBossWave() ? 3 : 2) : 1;
-        const recordKey = `${this.levelIndex}:${this.wave}`;
+        // Utilise l'identité stable du biome plutôt que sa position dans la
+        // liste. Les anciens ajouts/réordonnancements de mondes pouvaient faire
+        // croire qu'une vague du monde 5 avait déjà versé sa récompense.
+        const recordKey = `v2:${level.code}:${this.wave}`;
         const previousTier = this.waveDropRecords[recordKey] ?? 0;
         dropReward = Math.max(0, achievedTier - previousTier);
         if (achievedTier > previousTier) this.waveDropRecords[recordKey] = achievedTier;
