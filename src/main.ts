@@ -3104,12 +3104,21 @@ class DefenseScene extends Phaser.Scene {
     for (let index = 0; index < frontier.length; index += 1) {
       const current = frontier[index];
       if (current.col === end.col && current.row === end.row) return true;
-      for (const [colOffset, rowOffset] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [colOffset, rowOffset] of [
+        [1, 0], [-1, 0], [0, 1], [0, -1],
+        [1, 1], [1, -1], [-1, 1], [-1, -1],
+      ]) {
         const col = current.col + colOffset;
         const row = current.row + rowOffset;
         const nextKey = key(col, row);
         if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) continue;
         if (blocked.has(nextKey) || visited.has(nextKey)) continue;
+        if (
+          colOffset !== 0
+          && rowOffset !== 0
+          && (blocked.has(key(current.col + colOffset, current.row))
+            || blocked.has(key(current.col, current.row + rowOffset)))
+        ) continue;
         visited.add(nextKey);
         frontier.push({ col, row });
       }
@@ -3197,10 +3206,14 @@ class DefenseScene extends Phaser.Scene {
     const costs = new Map<string, number>([[key(start.col, start.row), 0]]);
     const previous = new Map<string, { col: number; row: number }>();
     const directions = [
-      { col: 1, row: 0 },
-      { col: 0, row: 1 },
-      { col: 0, row: -1 },
-      { col: -1, row: 0 },
+      { col: 1, row: 0, cost: 1 },
+      { col: 0, row: 1, cost: 1 },
+      { col: 0, row: -1, cost: 1 },
+      { col: -1, row: 0, cost: 1 },
+      { col: 1, row: 1, cost: Math.SQRT2 },
+      { col: 1, row: -1, cost: Math.SQRT2 },
+      { col: -1, row: 1, cost: Math.SQRT2 },
+      { col: -1, row: -1, cost: Math.SQRT2 },
     ];
 
     const attractors = this.towers.map((tower) => ({ col: tower.col, row: tower.row }));
@@ -3224,6 +3237,12 @@ class DefenseScene extends Phaser.Scene {
         const nextKey = key(next.col, next.row);
         if (next.col < 0 || next.col >= GRID_COLS || next.row < 0 || next.row >= GRID_ROWS) continue;
         if (blocked.has(nextKey)) continue;
+        if (
+          direction.col !== 0
+          && direction.row !== 0
+          && (blocked.has(key(current.col + direction.col, current.row))
+            || blocked.has(key(current.col, current.row + direction.row)))
+        ) continue;
 
         let scentStrength = 0;
         attractors.forEach((tower) => {
@@ -3235,7 +3254,7 @@ class DefenseScene extends Phaser.Scene {
         const guideDistance = Math.abs(next.col - this.waveRouteGuide.col) + Math.abs(next.row - this.waveRouteGuide.row);
         const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.0175);
         const movementCost = Math.max(0.34, 1 - scentStrength - routeAttraction);
-        const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost;
+        const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost * direction.cost;
         if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
         costs.set(nextKey, newCost);
         previous.set(nextKey, current);
