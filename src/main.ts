@@ -142,7 +142,7 @@ const LEVELS: LevelDefinition[] = [
   { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1.4, speedMultiplier: 1.08, swarmBonus: 4 },
   { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.7, speedMultiplier: 1.17, swarmBonus: 6 },
   { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 2.05, speedMultiplier: 1.25, swarmBonus: 8 },
-  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.45, speedMultiplier: 1.32, swarmBonus: 10 },
+  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.25, speedMultiplier: 1.28, swarmBonus: 9 },
   { name: "Fosse des spores", code: "BIOME 06", waves: 35, healthMultiplier: 2.9, speedMultiplier: 1.38, swarmBonus: 12 },
   { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.4, speedMultiplier: 1.44, swarmBonus: 14 },
   { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 4, speedMultiplier: 1.5, swarmBonus: 16 },
