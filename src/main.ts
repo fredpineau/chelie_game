@@ -1897,18 +1897,57 @@ class DefenseScene extends Phaser.Scene {
     // partagé entre les bords opposés au lieu d'étirer chaque axe différemment.
     const placementStartX = minTowerX + ((maxTowerX - minTowerX) - placementHalfColumns * PLANT_HALF_STEP) / 2;
     const placementStartY = minTowerY + ((maxTowerY - minTowerY) - placementHalfRows * PLANT_HALF_STEP) / 2;
-    const placementHalfCol = Phaser.Math.Clamp(
+    let placementHalfCol = Phaser.Math.Clamp(
       Math.round((x - placementStartX) / PLANT_HALF_STEP),
       0,
       placementHalfColumns,
     );
-    const placementHalfRow = Phaser.Math.Clamp(
+    let placementHalfRow = Phaser.Math.Clamp(
       Math.round((y - placementStartY) / PLANT_HALF_STEP),
       0,
       placementHalfRows,
     );
-    const towerX = placementStartX + placementHalfCol * PLANT_HALF_STEP;
-    const towerY = placementStartY + placementHalfRow * PLANT_HALF_STEP;
+    const positionFor = (halfCol: number, halfRow: number): { x: number; y: number } => ({
+      x: placementStartX + halfCol * PLANT_HALF_STEP,
+      y: placementStartY + halfRow * PLANT_HALF_STEP,
+    });
+    const overlapsTower = (candidateX: number, candidateY: number): boolean => this.towers.some((tower) =>
+      Math.abs(tower.body.x - candidateX) < PLANT_FRAME_SIZE - 1
+      && Math.abs(tower.body.y - candidateY) < PLANT_FRAME_SIZE - 1,
+    );
+    let snappedPosition = positionFor(placementHalfCol, placementHalfRow);
+
+    // Un demi-pas est utile pour dessiner un escalier mais chevauche une plante
+    // si le joueur vise juste à côté. Dans ce cas, cherche automatiquement la
+    // position libre la plus proche où les cadres peuvent réellement se toucher.
+    if (overlapsTower(snappedPosition.x, snappedPosition.y)) {
+      const nearby: Array<{ halfCol: number; halfRow: number; x: number; y: number; distance: number }> = [];
+      for (let rowOffset = -2; rowOffset <= 2; rowOffset += 1) {
+        for (let colOffset = -2; colOffset <= 2; colOffset += 1) {
+          const halfCol = placementHalfCol + colOffset;
+          const halfRow = placementHalfRow + rowOffset;
+          if (halfCol < 0 || halfCol > placementHalfColumns || halfRow < 0 || halfRow > placementHalfRows) continue;
+          const candidate = positionFor(halfCol, halfRow);
+          if (overlapsTower(candidate.x, candidate.y)) continue;
+          nearby.push({
+            halfCol,
+            halfRow,
+            x: candidate.x,
+            y: candidate.y,
+            distance: Phaser.Math.Distance.Squared(x, y, candidate.x, candidate.y),
+          });
+        }
+      }
+      nearby.sort((a, b) => a.distance - b.distance);
+      const nearest = nearby[0];
+      if (nearest) {
+        placementHalfCol = nearest.halfCol;
+        placementHalfRow = nearest.halfRow;
+        snappedPosition = { x: nearest.x, y: nearest.y };
+      }
+    }
+    const towerX = snappedPosition.x;
+    const towerY = snappedPosition.y;
     return {
       x: towerX,
       y: towerY,
