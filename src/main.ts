@@ -764,21 +764,12 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.add.text(WIDTH / 2, 5, "CHELIE", {
+    this.add.text(WIDTH / 2, 14, "CHELIE CARNIVOR GARDEN", {
       fontFamily: "Arial",
-      fontSize: "32px",
+      fontSize: "25px",
       color: "#f8fafc",
       fontStyle: "bold",
       stroke: "#17231d",
-      strokeThickness: 5,
-      letterSpacing: 7,
-    }).setOrigin(0.5, 0);
-    this.add.text(WIDTH / 2, 46, "CARNIVORE GARDEN", {
-      fontFamily: "Arial",
-      fontSize: "19px",
-      color: "#f4fbfc",
-      fontStyle: "bold",
-      stroke: "#183640",
       strokeThickness: 4,
       letterSpacing: 3,
     }).setOrigin(0.5, 0);
