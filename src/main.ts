@@ -836,34 +836,35 @@ class DefenseScene extends Phaser.Scene {
     this.betaOverlay?.destroy(true);
     const overlay = this.add.container(0, 0).setDepth(55);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.94).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 650, 930, 0x245d68, 0.995)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 650, 1080, 0x245d68, 0.995)
       .setStrokeStyle(4, 0xb28bc2, 0.96);
-    const title = this.add.text(WIDTH / 2, 235, "ESPACE BÊTA", {
+    const title = this.add.text(WIDTH / 2, 165, "ESPACE BÊTA", {
       fontFamily: "Arial", fontSize: "38px", color: "#ffffff", fontStyle: "bold",
       stroke: "#12353d", strokeThickness: 5, letterSpacing: 3,
     }).setOrigin(0.5);
-    const version = this.add.text(WIDTH / 2, 285, `VERSION ${BETA_VERSION}`, {
+    const version = this.add.text(WIDTH / 2, 215, `VERSION ${BETA_VERSION}`, {
       fontFamily: "Arial", fontSize: "20px", color: "#dfc8e9", fontStyle: "bold", letterSpacing: 1,
     }).setOrigin(0.5);
-    const explanation = this.add.text(WIDTH / 2, 345,
+    const explanation = this.add.text(WIDTH / 2, 280,
       "Aidez-nous à améliorer la tourbière.\nLes retours peuvent être partagés ou copiés depuis votre téléphone.", {
         fontFamily: "Arial", fontSize: "20px", color: "#edf8f7", fontStyle: "bold",
         align: "center", lineSpacing: 7, wordWrap: { width: 570 },
       }).setOrigin(0.5);
-    const report = this.makeButton(WIDTH / 2, 455, 480, 62, "SIGNALER UN PROBLÈME", 0x7a3945, () => this.createBugReport());
-    const survey = this.makeButton(WIDTH / 2, 535, 480, 62, "QUESTIONNAIRE DE TEST", 0x6b4c78, () => this.createBetaSurvey());
-    const exportSave = this.makeButton(WIDTH / 2, 640, 480, 62, "EXPORTER LA SAUVEGARDE", 0x315968, () => this.exportSave());
-    const importSave = this.makeButton(WIDTH / 2, 720, 480, 62, "IMPORTER UNE SAUVEGARDE", 0x315968, () => this.importSave());
-    const saveHelp = this.add.text(WIDTH / 2, 800,
+    const report = this.makeButton(WIDTH / 2, 390, 480, 62, "SIGNALER UN PROBLÈME", 0x7a3945, () => this.createBugReport());
+    const survey = this.makeButton(WIDTH / 2, 470, 480, 62, "QUESTIONNAIRE DE TEST", 0x6b4c78, () => this.createBetaSurvey());
+    const exportSave = this.makeButton(WIDTH / 2, 575, 480, 62, "EXPORTER LA SAUVEGARDE", 0x315968, () => this.exportSave());
+    const importSave = this.makeButton(WIDTH / 2, 655, 480, 62, "IMPORTER UNE SAUVEGARDE", 0x315968, () => this.importSave());
+    const resetProgress = this.makeButton(WIDTH / 2, 755, 500, 62, "RÉINITIALISER LA PROGRESSION", 0x7f1d2d, () => this.resetPermanentProgress());
+    const saveHelp = this.add.text(WIDTH / 2, 850,
       "L’export crée un petit fichier contenant uniquement votre progression.\nL’import permet de la restaurer ou de la transférer sur un autre appareil.", {
         fontFamily: "Arial", fontSize: "18px", color: "#cfe9e7", fontStyle: "bold",
         align: "center", lineSpacing: 6, wordWrap: { width: 570 },
       }).setOrigin(0.5);
-    const close = this.makeButton(WIDTH / 2, 930, 300, 58, "FERMER", 0x0f766e, () => {
+    const close = this.makeButton(WIDTH / 2, 1040, 300, 58, "FERMER", 0x0f766e, () => {
       overlay.destroy(true);
       this.betaOverlay = undefined;
     });
-    overlay.add([veil, panel, title, version, explanation, report, survey, exportSave, importSave, saveHelp, close]);
+    overlay.add([veil, panel, title, version, explanation, report, survey, exportSave, importSave, resetProgress, saveHelp, close]);
     this.betaOverlay = overlay;
   }
 
@@ -983,6 +984,26 @@ class DefenseScene extends Phaser.Scene {
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  private resetPermanentProgress(): void {
+    const confirmed = window.confirm(
+      "Cette action supprimera les mondes débloqués, les gouttes, les améliorations permanentes et les records de vagues.\n\nNous vous conseillons d’exporter votre sauvegarde avant de continuer.\n\nVoulez-vous poursuivre ?",
+    );
+    if (!confirmed) return;
+    const confirmationText = window.prompt("Pour confirmer la suppression définitive, écrivez EFFACER :", "");
+    if (confirmationText?.trim().toUpperCase() !== "EFFACER") {
+      window.alert("Réinitialisation annulée : la progression a été conservée.");
+      return;
+    }
+    [
+      "chelie-watering-cans",
+      "chelie-plant-mastery",
+      "chelie-unlocked-level",
+      "chelie-wave-drop-records",
+    ].forEach((key) => localStorage.removeItem(key));
+    window.alert("La progression a été réinitialisée. Le jeu va revenir au premier monde.");
+    this.scene.restart({ home: true, selectionPage: 0 });
   }
 
   private downloadTextFile(filename: string, content: string, mimeType: string): void {
