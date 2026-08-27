@@ -160,6 +160,7 @@ class DefenseScene extends Phaser.Scene {
   private energy = 60;
   private wateringCans = 0;
   private plantMastery: Record<TowerKind, number> = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
+  private waveDropRecords: Record<string, number> = {};
   private wave = 0;
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
@@ -243,11 +244,27 @@ class DefenseScene extends Phaser.Scene {
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
       const perfectWave = this.escapedThisWave === 0;
-      const dropReward = perfectWave ? (this.isBossWave() ? 3 : 2) : 1;
-      this.wateringCans += dropReward;
-      this.savePermanentProgress();
-      this.showWateringCanReward(dropReward, perfectWave);
       const level = LEVELS[this.levelIndex];
+      let dropReward = 0;
+      let rewardLabel = "";
+      if (level.waves === null) {
+        if (this.wave % 5 === 0) {
+          dropReward = 1;
+          rewardLabel = "PALIER INFINI";
+        }
+      } else {
+        const achievedTier = perfectWave ? (this.isBossWave() ? 3 : 2) : 1;
+        const recordKey = `${this.levelIndex}:${this.wave}`;
+        const previousTier = this.waveDropRecords[recordKey] ?? 0;
+        dropReward = Math.max(0, achievedTier - previousTier);
+        if (achievedTier > previousTier) this.waveDropRecords[recordKey] = achievedTier;
+        rewardLabel = perfectWave ? "NOUVEAU RECORD PARFAIT" : "PREMIÈRE RÉUSSITE";
+      }
+      if (dropReward > 0) {
+        this.wateringCans += dropReward;
+        this.savePermanentProgress();
+        this.showWateringCanReward(dropReward, rewardLabel);
+      }
       if (level.waves !== null && this.wave >= level.waves) {
         this.completeLevel();
       } else {
@@ -847,7 +864,7 @@ class DefenseScene extends Phaser.Scene {
       "Les insectes éliminés rapportent des pièces. Elles servent à acheter et améliorer les plantes jusqu’au niveau 5. Chaque niveau augmente les dégâts, la portée et la cadence. Une plante vendue rembourse 70 % de l’investissement.",
       "",
       "GOUTTES PERMANENTES",
-      "Chaque vague réussie rapporte des gouttes : une avec des fuites, deux sans aucune fuite et trois pour un boss parfait. Elles améliorent définitivement une famille de plantes et sont conservées après une défaite.",
+      "Dans les biomes, chaque récompense de vague ne peut être obtenue qu’une fois : revenir permet seulement de gagner les bonus parfaits encore manquants. Le mode infini reste une source renouvelable de gouttes.",
       "",
       "ENNEMIS ET TERRAINS",
       "Affrontez des insectes terrestres, volants, rapides, blindés, régénérateurs et des boss Alpha. Racines, tourbe, spores, glu, parasites et zones fertiles modifient votre stratégie.",
@@ -1214,7 +1231,7 @@ class DefenseScene extends Phaser.Scene {
         wordWrap: { width: 590 },
       }).setOrigin(0.5);
     const rewards = this.add.text(guideCenterX, 350,
-      "COMMENT EN GAGNER\n\n• Vague réussie avec fuite : 1 goutte\n• Vague parfaite : 2 gouttes\n• Boss parfait : 3 gouttes\n• Les gouttes sont conservées après une défaite", {
+      "COMMENT EN GAGNER\n\n• Première réussite : 1 goutte\n• Résultat parfait : jusqu’à 2 gouttes au total\n• Boss parfait : jusqu’à 3 gouttes au total\n• Rejouer verse seulement le bonus encore manquant\n• Mode infini : 1 goutte tous les 5 paliers", {
         fontFamily: "Arial",
         fontSize: "20px",
         color: "#d9f4f2",
@@ -1223,7 +1240,7 @@ class DefenseScene extends Phaser.Scene {
         align: "center",
         wordWrap: { width: 590 },
       }).setOrigin(0.5, 0);
-    const levelsTitle = this.add.text(guideCenterX, 525, "NIVEAUX PERMANENTS", {
+    const levelsTitle = this.add.text(guideCenterX, 565, "NIVEAUX PERMANENTS", {
       fontFamily: "Arial",
       fontSize: "25px",
       color: "#ffffff",
@@ -1236,7 +1253,7 @@ class DefenseScene extends Phaser.Scene {
     const rows: Phaser.GameObjects.GameObject[] = [];
     MASTERY_COSTS.forEach((cost, index) => {
       const level = index + 1;
-      const y = 580 + index * 65;
+      const y = 620 + index * 65;
       const rowBg = this.add.rectangle(guideCenterX, y, 570, 50, index % 2 === 0 ? 0x184b55 : 0x1d535c, 0.95)
         .setStrokeStyle(1, 0x70bec6, 0.45);
       const rowText = this.add.text(guideCenterX, y,
@@ -1248,7 +1265,7 @@ class DefenseScene extends Phaser.Scene {
         }).setOrigin(0.5);
       rows.push(rowBg, rowText);
     });
-    const total = this.add.text(guideCenterX, 930,
+    const total = this.add.text(guideCenterX, 970,
       "1 500 gouttes par plante\n6 000 gouttes pour les quatre", {
         fontFamily: "Arial",
         fontSize: "20px",
@@ -1259,7 +1276,7 @@ class DefenseScene extends Phaser.Scene {
         align: "center",
         lineSpacing: 4,
       }).setOrigin(0.5);
-    const distinction = this.add.text(guideCenterX, 990,
+    const distinction = this.add.text(guideCenterX, 1030,
       "Les pièces améliorent seulement les plantes de la partie en cours.", {
         fontFamily: "Arial",
         fontSize: "18px",
@@ -1345,12 +1362,14 @@ class DefenseScene extends Phaser.Scene {
   private loadPermanentProgress(): void {
     try {
       this.wateringCans = Math.max(0, Number(localStorage.getItem("chelie-watering-cans") ?? 0));
+      this.waveDropRecords = JSON.parse(localStorage.getItem("chelie-wave-drop-records") ?? "{}") as Record<string, number>;
       const stored = JSON.parse(localStorage.getItem("chelie-plant-mastery") ?? "{}") as Partial<Record<TowerKind, number>>;
       (Object.keys(TOWERS) as TowerKind[]).forEach((kind) => {
         this.plantMastery[kind] = Phaser.Math.Clamp(Number(stored[kind] ?? 0), 0, MASTERY_COSTS.length);
       });
     } catch {
       this.wateringCans = 0;
+      this.waveDropRecords = {};
       this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
     }
   }
@@ -1359,6 +1378,7 @@ class DefenseScene extends Phaser.Scene {
     try {
       localStorage.setItem("chelie-watering-cans", String(this.wateringCans));
       localStorage.setItem("chelie-plant-mastery", JSON.stringify(this.plantMastery));
+      localStorage.setItem("chelie-wave-drop-records", JSON.stringify(this.waveDropRecords));
     } catch {
       // La progression reste disponible pour la session si le stockage est désactivé.
     }
@@ -2276,8 +2296,9 @@ class DefenseScene extends Phaser.Scene {
       : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
   }
 
-  private showWateringCanReward(amount: number, perfect: boolean): void {
-    const label = perfect ? `+${amount} GOUTTES · PARFAIT  💧` : `+${amount} GOUTTE  💧`;
+  private showWateringCanReward(amount: number, reason: string): void {
+    const dropWord = amount > 1 ? "GOUTTES" : "GOUTTE";
+    const label = `+${amount} ${dropWord} · ${reason}  💧`;
     const reward = this.add.text(WIDTH / 2, HEIGHT - 292, label, {
       fontFamily: "Arial",
       fontSize: "22px",
