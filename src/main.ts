@@ -791,7 +791,7 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    const pauseButton = this.add.container(55, HEIGHT - 50);
+    const pauseButton = this.add.container(WIDTH - 55, HEIGHT - 50);
     const pauseShadow = this.add.circle(2, 4, 37, 0x071a20, 0.42);
     const pauseHalo = this.add.circle(0, 0, 38, 0x75d5c7, 0.1).setStrokeStyle(1, 0xb7eee5, 0.45);
     const pauseBackground = this.add.circle(0, 0, 33, 0x0b3538, 0.99).setStrokeStyle(3, 0x69bdb7, 0.95);
@@ -809,7 +809,7 @@ class DefenseScene extends Phaser.Scene {
     pauseButton.on("pointerdown", () => this.showGameMenu());
     this.tweens.add({ targets: pauseHalo, alpha: 0.2, scale: 1.08, yoyo: true, repeat: -1, duration: 1800 });
 
-    const attackButton = this.add.container(WIDTH / 2, HEIGHT - 50);
+    const attackButton = this.add.container(WIDTH / 2, HEIGHT - 42);
     const attackShadow = this.add.graphics();
     attackShadow.fillStyle(0x071a20, 0.4);
     attackShadow.fillRoundedRect(-152, -31, 304, 68, 30);
