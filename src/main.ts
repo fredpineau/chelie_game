@@ -1263,14 +1263,6 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 5,
     }).setOrigin(0.5).setDepth(32);
-    this.add.text(homeCenterX, 240, "Chaque biome renforce la menace", {
-      fontFamily: "Arial",
-      fontSize: "22px",
-      color: "#f0fbfa",
-      fontStyle: "bold",
-      stroke: "#173943",
-      strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(32);
     this.add.text(homeCenterX, 270, `BÊTA · ${BETA_VERSION}`, {
       fontFamily: "Arial",
       fontSize: "16px",
