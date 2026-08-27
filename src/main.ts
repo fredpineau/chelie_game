@@ -203,7 +203,9 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementPreviewKey = "";
   private lastPlacementPreviewAllowed?: boolean;
   private lastPlacementPreview?: TowerPlacement;
+  private lastPlacementHapticAt = 0;
   private pathRecalculationVersion = 0;
+  private blockedPathCache?: Set<string>;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
 
@@ -309,7 +311,9 @@ class DefenseScene extends Phaser.Scene {
     this.waveRouteWarning = undefined;
     this.lastPlacementPreviewKey = "";
     this.lastPlacementPreviewAllowed = undefined;
+    this.lastPlacementHapticAt = 0;
     this.pathRecalculationVersion = 0;
+    this.blockedPathCache = undefined;
   }
 
   private drawWorld(): void {
@@ -1864,8 +1868,16 @@ class DefenseScene extends Phaser.Scene {
     this.placementPreviewFrame?.setFillStyle(color, 0.58).setStrokeStyle(5, color, 1);
     this.placementPreviewRange?.setFillStyle(color, 0.07).setStrokeStyle(3, color, 0.82);
     this.placementPreviewPrice?.setColor(check.allowed ? "#ffffff" : "#ffd6d6");
-    if (haptic && previewKey !== this.lastPlacementPreviewKey && typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(this.lastPlacementPreviewAllowed !== undefined && this.lastPlacementPreviewAllowed !== check.allowed ? 20 : 7);
+    const validityChanged = this.lastPlacementPreviewAllowed !== undefined && this.lastPlacementPreviewAllowed !== check.allowed;
+    if (
+      haptic
+      && previewKey !== this.lastPlacementPreviewKey
+      && (validityChanged || this.time.now - this.lastPlacementHapticAt >= 90)
+      && typeof navigator !== "undefined"
+      && navigator.vibrate
+    ) {
+      navigator.vibrate(validityChanged ? 20 : 6);
+      this.lastPlacementHapticAt = this.time.now;
     }
     this.lastPlacementPreviewKey = previewKey;
     this.lastPlacementPreviewAllowed = check.allowed;
@@ -1967,6 +1979,7 @@ class DefenseScene extends Phaser.Scene {
       this.showTowerActions(tower);
     });
     this.towers.push(tower);
+    this.blockedPathCache = undefined;
     this.recalculateEnemyPaths();
     this.selectedTower = null;
     this.hidePlacementPreview(true);
@@ -2453,16 +2466,25 @@ class DefenseScene extends Phaser.Scene {
 
   private findTarget(tower: Tower): Enemy | undefined {
     const definition = TOWERS[tower.kind];
-    const targets = this.enemies
-      .filter((enemy) => definition.target === "all" || definition.target === enemy.kind)
-      .filter((enemy) => Phaser.Math.Distance.Between(tower.body.x, tower.body.y, enemy.body.x, enemy.body.y) <= tower.range);
-    if (tower.priority === "strong") return targets.sort((a, b) => b.hp - a.hp)[0];
-    if (tower.priority === "weak") return targets.sort((a, b) => a.hp - b.hp)[0];
-    return targets.sort((a, b) => {
-      const remainingA = a.path.length - a.pathIndex;
-      const remainingB = b.path.length - b.pathIndex;
-      return remainingA - remainingB;
-    })[0];
+    const rangeSquared = tower.range * tower.range;
+    let bestTarget: Enemy | undefined;
+    let bestScore = tower.priority === "strong" ? -Infinity : Infinity;
+    for (const enemy of this.enemies) {
+      if (definition.target !== "all" && definition.target !== enemy.kind) continue;
+      const deltaX = tower.body.x - enemy.body.x;
+      const deltaY = tower.body.y - enemy.body.y;
+      if (deltaX * deltaX + deltaY * deltaY > rangeSquared) continue;
+      const score = tower.priority === "strong"
+        ? enemy.hp
+        : tower.priority === "weak"
+          ? enemy.hp
+          : enemy.path.length - enemy.pathIndex;
+      const isBetter = tower.priority === "strong" ? score > bestScore : score < bestScore;
+      if (!isBetter) continue;
+      bestScore = score;
+      bestTarget = enemy;
+    }
+    return bestTarget;
   }
 
   private applyTowerHit(tower: Tower, target: Enemy, definition: TowerDefinition): void {
@@ -2750,6 +2772,7 @@ class DefenseScene extends Phaser.Scene {
     this.energy += refund;
     tower.body.destroy();
     this.towers.splice(index, 1);
+    this.blockedPathCache = undefined;
     this.closeTowerActions();
     this.recalculateEnemyPaths();
     this.updateHud(`${name} supprimée — ${refund} pièces récupérées`);
@@ -3028,29 +3051,40 @@ class DefenseScene extends Phaser.Scene {
 
   private getBlockedPathCells(extraBlocked?: { col: number; row: number; x?: number; y?: number }): Set<string> {
     const key = (col: number, row: number) => `${col},${row}`;
-    const blockers = this.towers.map((tower) => ({ x: tower.body.x, y: tower.body.y }));
-    if (extraBlocked) {
-      blockers.push({
-        x: extraBlocked.x ?? this.gridToWorldX(extraBlocked.col, extraBlocked.row),
-        y: extraBlocked.y ?? this.gridToWorldY(extraBlocked.row),
-      });
+    const insectClearance = PLANT_FRAME_SIZE / 2 + 5;
+    if (!this.blockedPathCache) {
+      const blocked = new Set<string>();
+      const blockers = this.towers.map((tower) => ({ x: tower.body.x, y: tower.body.y }));
+      const roots = this.terrainFeatures.filter((feature) => feature.kind === "root");
+      for (let row = 0; row < GRID_ROWS; row += 1) {
+        for (let col = 0; col < GRID_COLS; col += 1) {
+          const cellX = this.gridToWorldX(col, row);
+          const cellY = this.gridToWorldY(row);
+          const blockedByPlant = blockers.some((plant) =>
+            Math.abs(cellX - plant.x) < insectClearance
+            && Math.abs(cellY - plant.y) < insectClearance,
+          );
+          const blockedByRoot = roots.some((root) => {
+            const deltaX = cellX - root.x;
+            const deltaY = cellY - root.y;
+            const clearance = root.radius + 5;
+            return deltaX * deltaX + deltaY * deltaY < clearance * clearance;
+          });
+          if (blockedByPlant || blockedByRoot) blocked.add(key(col, row));
+        }
+      }
+      this.blockedPathCache = blocked;
     }
 
-    const blocked = new Set<string>();
-    const insectClearance = PLANT_FRAME_SIZE / 2 + 5;
-    const roots = this.terrainFeatures.filter((feature) => feature.kind === "root");
+    if (!extraBlocked) return this.blockedPathCache;
+    const blocked = new Set(this.blockedPathCache);
+    const extraX = extraBlocked.x ?? this.gridToWorldX(extraBlocked.col, extraBlocked.row);
+    const extraY = extraBlocked.y ?? this.gridToWorldY(extraBlocked.row);
     for (let row = 0; row < GRID_ROWS; row += 1) {
       for (let col = 0; col < GRID_COLS; col += 1) {
         const cellX = this.gridToWorldX(col, row);
         const cellY = this.gridToWorldY(row);
-        const blockedByPlant = blockers.some((plant) =>
-          Math.abs(cellX - plant.x) < insectClearance
-          && Math.abs(cellY - plant.y) < insectClearance,
-        );
-        const blockedByRoot = roots.some((root) =>
-          Phaser.Math.Distance.Between(cellX, cellY, root.x, root.y) < root.radius + 5,
-        );
-        if (blockedByPlant || blockedByRoot) {
+        if (Math.abs(cellX - extraX) < insectClearance && Math.abs(cellY - extraY) < insectClearance) {
           blocked.add(key(col, row));
         }
       }
