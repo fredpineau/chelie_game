@@ -778,7 +778,7 @@ class DefenseScene extends Phaser.Scene {
     this.levelText = this.createCompactHudBadge(120, statsY, 212, "BIOME", 0x315c54, "#d8f2ed");
     this.waveText = this.createCompactHudBadge(360, statsY, 212, "VAGUE 1", 0x58322e, "#f4d7c9");
     this.hpText = this.createCompactHudBadge(600, statsY, 212, "♥ 20/20", 0xb83f52, "#ffd4da");
-    this.energyText = this.createCompactHudBadge(585, 70, 120, "🪙 60", 0xd7b84b, "#fff3b0", true);
+    this.energyText = this.createCompactHudBadge(585, 70, 120, "● 60", 0xd7b84b, "#ffd84d", true);
     this.shearText = this.createCompactHudBadge(670, 70, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
@@ -1673,11 +1673,11 @@ class DefenseScene extends Phaser.Scene {
         strokeThickness: 2,
       }).setOrigin(0.5);
       const targetLabel = definition.target === "sea" ? "SOL" : definition.target === "air" ? "AIR" : "TOUS";
-      const detail = available ? `${definition.cost} 🪙 · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
+      const detail = available ? `● ${definition.cost} · ${targetLabel}` : LEVELS[definition.unlockLevel].code;
       const target = this.add.text(0, 47, detail, {
         fontFamily: "Arial",
         fontSize: "17px",
-        color: available ? "#cbd5e1" : "#8190a5",
+        color: available ? "#ffe27a" : "#8190a5",
         fontStyle: "bold",
         stroke: "#08100c",
         strokeThickness: 2,
@@ -1841,8 +1841,8 @@ class DefenseScene extends Phaser.Scene {
       .setStrokeStyle(5, 0x82f5a0, 1);
     const scale = kind === "flak" ? 0.62 : 0.72;
     const plant = this.createPlantVisual(kind, definition.color).setPosition(0, 1).setScale(scale).setAlpha(0.72);
-    const price = this.add.text(0, PLANT_FRAME_SIZE / 2 + 13, `${definition.cost} 🪙`, {
-      fontFamily: "Arial", fontSize: "18px", color: "#ffffff", fontStyle: "bold",
+    const price = this.add.text(0, PLANT_FRAME_SIZE / 2 + 13, `● ${definition.cost}`, {
+      fontFamily: "Arial", fontSize: "18px", color: "#ffe27a", fontStyle: "bold",
       stroke: "#10231b", strokeThickness: 4,
     }).setOrigin(0.5);
     preview.add([range, frame, plant, price]);
@@ -2768,7 +2768,7 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private showEnergyReward(x: number, y: number, amount: number, isBoss: boolean): void {
-    const text = this.add.text(x, y - 35, `+${amount} 🪙`, {
+    const text = this.add.text(x, y - 35, `+${amount} ●`, {
       fontFamily: "Arial",
       fontSize: isBoss ? "18px" : "13px",
       color: isBoss ? "#fde047" : "#facc15",
@@ -3083,7 +3083,7 @@ class DefenseScene extends Phaser.Scene {
 
   private updateHud(_message: string): void {
     this.hpText?.setText(`♥ ${this.baseHp}/20`);
-    this.energyText?.setText(`🪙 ${this.energy}`);
+    this.energyText?.setText(`● ${this.energy}`);
     this.waveText?.setText(`VAGUE ${Math.max(1, this.wave)}`);
     this.shearText?.setText(`💧 ${this.wateringCans}`);
     this.statusText?.setText("").setVisible(false);
