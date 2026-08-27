@@ -206,6 +206,7 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementHapticAt = 0;
   private placementDragActive = false;
   private placementDragStartedAt = 0;
+  private placementEnemyMarkers?: Phaser.GameObjects.Graphics;
   private pathRecalculationVersion = 0;
   private blockedPathCache?: Set<string>;
   private waveRouteWarning?: Phaser.GameObjects.Container;
@@ -317,6 +318,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastPlacementHapticAt = 0;
     this.placementDragActive = false;
     this.placementDragStartedAt = 0;
+    this.placementEnemyMarkers = undefined;
     this.pathRecalculationVersion = 0;
     this.blockedPathCache = undefined;
   }
@@ -1751,6 +1753,29 @@ class DefenseScene extends Phaser.Scene {
     this.placementDragActive = true;
     this.placementDragStartedAt = this.time.now;
     this.tweens.pauseAll();
+    if (this.enemies.length >= 18) {
+      const markers = this.add.graphics().setDepth(16);
+      for (const enemy of this.enemies) {
+        if (!enemy.body.active) continue;
+        enemy.body.setVisible(false);
+        const color = enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
+        const radius = enemy.isBoss ? 10 : 7;
+        markers.fillStyle(color, 0.94);
+        markers.fillCircle(enemy.body.x, enemy.body.y, radius);
+        markers.lineStyle(enemy.isBoss ? 3 : 2, enemy.kind === "air" ? 0xd8faff : 0xead1a6, 0.92);
+        markers.strokeCircle(enemy.body.x, enemy.body.y, radius);
+        if (enemy.kind === "air") {
+          markers.lineStyle(2, 0xb9f3f7, 0.82);
+          markers.lineBetween(enemy.body.x - 12, enemy.body.y, enemy.body.x + 12, enemy.body.y);
+        }
+        const healthRatio = Phaser.Math.Clamp(enemy.hp / enemy.maxHp, 0, 1);
+        markers.fillStyle(0x14211d, 0.86);
+        markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20, 3);
+        markers.fillStyle(0x7fd68c, 0.96);
+        markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20 * healthRatio, 3);
+      }
+      this.placementEnemyMarkers = markers;
+    }
   }
 
   private endPlacementDrag(): void {
@@ -1769,6 +1794,11 @@ class DefenseScene extends Phaser.Scene {
     });
     this.placementDragActive = false;
     this.placementDragStartedAt = 0;
+    this.enemies.forEach((enemy) => {
+      if (enemy.body.active) enemy.body.setVisible(true);
+    });
+    this.placementEnemyMarkers?.destroy();
+    this.placementEnemyMarkers = undefined;
     this.tweens.resumeAll();
   }
 
