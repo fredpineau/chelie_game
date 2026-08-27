@@ -1987,9 +1987,6 @@ class DefenseScene extends Phaser.Scene {
     if (!topEntryOpen || !leftEntryOpen) {
       return { allowed: false, reason: "Chaque entrée doit conserver au moins un passage" };
     }
-    // Une entrée doit toujours pouvoir rejoindre au moins une sortie, mais il
-    // n'est pas nécessaire de réserver simultanément les quatre combinaisons.
-    // Le trajet réellement annoncé ou utilisé reste, lui, obligatoirement ouvert.
     if (this.wavePreparing || this.waveActive) {
       const warnedRoute = this.getRouteOptions().find((route) =>
         route.top === this.waveEntryTop && route.exit === this.waveExitId,
@@ -3088,7 +3085,10 @@ class DefenseScene extends Phaser.Scene {
     for (let index = 0; index < frontier.length; index += 1) {
       const current = frontier[index];
       if (current.col === end.col && current.row === end.row) return true;
-      for (const [colOffset, rowOffset] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [colOffset, rowOffset] of [
+        [1, 0], [-1, 0], [0, 1], [0, -1],
+        [1, 1], [1, -1], [-1, 1], [-1, -1],
+      ]) {
         const col = current.col + colOffset;
         const row = current.row + rowOffset;
         const nextKey = key(col, row);
@@ -3181,10 +3181,14 @@ class DefenseScene extends Phaser.Scene {
     const costs = new Map<string, number>([[key(start.col, start.row), 0]]);
     const previous = new Map<string, { col: number; row: number }>();
     const directions = [
-      { col: 1, row: 0 },
-      { col: 0, row: 1 },
-      { col: 0, row: -1 },
-      { col: -1, row: 0 },
+      { col: 1, row: 0, cost: 1 },
+      { col: 0, row: 1, cost: 1 },
+      { col: 0, row: -1, cost: 1 },
+      { col: -1, row: 0, cost: 1 },
+      { col: 1, row: 1, cost: Math.SQRT2 },
+      { col: 1, row: -1, cost: Math.SQRT2 },
+      { col: -1, row: 1, cost: Math.SQRT2 },
+      { col: -1, row: -1, cost: Math.SQRT2 },
     ];
 
     const attractors = this.towers.map((tower) => ({ col: tower.col, row: tower.row }));
@@ -3219,7 +3223,7 @@ class DefenseScene extends Phaser.Scene {
         const guideDistance = Math.abs(next.col - this.waveRouteGuide.col) + Math.abs(next.row - this.waveRouteGuide.row);
         const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.0175);
         const movementCost = Math.max(0.34, 1 - scentStrength - routeAttraction);
-        const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost;
+        const newCost = (costs.get(key(current.col, current.row)) ?? 0) + movementCost * direction.cost;
         if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
         costs.set(nextKey, newCost);
         previous.set(nextKey, current);
