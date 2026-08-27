@@ -1838,6 +1838,10 @@ class DefenseScene extends Phaser.Scene {
       this.updateHud(`${TOWERS[kind].name} sera débloqué dans ${LEVELS[TOWERS[kind].unlockLevel].code}`);
       return;
     }
+    if (this.selectedTower === kind) {
+      this.cancelTowerSelection();
+      return;
+    }
     this.selectedTower = kind;
     this.closeTowerActions();
     this.createPlacementPreview(kind);
@@ -1851,6 +1855,21 @@ class DefenseScene extends Phaser.Scene {
       });
     });
     this.updateHud(`${TOWERS[kind].name} sélectionnée — améliorations : ${UPGRADE_COSTS[kind].slice(1).join(" / ")} pièces`);
+  }
+
+  private cancelTowerSelection(message = "Sélection annulée"): void {
+    this.selectedTower = null;
+    this.placementDragActive = false;
+    this.placementBattleDelta = 0;
+    this.hidePlacementPreview(true);
+    this.disablePlacementEnemyMarkers();
+    this.towerButtons.forEach((buttons) => {
+      buttons.forEach((button) => {
+        const bg = button.getAt(0) as Phaser.GameObjects.Arc;
+        bg.setStrokeStyle(2, 0x28665e, 1);
+      });
+    });
+    this.updateHud(message);
   }
 
   private getTowerPlacement(x: number, y: number): TowerPlacement {
@@ -2007,6 +2026,7 @@ class DefenseScene extends Phaser.Scene {
     if (!placementCheck.allowed) {
       this.updateHud(placementCheck.reason);
       this.cameras.main.shake(120, 0.002);
+      if (this.energy < definition.cost) this.cancelTowerSelection(`${placementCheck.reason} — sélection annulée`);
       return;
     }
     const { x: towerX, y: towerY, col, row } = placement;
