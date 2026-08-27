@@ -163,6 +163,7 @@ class DefenseScene extends Phaser.Scene {
   private wave = 0;
   private enemiesToSpawn = 0;
   private spawnedThisWave = 0;
+  private escapedThisWave = 0;
   private waveActive = false;
   private wavePreparing = false;
   private waveStartsAt = 0;
@@ -241,12 +242,11 @@ class DefenseScene extends Phaser.Scene {
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
-      const earnsWateringCan = this.levelIndex !== LEVELS.length - 1 || this.wave % 5 === 0;
-      if (earnsWateringCan) {
-        this.wateringCans += 1;
-        this.savePermanentProgress();
-        this.showWateringCanReward();
-      }
+      const perfectWave = this.escapedThisWave === 0;
+      const dropReward = perfectWave ? (this.isBossWave() ? 3 : 2) : 1;
+      this.wateringCans += dropReward;
+      this.savePermanentProgress();
+      this.showWateringCanReward(dropReward, perfectWave);
       const level = LEVELS[this.levelIndex];
       if (level.waves !== null && this.wave >= level.waves) {
         this.completeLevel();
@@ -269,6 +269,7 @@ class DefenseScene extends Phaser.Scene {
     this.wave = 0;
     this.enemiesToSpawn = 0;
     this.spawnedThisWave = 0;
+    this.escapedThisWave = 0;
     this.waveActive = false;
     this.wavePreparing = false;
     this.waveStartsAt = 0;
@@ -846,7 +847,7 @@ class DefenseScene extends Phaser.Scene {
       "Les insectes éliminés rapportent des pièces. Elles servent à acheter et améliorer les plantes jusqu’au niveau 5. Chaque niveau augmente les dégâts, la portée et la cadence. Une plante vendue rembourse 70 % de l’investissement.",
       "",
       "GOUTTES PERMANENTES",
-      "Une goutte est gagnée après chaque vague classique et toutes les cinq vagues en mode infini. Elles améliorent définitivement une famille de plantes et sont conservées après une défaite.",
+      "Chaque vague réussie rapporte des gouttes : une avec des fuites, deux sans aucune fuite et trois pour un boss parfait. Elles améliorent définitivement une famille de plantes et sont conservées après une défaite.",
       "",
       "ENNEMIS ET TERRAINS",
       "Affrontez des insectes terrestres, volants, rapides, blindés, régénérateurs et des boss Alpha. Racines, tourbe, spores, glu, parasites et zones fertiles modifient votre stratégie.",
@@ -1213,7 +1214,7 @@ class DefenseScene extends Phaser.Scene {
         wordWrap: { width: 590 },
       }).setOrigin(0.5);
     const rewards = this.add.text(guideCenterX, 350,
-      "COMMENT EN GAGNER\n\n• Mondes classiques : 1 après chaque vague\n• Mode infini : 1 toutes les 5 vagues\n• Les gouttes sont conservées après une défaite", {
+      "COMMENT EN GAGNER\n\n• Vague réussie avec fuite : 1 goutte\n• Vague parfaite : 2 gouttes\n• Boss parfait : 3 gouttes\n• Les gouttes sont conservées après une défaite", {
         fontFamily: "Arial",
         fontSize: "20px",
         color: "#d9f4f2",
@@ -1821,6 +1822,7 @@ class DefenseScene extends Phaser.Scene {
     this.selectWaveRoute();
     this.enemiesToSpawn = 6 + this.wave * 3 + level.swarmBonus;
     this.spawnedThisWave = 0;
+    this.escapedThisWave = 0;
     this.wavePreparing = true;
     this.waveStartsAt = this.time.now + 3_000;
     this.nextSpawnAt = 0;
@@ -2145,6 +2147,7 @@ class DefenseScene extends Phaser.Scene {
         this.snapExitTrap(enemy.exitId);
         enemy.body.destroy();
         this.enemies.splice(index, 1);
+        this.escapedThisWave += 1;
         this.baseHp = Math.max(0, this.baseHp - enemy.coreDamage);
         this.cameras.main.shake(180, 0.005);
         const escaped = 20 - this.baseHp;
@@ -2273,8 +2276,9 @@ class DefenseScene extends Phaser.Scene {
       : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
   }
 
-  private showWateringCanReward(): void {
-    const reward = this.add.text(WIDTH / 2, HEIGHT - 292, "+1 ARROSOIR  💧", {
+  private showWateringCanReward(amount: number, perfect: boolean): void {
+    const label = perfect ? `+${amount} GOUTTES · PARFAIT  💧` : `+${amount} GOUTTE  💧`;
+    const reward = this.add.text(WIDTH / 2, HEIGHT - 292, label, {
       fontFamily: "Arial",
       fontSize: "22px",
       color: "#dffaff",
