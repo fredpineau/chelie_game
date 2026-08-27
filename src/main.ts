@@ -248,6 +248,7 @@ class DefenseScene extends Phaser.Scene {
     this.moveEnemies(time, delta);
     this.fireTowers(time);
     this.updateTowerUpgrades(time);
+    if (this.selectedTower !== null) this.enablePlacementEnemyMarkers();
 
     if (this.waveActive && this.spawnedThisWave >= this.enemiesToSpawn && this.enemies.length === 0) {
       this.waveActive = false;
@@ -1753,29 +1754,44 @@ class DefenseScene extends Phaser.Scene {
     this.placementDragActive = true;
     this.placementDragStartedAt = this.time.now;
     this.tweens.pauseAll();
-    if (this.enemies.length >= 18) {
-      const markers = this.add.graphics().setDepth(16);
-      for (const enemy of this.enemies) {
-        if (!enemy.body.active) continue;
-        enemy.body.setVisible(false);
-        const color = enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
-        const radius = enemy.isBoss ? 10 : 7;
-        markers.fillStyle(color, 0.94);
-        markers.fillCircle(enemy.body.x, enemy.body.y, radius);
-        markers.lineStyle(enemy.isBoss ? 3 : 2, enemy.kind === "air" ? 0xd8faff : 0xead1a6, 0.92);
-        markers.strokeCircle(enemy.body.x, enemy.body.y, radius);
-        if (enemy.kind === "air") {
-          markers.lineStyle(2, 0xb9f3f7, 0.82);
-          markers.lineBetween(enemy.body.x - 12, enemy.body.y, enemy.body.x + 12, enemy.body.y);
-        }
-        const healthRatio = Phaser.Math.Clamp(enemy.hp / enemy.maxHp, 0, 1);
-        markers.fillStyle(0x14211d, 0.86);
-        markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20, 3);
-        markers.fillStyle(0x7fd68c, 0.96);
-        markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20 * healthRatio, 3);
+    this.enablePlacementEnemyMarkers();
+  }
+
+  private enablePlacementEnemyMarkers(): void {
+    // Les animations détaillées de nombreux insectes sont la principale source
+    // de latence au moment de saisir une plante sur téléphone. Le rendu tactique
+    // commence dès la sélection, avant même que le doigt atteigne la carte.
+    if (!this.placementEnemyMarkers && this.enemies.length < 8) return;
+    if (!this.placementEnemyMarkers) this.placementEnemyMarkers = this.add.graphics().setDepth(16);
+    const markers = this.placementEnemyMarkers;
+    markers.clear();
+    for (const enemy of this.enemies) {
+      if (!enemy.body.active) continue;
+      enemy.body.setVisible(false);
+      const color = enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
+      const radius = enemy.isBoss ? 10 : 7;
+      markers.fillStyle(color, 0.94);
+      markers.fillCircle(enemy.body.x, enemy.body.y, radius);
+      markers.lineStyle(enemy.isBoss ? 3 : 2, enemy.kind === "air" ? 0xd8faff : 0xead1a6, 0.92);
+      markers.strokeCircle(enemy.body.x, enemy.body.y, radius);
+      if (enemy.kind === "air") {
+        markers.lineStyle(2, 0xb9f3f7, 0.82);
+        markers.lineBetween(enemy.body.x - 12, enemy.body.y, enemy.body.x + 12, enemy.body.y);
       }
-      this.placementEnemyMarkers = markers;
+      const healthRatio = Phaser.Math.Clamp(enemy.hp / enemy.maxHp, 0, 1);
+      markers.fillStyle(0x14211d, 0.86);
+      markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20, 3);
+      markers.fillStyle(0x7fd68c, 0.96);
+      markers.fillRect(enemy.body.x - 10, enemy.body.y - radius - 7, 20 * healthRatio, 3);
     }
+  }
+
+  private disablePlacementEnemyMarkers(): void {
+    this.enemies.forEach((enemy) => {
+      if (enemy.body.active) enemy.body.setVisible(true);
+    });
+    this.placementEnemyMarkers?.destroy();
+    this.placementEnemyMarkers = undefined;
   }
 
   private endPlacementDrag(): void {
@@ -1794,11 +1810,8 @@ class DefenseScene extends Phaser.Scene {
     });
     this.placementDragActive = false;
     this.placementDragStartedAt = 0;
-    this.enemies.forEach((enemy) => {
-      if (enemy.body.active) enemy.body.setVisible(true);
-    });
-    this.placementEnemyMarkers?.destroy();
-    this.placementEnemyMarkers = undefined;
+    if (this.selectedTower === null) this.disablePlacementEnemyMarkers();
+    else this.enablePlacementEnemyMarkers();
     this.tweens.resumeAll();
   }
 
@@ -1818,6 +1831,7 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
     this.selectedTower = kind;
+    this.enablePlacementEnemyMarkers();
     this.closeTowerActions();
     this.createPlacementPreview(kind);
     this.towerButtons.forEach((buttons, buttonKind) => {
@@ -2051,6 +2065,7 @@ class DefenseScene extends Phaser.Scene {
     this.blockedPathCache = undefined;
     this.recalculateEnemyPaths();
     this.selectedTower = null;
+    this.disablePlacementEnemyMarkers();
     this.hidePlacementPreview(true);
     this.towerButtons.forEach((buttons) => {
       buttons.forEach((button) => {
