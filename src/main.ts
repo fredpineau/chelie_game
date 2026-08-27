@@ -1183,11 +1183,11 @@ class DefenseScene extends Phaser.Scene {
     }
     return this.add.text(x, y, initialText, {
       fontFamily: "Arial",
-      fontSize: highlighted ? "26px" : "15px",
+      fontSize: highlighted ? "26px" : "17px",
       color: textColor,
       fontStyle: "bold",
       stroke: "#07110d",
-      strokeThickness: highlighted ? 4 : 2,
+      strokeThickness: highlighted ? 4 : 3,
       shadow: highlighted ? {
         offsetX: 0,
         offsetY: 0,
