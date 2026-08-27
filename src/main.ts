@@ -205,7 +205,7 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementPreview?: TowerPlacement;
   private lastPlacementHapticAt = 0;
   private placementDragActive = false;
-  private placementDragStartedAt = 0;
+  private placementBattleDelta = 0;
   private placementEnemyMarkers?: Phaser.GameObjects.Graphics;
   private pathRecalculationVersion = 0;
   private blockedPathCache?: Set<string>;
@@ -241,7 +241,18 @@ class DefenseScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (!this.levelStarted || this.baseHp <= 0 || this.menuOpen) return;
-    if (this.placementDragActive) return;
+
+    // Pendant une pose, la bataille reste active mais ses calculs sont regroupés
+    // à 20 images/s. L'interface tactile, elle, reste rendue à pleine fréquence.
+    // Le delta cumulé conserve la vitesse réelle des ennemis et les récompenses.
+    if (this.selectedTower !== null) {
+      this.placementBattleDelta += delta;
+      if (this.placementBattleDelta < 50) return;
+      delta = this.placementBattleDelta;
+      this.placementBattleDelta = 0;
+    } else {
+      this.placementBattleDelta = 0;
+    }
 
     this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
@@ -318,7 +329,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastPlacementPreviewAllowed = undefined;
     this.lastPlacementHapticAt = 0;
     this.placementDragActive = false;
-    this.placementDragStartedAt = 0;
+    this.placementBattleDelta = 0;
     this.placementEnemyMarkers = undefined;
     this.pathRecalculationVersion = 0;
     this.blockedPathCache = undefined;
@@ -1757,8 +1768,6 @@ class DefenseScene extends Phaser.Scene {
   private beginPlacementDrag(): void {
     if (this.placementDragActive) return;
     this.placementDragActive = true;
-    this.placementDragStartedAt = this.time.now;
-    this.tweens.pauseAll();
     this.enablePlacementEnemyMarkers();
   }
 
@@ -1801,23 +1810,9 @@ class DefenseScene extends Phaser.Scene {
 
   private endPlacementDrag(): void {
     if (!this.placementDragActive) return;
-    const pausedDuration = Math.max(0, this.time.now - this.placementDragStartedAt);
-    if (this.nextSpawnAt > 0) this.nextSpawnAt += pausedDuration;
-    if (this.nextWaveAt > 0) this.nextWaveAt += pausedDuration;
-    if (this.waveStartsAt > 0) this.waveStartsAt += pausedDuration;
-    this.towers.forEach((tower) => {
-      tower.lastShot += pausedDuration;
-      if (tower.isUpgrading) tower.upgradeReadyAt += pausedDuration;
-    });
-    this.enemies.forEach((enemy) => {
-      if (enemy.slowedUntil > 0) enemy.slowedUntil += pausedDuration;
-      if (enemy.swiftSuppressedUntil > 0) enemy.swiftSuppressedUntil += pausedDuration;
-    });
     this.placementDragActive = false;
-    this.placementDragStartedAt = 0;
     if (this.selectedTower === null) this.disablePlacementEnemyMarkers();
     else this.enablePlacementEnemyMarkers();
-    this.tweens.resumeAll();
   }
 
   private selectNearestTower(x: number, y: number): void {
@@ -1838,9 +1833,8 @@ class DefenseScene extends Phaser.Scene {
     this.selectedTower = kind;
     this.closeTowerActions();
     this.createPlacementPreview(kind);
-    // Stoppe immédiatement la simulation lourde dès la prise de la plante.
-    // Attendre le pointerdown sur la carte laissait encore les grosses vagues
-    // ralentir le glissement entre l'herbier et la zone de jeu.
+    // Active immédiatement le rendu tactique et le calcul regroupé : la bataille
+    // continue, mais ne ralentit plus le glissement vers la carte.
     this.beginPlacementDrag();
     this.towerButtons.forEach((buttons, buttonKind) => {
       buttons.forEach((button) => {
@@ -2540,6 +2534,12 @@ class DefenseScene extends Phaser.Scene {
 
       tower.lastShot = time;
       const definition = TOWERS[tower.kind];
+      if (this.selectedTower !== null) {
+        // En mode placement, le tir reste effectif (dégâts, morts et pièces),
+        // mais sans créer de projectile animé coûteux.
+        this.applyTowerHit(tower, target, definition);
+        continue;
+      }
       const projectile = this.add.circle(tower.body.x, tower.body.y, 5, definition.color);
       this.tweens.add({
         targets: projectile,
@@ -2609,15 +2609,17 @@ class DefenseScene extends Phaser.Scene {
 
     if (mastery < 4) return;
     const stickyRadius = 82;
-    const stickyZone = this.add.circle(impactX, impactY, stickyRadius, 0x67a3a6, 0.1)
-      .setStrokeStyle(3, 0xa5f3fc, 0.62);
-    this.tweens.add({
-      targets: stickyZone,
-      alpha: 0,
-      scale: 1.12,
-      duration: 520,
-      onComplete: () => stickyZone.destroy(),
-    });
+    if (this.selectedTower === null) {
+      const stickyZone = this.add.circle(impactX, impactY, stickyRadius, 0x67a3a6, 0.1)
+        .setStrokeStyle(3, 0xa5f3fc, 0.62);
+      this.tweens.add({
+        targets: stickyZone,
+        alpha: 0,
+        scale: 1.12,
+        duration: 520,
+        onComplete: () => stickyZone.destroy(),
+      });
+    }
     this.enemies
       .filter((enemy) => enemy !== target && enemy.body.active)
       .filter((enemy) => Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadius)
@@ -2641,7 +2643,7 @@ class DefenseScene extends Phaser.Scene {
     const effectiveDamage = ignoresArmor ? damage : Math.max(1, Math.round(damage * (1 - enemy.armor)));
     enemy.hp -= effectiveDamage;
     enemy.healthBar.width = enemy.healthBarWidth * Math.max(0, enemy.hp / enemy.maxHp);
-    this.createImpact(enemy.body.x, enemy.body.y, color);
+    if (this.selectedTower === null) this.createImpact(enemy.body.x, enemy.body.y, color);
     if (enemy.hp <= 0) this.destroyEnemy(enemy);
   }
 
@@ -2649,7 +2651,9 @@ class DefenseScene extends Phaser.Scene {
     const index = this.enemies.indexOf(enemy);
     if (index === -1) return;
     this.energy += enemy.energyReward;
-    this.showEnergyReward(enemy.body.x, enemy.body.y, enemy.energyReward, enemy.isBoss);
+    if (this.selectedTower === null) {
+      this.showEnergyReward(enemy.body.x, enemy.body.y, enemy.energyReward, enemy.isBoss);
+    }
     enemy.body.destroy();
     this.enemies.splice(index, 1);
     this.updateHud(enemy.isBoss
