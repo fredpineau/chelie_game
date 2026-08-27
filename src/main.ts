@@ -778,8 +778,8 @@ class DefenseScene extends Phaser.Scene {
     this.levelText = this.createCompactHudBadge(120, statsY, 212, "BIOME", 0x315c54, "#d8f2ed");
     this.waveText = this.createCompactHudBadge(360, statsY, 212, "VAGUE 1", 0x58322e, "#f4d7c9");
     this.hpText = this.createCompactHudBadge(600, statsY, 212, "♥ 20/20", 0xb83f52, "#ffd4da");
-    this.energyText = this.createCompactHudBadge(650, 24, 120, "◈ 60", 0xd7b84b, "#fff3b0", true);
-    this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
+    this.energyText = this.createCompactHudBadge(585, 70, 120, "◈ 60", 0xd7b84b, "#fff3b0", true);
+    this.shearText = this.createCompactHudBadge(670, 70, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
     const attackButton = this.add.container(WIDTH / 2 - 25, HEIGHT - 42);
