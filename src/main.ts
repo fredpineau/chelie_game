@@ -1886,12 +1886,22 @@ class DefenseScene extends Phaser.Scene {
     const maxTowerY = mapBottom - PLANT_FRAME_SIZE / 2;
     const placementHalfColumns = Math.floor((maxTowerX - minTowerX) / PLANT_HALF_STEP);
     const placementHalfRows = Math.floor((maxTowerY - minTowerY) / PLANT_HALF_STEP);
-    const horizontalStep = (maxTowerX - minTowerX) / placementHalfColumns;
-    const verticalStep = (maxTowerY - minTowerY) / placementHalfRows;
-    const placementHalfCol = Phaser.Math.Clamp(Math.round((x - minTowerX) / horizontalStep), 0, placementHalfColumns);
-    const placementHalfRow = Phaser.Math.Clamp(Math.round((y - minTowerY) / verticalStep), 0, placementHalfRows);
-    const towerX = minTowerX + placementHalfCol * horizontalStep;
-    const towerY = minTowerY + placementHalfRow * verticalStep;
+    // Le même pas exact est utilisé sur les deux axes. L'espace restant est
+    // partagé entre les bords opposés au lieu d'étirer chaque axe différemment.
+    const placementStartX = minTowerX + ((maxTowerX - minTowerX) - placementHalfColumns * PLANT_HALF_STEP) / 2;
+    const placementStartY = minTowerY + ((maxTowerY - minTowerY) - placementHalfRows * PLANT_HALF_STEP) / 2;
+    const placementHalfCol = Phaser.Math.Clamp(
+      Math.round((x - placementStartX) / PLANT_HALF_STEP),
+      0,
+      placementHalfColumns,
+    );
+    const placementHalfRow = Phaser.Math.Clamp(
+      Math.round((y - placementStartY) / PLANT_HALF_STEP),
+      0,
+      placementHalfRows,
+    );
+    const towerX = placementStartX + placementHalfCol * PLANT_HALF_STEP;
+    const towerY = placementStartY + placementHalfRow * PLANT_HALF_STEP;
     return {
       x: towerX,
       y: towerY,
