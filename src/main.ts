@@ -2006,14 +2006,6 @@ class DefenseScene extends Phaser.Scene {
     if (!topEntryOpen || !leftEntryOpen) {
       return { allowed: false, reason: "Chaque entrée doit conserver au moins un passage" };
     }
-    if (this.wavePreparing || this.waveActive) {
-      const warnedRoute = this.getRouteOptions().find((route) =>
-        route.top === this.waveEntryTop && route.exit === this.waveExitId,
-      );
-      if (warnedRoute && !this.hasGridPath(warnedRoute.entry, warnedRoute.destination, blockedCells)) {
-        return { allowed: false, reason: "Cette plante bloquerait le trajet de la vague" };
-      }
-    }
     return { allowed: true, reason: "Emplacement disponible" };
   }
 
@@ -3161,17 +3153,35 @@ class DefenseScene extends Phaser.Scene {
       return distanceA - distanceB;
     });
 
-    const exits: Array<{ id: ExitId; col: number; row: number; x: number; y: number }> = enemy.exitId === "right"
-      ? [{ id: "right", col: TOP_EXIT_COL, row: TOP_EXIT_ROW, x: this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW), y: this.gridToWorldY(TOP_EXIT_ROW) }]
-      : [{ id: "bottom", col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW, x: this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW), y: this.gridToWorldY(BOTTOM_EXIT_ROW) }];
+    const rightExit = {
+      id: "right" as ExitId,
+      col: TOP_EXIT_COL,
+      row: TOP_EXIT_ROW,
+      x: this.gridToWorldX(TOP_EXIT_COL, TOP_EXIT_ROW),
+      y: this.gridToWorldY(TOP_EXIT_ROW),
+    };
+    const bottomExit = {
+      id: "bottom" as ExitId,
+      col: BOTTOM_EXIT_COL,
+      row: BOTTOM_EXIT_ROW,
+      x: this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW),
+      y: this.gridToWorldY(BOTTOM_EXIT_ROW),
+    };
+    // Conserve la sortie prévue en priorité, mais utilise l'autre si une
+    // nouvelle plante ferme ce trajet tout en laissant un passage réel.
+    const exits = enemy.exitId === "right" ? [rightExit, bottomExit] : [bottomExit, rightExit];
 
     let bestRoute: { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null = null;
-    for (const start of candidates) {
-      for (const exit of exits) {
+    for (const exit of exits) {
+      let bestPathForExit: Phaser.Math.Vector2[] | null = null;
+      for (const start of candidates) {
         const path = this.calculatePath(start, { col: exit.col, row: exit.row });
-        if (!path || (bestRoute && path.length >= bestRoute.path.length)) continue;
-        bestRoute = { path, exit };
+        if (!path || (bestPathForExit && path.length >= bestPathForExit.length)) continue;
+        bestPathForExit = path;
       }
+      if (!bestPathForExit) continue;
+      bestRoute = { path: bestPathForExit, exit };
+      break;
     }
 
     if (bestRoute) {
