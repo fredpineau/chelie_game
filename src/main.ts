@@ -1745,7 +1745,12 @@ class DefenseScene extends Phaser.Scene {
       if (!pointer.isDown) this.hidePlacementPreview();
     });
     this.input.on("pointerup", () => {
-      if (this.placementDragActive) this.time.delayedCall(0, () => this.endPlacementDrag());
+      // Un relâchement sur le bouton de l'herbier ne doit pas quitter la pause
+      // tactique. Celle-ci se termine seulement après un passage sur la carte
+      // (pose ou relâchement du doigt hors de la zone).
+      if (this.placementDragActive && this.lastPlacementPreview) {
+        this.time.delayedCall(0, () => this.endPlacementDrag());
+      }
     });
   }
 
@@ -1831,9 +1836,12 @@ class DefenseScene extends Phaser.Scene {
       return;
     }
     this.selectedTower = kind;
-    this.enablePlacementEnemyMarkers();
     this.closeTowerActions();
     this.createPlacementPreview(kind);
+    // Stoppe immédiatement la simulation lourde dès la prise de la plante.
+    // Attendre le pointerdown sur la carte laissait encore les grosses vagues
+    // ralentir le glissement entre l'herbier et la zone de jeu.
+    this.beginPlacementDrag();
     this.towerButtons.forEach((buttons, buttonKind) => {
       buttons.forEach((button) => {
         const bg = button.getAt(0) as Phaser.GameObjects.Arc;
