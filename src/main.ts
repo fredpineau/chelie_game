@@ -1897,76 +1897,20 @@ class DefenseScene extends Phaser.Scene {
     // partagé entre les bords opposés au lieu d'étirer chaque axe différemment.
     const placementStartX = minTowerX + ((maxTowerX - minTowerX) - placementHalfColumns * PLANT_HALF_STEP) / 2;
     const placementStartY = minTowerY + ((maxTowerY - minTowerY) - placementHalfRows * PLANT_HALF_STEP) / 2;
-    let placementHalfCol = Phaser.Math.Clamp(
+    const placementHalfCol = Phaser.Math.Clamp(
       Math.round((x - placementStartX) / PLANT_HALF_STEP),
       0,
       placementHalfColumns,
     );
-    let placementHalfRow = Phaser.Math.Clamp(
+    const placementHalfRow = Phaser.Math.Clamp(
       Math.round((y - placementStartY) / PLANT_HALF_STEP),
       0,
       placementHalfRows,
     );
-    const positionFor = (halfCol: number, halfRow: number): { x: number; y: number } => ({
-      x: placementStartX + halfCol * PLANT_HALF_STEP,
-      y: placementStartY + halfRow * PLANT_HALF_STEP,
-    });
-    const overlapsTower = (candidateX: number, candidateY: number): boolean => this.towers.some((tower) =>
-      Math.abs(tower.body.x - candidateX) < PLANT_FRAME_SIZE - 1
-      && Math.abs(tower.body.y - candidateY) < PLANT_FRAME_SIZE - 1,
-    );
-    let snappedPosition = positionFor(placementHalfCol, placementHalfRow);
-
-    // Un demi-pas est utile pour dessiner un escalier mais chevauche une plante
-    // si le joueur vise juste à côté. Dans ce cas, cherche automatiquement la
-    // position libre la plus proche où les cadres peuvent réellement se toucher.
-    if (overlapsTower(snappedPosition.x, snappedPosition.y)) {
-      const anchor = this.towers
-        .filter((tower) =>
-          Math.abs(tower.body.x - snappedPosition.x) < PLANT_FRAME_SIZE - 1
-          && Math.abs(tower.body.y - snappedPosition.y) < PLANT_FRAME_SIZE - 1,
-        )
-        .map((tower) => ({ tower, distance: Phaser.Math.Distance.Squared(x, y, tower.body.x, tower.body.y) }))
-        .sort((a, b) => a.distance - b.distance)[0]?.tower;
-      const desiredX = anchor ? x - anchor.body.x : 0;
-      const desiredY = anchor ? y - anchor.body.y : 0;
-      const directionThreshold = 5;
-      const nearby: Array<{ halfCol: number; halfRow: number; x: number; y: number; score: number }> = [];
-      for (let rowOffset = -2; rowOffset <= 2; rowOffset += 1) {
-        for (let colOffset = -2; colOffset <= 2; colOffset += 1) {
-          const halfCol = placementHalfCol + colOffset;
-          const halfRow = placementHalfRow + rowOffset;
-          if (halfCol < 0 || halfCol > placementHalfColumns || halfRow < 0 || halfRow > placementHalfRows) continue;
-          const candidate = positionFor(halfCol, halfRow);
-          if (overlapsTower(candidate.x, candidate.y)) continue;
-          const candidateX = anchor ? candidate.x - anchor.body.x : 0;
-          const candidateY = anchor ? candidate.y - anchor.body.y : 0;
-          let directionPenalty = 0;
-          if (Math.abs(desiredX) > directionThreshold && Math.sign(candidateX) !== Math.sign(desiredX)) {
-            directionPenalty += 100_000;
-          }
-          if (Math.abs(desiredY) > directionThreshold && Math.sign(candidateY) !== Math.sign(desiredY)) {
-            directionPenalty += 100_000;
-          }
-          nearby.push({
-            halfCol,
-            halfRow,
-            x: candidate.x,
-            y: candidate.y,
-            score: Phaser.Math.Distance.Squared(x, y, candidate.x, candidate.y) + directionPenalty,
-          });
-        }
-      }
-      nearby.sort((a, b) => a.score - b.score);
-      const nearest = nearby[0];
-      if (nearest) {
-        placementHalfCol = nearest.halfCol;
-        placementHalfRow = nearest.halfRow;
-        snappedPosition = { x: nearest.x, y: nearest.y };
-      }
-    }
-    const towerX = snappedPosition.x;
-    const towerY = snappedPosition.y;
+    // Aucun aimant vers les plantes voisines : la case suit exactement le côté
+    // visé par le joueur, même au milieu d'un groupe très compact.
+    const towerX = placementStartX + placementHalfCol * PLANT_HALF_STEP;
+    const towerY = placementStartY + placementHalfRow * PLANT_HALF_STEP;
     return {
       x: towerX,
       y: towerY,
