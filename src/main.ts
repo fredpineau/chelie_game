@@ -791,7 +791,17 @@ class DefenseScene extends Phaser.Scene {
     this.shearText = this.createCompactHudBadge(650, 76, 120, "💧 0", 0x5fd6e8, "#e9fdff", true);
     this.statusText = this.add.text(0, 0, "").setVisible(false);
 
-    this.makeButton(76, HEIGHT - 50, 132, 68, "MENU", 0x315968, () => this.showGameMenu());
+    const pauseButton = this.add.container(45, HEIGHT - 50);
+    const pauseBackground = this.add.circle(0, 0, 34, 0x315968, 0.98).setStrokeStyle(2, 0x8ddce6, 0.9);
+    const pauseIcon = this.add.text(0, -5, "Ⅱ", {
+      fontFamily: "Arial", fontSize: "26px", color: "#ffffff", fontStyle: "bold",
+    }).setOrigin(0.5);
+    const pauseLabel = this.add.text(0, 19, "PAUSE", {
+      fontFamily: "Arial", fontSize: "10px", color: "#dff7f8", fontStyle: "bold",
+    }).setOrigin(0.5);
+    pauseButton.add([pauseBackground, pauseIcon, pauseLabel]);
+    pauseButton.setSize(76, 76).setInteractive({ useHandCursor: true });
+    pauseButton.on("pointerdown", () => this.showGameMenu());
     this.startButton = this.makeButton(WIDTH / 2, HEIGHT - 50, 300, 68, "À L'ATTAQUE", 0x0f766e, () => this.startWave());
   }
 
@@ -804,9 +814,9 @@ class DefenseScene extends Phaser.Scene {
 
     const menu = this.add.container(0, 0).setDepth(40);
     const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.78).setInteractive();
-    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 580, 720, 0x164f59, 0.99)
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 560, 500, 0x164f59, 0.99)
       .setStrokeStyle(4, 0x8ddce6, 0.94);
-    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 235, "MENU", {
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 175, "PAUSE", {
       fontFamily: "Arial",
       fontSize: "36px",
       color: "#f4fbfc",
@@ -815,21 +825,37 @@ class DefenseScene extends Phaser.Scene {
       strokeThickness: 5,
       letterSpacing: 4,
     }).setOrigin(0.5);
-    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 - 150, 350, 56, "ACCUEIL", 0x315968, () => {
-      this.goToHome();
-    });
-    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 80, 350, 56, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
-    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2 - 10, 410, 56, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
+    const resume = this.makeButton(WIDTH / 2, HEIGHT / 2 - 80, 380, 60, "REPRENDRE", 0x0f766e, () => this.closeGameMenu());
+    const restart = this.makeButton(WIDTH / 2, HEIGHT / 2, 430, 60, "RECOMMENCER LA PARTIE", 0x6b4f25, () => {
       this.scene.restart({ levelIndex: this.levelIndex, infiniteNightmare: this.infiniteNightmare });
     });
-    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 + 60, 350, 56, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
-    const wateringGuide = this.makeButton(WIDTH / 2, HEIGHT / 2 + 130, 350, 56, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
-    const beta = this.makeButton(WIDTH / 2, HEIGHT / 2 + 200, 350, 56, "ESPACE BÊTA", 0x6b4c78, () => this.showBetaTools());
-    const version = this.add.text(WIDTH / 2, HEIGHT / 2 + 278, `VERSION ${BETA_VERSION}`, {
+    const home = this.makeButton(WIDTH / 2, HEIGHT / 2 + 80, 430, 60, "QUITTER VERS LES MONDES", 0x315968, () => {
+      this.goToHome();
+    });
+    const version = this.add.text(WIDTH / 2, HEIGHT / 2 + 165, `VERSION ${BETA_VERSION}`, {
       fontFamily: "Arial", fontSize: "18px", color: "#bfe7ea", fontStyle: "bold", letterSpacing: 1,
     }).setOrigin(0.5);
-    menu.add([veil, panel, title, home, resume, restart, goal, wateringGuide, beta, version]);
+    menu.add([veil, panel, title, resume, restart, home, version]);
     this.menuOverlay = menu;
+  }
+
+  private showHomeOptions(): void {
+    const options = this.add.container(0, 0).setDepth(45);
+    const veil = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x071a20, 0.9).setInteractive();
+    const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 590, 650, 0x164f59, 0.995)
+      .setStrokeStyle(4, 0x8ddce6, 0.95);
+    const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 240, "OPTIONS ET AIDE", {
+      fontFamily: "Arial", fontSize: "35px", color: "#ffffff", fontStyle: "bold",
+      stroke: "#173943", strokeThickness: 5, letterSpacing: 2,
+    }).setOrigin(0.5);
+    const goal = this.makeButton(WIDTH / 2, HEIGHT / 2 - 125, 400, 60, "BUT DU JEU", 0x245d68, () => this.showGameGoalGuide());
+    const drops = this.makeButton(WIDTH / 2, HEIGHT / 2 - 45, 400, 60, "GUIDE DES GOUTTES", 0x2f7180, () => this.showWateringGuide());
+    const beta = this.makeButton(WIDTH / 2, HEIGHT / 2 + 35, 400, 60, "ESPACE BÊTA", 0x6b4c78, () => this.showBetaTools());
+    const version = this.add.text(WIDTH / 2, HEIGHT / 2 + 115, `VERSION ${BETA_VERSION}`, {
+      fontFamily: "Arial", fontSize: "18px", color: "#bfe7ea", fontStyle: "bold", letterSpacing: 1,
+    }).setOrigin(0.5);
+    const close = this.makeButton(WIDTH / 2, HEIGHT / 2 + 210, 300, 58, "FERMER", 0x0f766e, () => options.destroy(true));
+    options.add([veil, panel, title, goal, drops, beta, version, close]);
   }
 
   private showBetaTools(): void {
@@ -1218,7 +1244,7 @@ class DefenseScene extends Phaser.Scene {
       stroke: "#173943",
       strokeThickness: 2,
     }).setOrigin(0.5).setDepth(32);
-    const betaAccess = this.add.text(homeCenterX, 270, `BÊTA · ${BETA_VERSION} · RETOURS`, {
+    this.add.text(homeCenterX, 270, `BÊTA · ${BETA_VERSION}`, {
       fontFamily: "Arial",
       fontSize: "16px",
       color: "#ccecef",
@@ -1226,8 +1252,7 @@ class DefenseScene extends Phaser.Scene {
       letterSpacing: 1.5,
       stroke: "#173943",
       strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(32).setInteractive({ useHandCursor: true });
-    betaAccess.on("pointerdown", () => this.showBetaTools());
+    }).setOrigin(0.5).setDepth(32);
 
     const firstPage = this.makeButton(homeCenterX - 110, 306, 200, 46, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
       this.scene.restart({ home: true, selectionPage: 0 });
@@ -1391,6 +1416,9 @@ class DefenseScene extends Phaser.Scene {
       button.on("pointerout", () => bg.setScale(1));
       button.on("pointerdown", () => this.upgradePlantMastery(kind));
     });
+
+    this.makeButton(homeCenterX, 1150, 330, 50, "OPTIONS ET AIDE", 0x315968, () => this.showHomeOptions())
+      .setDepth(32);
 
     overlay.on("pointerdown", () => undefined);
     panel.setInteractive().on("pointerdown", () => undefined);
