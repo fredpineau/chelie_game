@@ -58,6 +58,14 @@ function staggeredPlacementFix(): Plugin {
         '      const shellLeft = this.add.arc(-12 * scale, 1 * scale, 19 * scale, 95, 265, false, 0x59462d).setStrokeStyle(2, 0x241b12);\n      const shellRight = this.add.arc(-4 * scale, 1 * scale, 19 * scale, -85, 85, false, 0x463823).setStrokeStyle(2, 0x241b12);',
       );
 
+      // Silhouettes plus agressives, toujours 100 % vectorielles : quelques
+      // primitives Phaser seulement, sans asset, sprite ou texture externe.
+      const airAnchor = '      insectParts.push(leftWing, rightWing, leftVein, rightVein, abdomen, abdomenRidge, thorax, head, leftAntenna, rightAntenna);';
+      transformed = transformed.replace(airAnchor, `      const airEyeLeft = this.add.circle(-4 * scale, -21 * scale, isBoss ? 3.2 : 2.2, 0xff3b18, 0.98).setStrokeStyle(1, 0x4a0904);\n      const airEyeRight = this.add.circle(4 * scale, -21 * scale, isBoss ? 3.2 : 2.2, 0xff3b18, 0.98).setStrokeStyle(1, 0x4a0904);\n      const airFangLeft = this.add.triangle(-5 * scale, -28 * scale, -3, -1, 0, 7, 3, -1, 0xe9f6ef).setRotation(-0.22);\n      const airFangRight = this.add.triangle(5 * scale, -28 * scale, -3, -1, 0, 7, 3, -1, 0xe9f6ef).setRotation(0.22);\n      const rearWingLeft = this.add.triangle(-15 * scale, 5 * scale, -2, 7, -31, 12, -8, -13, 0x71ddea, 0.58).setStrokeStyle(1, 0x347d8c, 0.9);\n      const rearWingRight = this.add.triangle(15 * scale, 5 * scale, 2, 7, 31, 12, 8, -13, 0x71ddea, 0.58).setStrokeStyle(1, 0x347d8c, 0.9);\n      insectParts.push(rearWingLeft, rearWingRight, leftWing, rightWing, leftVein, rightVein, abdomen, abdomenRidge, thorax, head, leftAntenna, rightAntenna, airEyeLeft, airEyeRight, airFangLeft, airFangRight);`);
+
+      const groundAnchor = '      insectParts.push(abdomen, shellLeft, shellRight, thorax, head, upperMandible, lowerMandible);';
+      transformed = transformed.replace(groundAnchor, `      const groundEye = this.add.circle(29 * scale, -4 * scale, isBoss ? 3.4 : 2.4, 0xff351c, 1).setStrokeStyle(1, 0x4a0904);\n      const brow = this.add.line(0, 0, 23 * scale, -10 * scale, 34 * scale, -6 * scale, 0x080806, 1).setLineWidth(isBoss ? 4 : 3);\n      const hornTop = this.add.triangle(15 * scale, -15 * scale, -5, 5, 0, -11, 5, 5, isBoss ? 0xd49a45 : 0x8b6738).setRotation(0.45);\n      const hornRear = this.add.triangle(-15 * scale, -15 * scale, -5, 5, 0, -10, 5, 5, isBoss ? 0xc98b39 : 0x75562f).setRotation(-0.25);\n      insectParts.push(abdomen, shellLeft, shellRight, hornRear, hornTop, thorax, head, upperMandible, lowerMandible, groundEye, brow);`);
+
       // Recalcul en cours de vague : on évite d'utiliser à nouveau la partie du
       // trajet déjà parcourue. Si aucun autre chemin n'existe, le comportement
       // historique reste disponible en dernier recours afin de ne jamais bloquer
