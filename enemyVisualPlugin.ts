@@ -27,6 +27,18 @@ export function realisticEnemyVisuals(): Plugin {
       const visualBlock = `    const shadow = this.add.ellipse(\n      0,\n      kind === "air" ? 24 : 17,\n      kind === "air" ? (isBoss ? 39 : 32) : (isBoss ? 55 : 46),\n      kind === "air" ? (isBoss ? 8 : 6) : (isBoss ? 12 : 10),\n      0x010403,\n      kind === "air" ? 0.22 : 0.44,\n    );\n    const textureKey = kind === "air"\n      ? (isBoss ? "enemy-air-boss-art" : "enemy-air-art")\n      : (isBoss ? "enemy-ground-boss-art" : "enemy-ground-art");\n    const visual = this.add.image(0, kind === "air" ? -4 : 0, textureKey);\n    const displaySize = isBoss ? (kind === "air" ? 72 : 70) : (kind === "air" ? 58 : 56);\n    visual.setDisplaySize(displaySize, displaySize);\n    if (!isBoss) {\n      if (trait === "armored") visual.setTint(kind === "air" ? 0xd9e5e8 : 0xc8baa5);\n      else if (trait === "swift") visual.setTint(kind === "air" ? 0xffddb0 : 0xe6c47b);\n      else if (trait === "regenerator") visual.setTint(kind === "air" ? 0xc8f0d8 : 0xa9cc98);\n    }\n    const insectParts: Phaser.GameObjects.GameObject[] = [shadow, visual];\n    if (kind === "air") {\n      this.tweens.add({ targets: visual, y: visual.y - (isBoss ? 4 : 3), yoyo: true, repeat: -1, duration: isBoss ? 320 : 220, ease: "Sine.easeInOut" });\n      this.tweens.add({ targets: visual, angle: isBoss ? 1.2 : 2, yoyo: true, repeat: -1, duration: isBoss ? 430 : 280, ease: "Sine.easeInOut" });\n    }\n`;
 
       transformed = transformed.slice(0, visualStart) + visualBlock + transformed.slice(visualEnd);
+
+      const labelStartAnchor = '    const typeName = kind === "air" ? "VOLANT" : "TERRIEN";';
+      const containerAddAnchor = '    container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);';
+      const labelStart = transformed.indexOf(labelStartAnchor, transformed.indexOf(spawnAnchor));
+      const containerAdd = transformed.indexOf(containerAddAnchor, labelStart);
+      if (labelStart >= 0 && containerAdd >= 0) {
+        const labelEnd = containerAdd + containerAddAnchor.length;
+        transformed = transformed.slice(0, labelStart)
+          + '    container.add([...insectParts, healthBg, healthBar]);'
+          + transformed.slice(labelEnd);
+      }
+
       return { code: transformed, map: null };
     },
   };
