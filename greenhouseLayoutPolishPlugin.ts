@@ -15,7 +15,7 @@ export function polishGreenhouseLayout(): Plugin {
         'const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 34, 650, 920, 0x245d68, 0.995)',
       );
       transformed = transformed.replace('WIDTH / 2, 168, "SERRE PERMANENTE"', 'WIDTH / 2, 184, "SERRE PERMANENTE"');
-      transformed = transformed.replace('WIDTH / 2, 223, `RÉSERVE  ·  💧 ${this.wateringCans}`', 'WIDTH / 2, 241, `RÉSERVE  ·  💧 ${this.wateringCans}`');
+      transformed = transformed.replace('WIDTH / 2, 223, `RÉSERVE  ·  💧 ${this.wateringCans}`', 'WIDTH / 2, 241, `RÉSERVE        ·  💧 ${this.wateringCans}`');
       transformed = transformed.replace('WIDTH / 2, 315,\n      "Les gouttes améliorent', 'WIDTH / 2, 338,\n      "Les gouttes améliorent');
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "22px", color: "#edf8f7"', 'fontFamily: "Arial", fontSize: "24px", color: "#edf8f7"');
       transformed = transformed.replace('WIDTH / 2, 405,\n      "1re réussite', 'WIDTH / 2, 438,\n      "1re réussite');
