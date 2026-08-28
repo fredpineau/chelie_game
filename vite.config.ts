@@ -7,23 +7,16 @@ function staggeredPlacementFix(): Plugin {
     transform(code, id) {
       if (!id.endsWith("/src/main.ts") && !id.endsWith("\\src\\main.ts")) return null;
 
-      const oldRowSnap = `    const placementHalfRow = Phaser.Math.Clamp(\n      Math.round((y - placementStartY) / PLANT_HALF_STEP),\n      0,\n      placementHalfRows,\n    );`;
-      const newRowSnap = `    const placementHalfRow = Phaser.Math.Clamp(\n      Math.round((y - placementStartY) / PLANT_FRAME_SIZE),\n      0,\n      Math.floor(placementHalfRows / 2),\n    );`;
-      const oldTowerY = "    const towerY = placementStartY + placementHalfRow * PLANT_HALF_STEP;";
-      const newTowerY = "    const towerY = placementStartY + placementHalfRow * PLANT_FRAME_SIZE;";
+      const oldCollision = `    if (this.towers.some((tower) =>\n      Math.abs(tower.body.x - placement.x) < PLANT_FRAME_SIZE - 1\n      && Math.abs(tower.body.y - placement.y) < PLANT_FRAME_SIZE - 1,\n    )) return { allowed: false, reason: \"Cet emplacement est déjà occupé\" };`;
 
-      if (!code.includes(oldRowSnap) || !code.includes(oldTowerY)) {
-        throw new Error("Placement row snapping block not found; overlap fix was not applied.");
+      const newCollision = `    const occupied = this.towers.some((tower) => {\n      const deltaX = Math.abs(tower.body.x - placement.x);\n      const deltaY = Math.abs(tower.body.y - placement.y);\n\n      // Le placement garde le demi-pas d'origine sur X et Y pour conserver\n      // des lignes compactes. En revanche, deux cadres de plantes ne peuvent\n      // jamais se recouvrir réellement. Le contact bord à bord reste autorisé.\n      return deltaX < PLANT_FRAME_SIZE - 1\n        && deltaY < PLANT_FRAME_SIZE - 1;\n    });\n    if (occupied) return { allowed: false, reason: \"Cet emplacement est déjà occupé\" };`;
+
+      if (!code.includes(oldCollision)) {
+        throw new Error("Placement collision block not found; compact spacing fix was not applied.");
       }
 
-      // X reste sur une demi-case pour permettre le quinconce gauche/droite.
-      // Y passe sur une hauteur de plante complète afin que deux cadres ne
-      // puissent jamais se chevaucher verticalement.
-      let transformed = code.replace(oldRowSnap, newRowSnap);
-      transformed = transformed.replace(oldTowerY, newTowerY);
-
       return {
-        code: transformed,
+        code: code.replace(oldCollision, newCollision),
         map: null,
       };
     },
