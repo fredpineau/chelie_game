@@ -15,16 +15,28 @@ export function polishGreenhouseLayout(): Plugin {
         'const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 34, 650, 920, 0x245d68, 0.995)',
       );
       transformed = transformed.replace('WIDTH / 2, 168, "SERRE PERMANENTE"', 'WIDTH / 2, 184, "SERRE PERMANENTE"');
-      transformed = transformed.replace('WIDTH / 2, 223, `RÉSERVE  ·  💧 ${this.wateringCans}`', 'WIDTH / 2, 241, `RÉSERVE        ·  💧 ${this.wateringCans}`');
+
+      // Force un vrai espace visuel entre RÉSERVE et le compteur, quelle que soit
+      // la quantité d'espaces présente dans le code généré en amont.
+      transformed = transformed.replace(
+        /`RÉSERVE\s*·\s*💧\s*\$\{this\.wateringCans\}`/,
+        '`RÉSERVE          ·          💧 ${this.wateringCans}`',
+      );
+      transformed = transformed.replace('WIDTH / 2, 223, `RÉSERVE', 'WIDTH / 2, 241, `RÉSERVE');
+
       transformed = transformed.replace('WIDTH / 2, 315,\n      "Les gouttes améliorent', 'WIDTH / 2, 338,\n      "Les gouttes améliorent');
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "22px", color: "#edf8f7"', 'fontFamily: "Arial", fontSize: "24px", color: "#edf8f7"');
+
       transformed = transformed.replace('WIDTH / 2, 405,\n      "1re réussite', 'WIDTH / 2, 438,\n      "1re réussite');
-      transformed = transformed.replace('fontFamily: "Arial", fontSize: "18px", color: "#d9f4f2"', 'fontFamily: "Arial", fontSize: "20px", color: "#edf8f7"');
-      // Harmonise systématiquement la ligne des récompenses avec le texte explicatif au-dessus.
+
+      // Applique la couleur cyan claire de la ligne RÉSERVE à toute la ligne
+      // « 1re réussite… » afin que le changement soit réellement visible et
+      // indépendant des transformations précédentes.
       transformed = transformed.replace(
-        /(const rewardHint = this\.add\.text\([\s\S]*?fontFamily: "Arial", fontSize: "20px", color: ")#[0-9a-fA-F]{6}("[\s\S]*?\)\.setOrigin\(0\.5\);)/,
-        '$1#edf8f7$2',
+        /(const rewardHint = this\.add\.text\([\s\S]*?\{\s*\n\s*fontFamily: "Arial", fontSize: ")[^"]+("\s*, color: ")[^"]+("\s*, fontStyle: "bold")/,
+        '$124px$2#bff5fb$3',
       );
+
       transformed = transformed.replace('WIDTH / 2, 458, "COÛTS PAR PLANTE', 'WIDTH / 2, 498, "COÛTS PAR PLANTE');
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "18px", color: "#ffe7a3"', 'fontFamily: "Arial", fontSize: "19px", color: "#ffe7a3"');
       transformed = transformed.replace('const y = 598 + row * 190;', 'const y = 638 + row * 190;');
