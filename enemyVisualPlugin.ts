@@ -5,7 +5,10 @@ export function realisticEnemyVisuals(): Plugin {
     name: "realistic-enemy-visuals",
     enforce: "post",
     transform(code, id) {
-      if (!id.endsWith("/src/main.ts") && !id.endsWith("\\src\\main.ts")) return null;
+      // Vite appelle aussi les hooks transform pour index.html pendant vite:build-html.
+      // Ne jamais tenter d'appliquer les remplacements Phaser à ces modules.
+      const normalizedId = id.split("?")[0].replace(/\\/g, "/");
+      if (!normalizedId.endsWith("/src/main.ts")) return null;
 
       const createAnchor = "  create(): void {";
       if (!code.includes(createAnchor)) throw new Error("Scene create anchor not found; enemy sprites were not loaded.");
