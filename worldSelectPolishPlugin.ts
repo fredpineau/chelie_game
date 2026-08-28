@@ -1,0 +1,50 @@
+import type { Plugin } from "vite";
+
+export function polishWorldSelection(): Plugin {
+  return {
+    name: "polish-world-selection",
+    enforce: "post",
+    transform(code, id) {
+      const normalizedId = id.split("?")[0].replace(/\\/g, "/");
+      if (!normalizedId.endsWith("/src/main.ts")) return null;
+
+      let transformed = code;
+
+      // Nouvelle version de la bêta après l'extension des mondes et la refonte de l'accueil.
+      transformed = transformed.replace(
+        'const BETA_VERSION = "0.2.0-beta.1";',
+        'const BETA_VERSION = "0.3.0-beta.1";',
+      );
+
+      // La sélection des mondes reprend la palette turquoise du bandeau inférieur de la map.
+      transformed = transformed.replace(
+        'const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x164f59, 0.94)',
+        'const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x2f7782, 0.98)',
+      );
+      transformed = transformed.replace(
+        'const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 680, 1080, 0x326f77, 0.98)',
+        'const panel = this.add.rectangle(WIDTH / 2, HEIGHT / 2, 680, 1080, 0x58a8ad, 0.96)',
+      );
+
+      // La version reste accessible dans Options et Aide : on la retire de l'écran principal.
+      const betaBlock = `    this.add.text(homeCenterX, 270, \`BÊTA · \${BETA_VERSION}\`, {\n      fontFamily: "Arial",\n      fontSize: "16px",\n      color: "#ccecef",\n      fontStyle: "bold",\n      letterSpacing: 1.5,\n      stroke: "#173943",\n      strokeThickness: 2,\n    }).setOrigin(0.5).setDepth(32);\n\n`;
+      transformed = transformed.replace(betaBlock, "");
+
+      // Recentrage vertical après suppression du libellé bêta, sans remonter les cartes.
+      transformed = transformed.replace(
+        'homeCenterX - 215, 306, 190, 46, "MONDES 1–6"',
+        'homeCenterX - 215, 286, 190, 46, "MONDES 1–6"',
+      );
+      transformed = transformed.replace(
+        'homeCenterX, 306, 190, 46, "MONDES 7–12"',
+        'homeCenterX, 286, 190, 46, "MONDES 7–12"',
+      );
+      transformed = transformed.replace(
+        'homeCenterX + 215, 306, 190, 46, "MONDES 13–15"',
+        'homeCenterX + 215, 286, 190, 46, "MONDES 13–15"',
+      );
+
+      return transformed === code ? null : { code: transformed, map: null };
+    },
+  };
+}
