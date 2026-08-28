@@ -51,38 +51,6 @@ export function polishWorldSelection(): Plugin {
         'homeCenterX + 215, 286, 190, 46, "MONDES 13–15"',
       );
 
-      // Les cartes des mondes finis n'affichent plus la mention générique
-      // « MENACE CROISSANTE ». On garde uniquement les libellés utiles aux
-      // modes infinis / spéciaux.
-      transformed = transformed.replace(
-        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";',
-        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : "";',
-      );
-
-      // Recentre le contenu des cartes standards maintenant que la dernière
-      // ligne a disparu. Les cartes qui hébergent un accès infini conservent
-      // leur mise en page compacte afin de laisser la place au second bouton.
-      transformed = transformed.replace(
-        'const iconHalo = this.add.circle(0, -39, 29, available ? biomeAccents[index] : 0x496469, available ? 0.24 : 0.16);',
-        'const compactCard = hostsFirstInfinite || isFinalInfinite;\n      const iconHalo = this.add.circle(0, compactCard ? -39 : -25, 29, available ? biomeAccents[index] : 0x496469, available ? 0.24 : 0.16);',
-      );
-      transformed = transformed.replace(
-        'const icon = this.add.text(0, -40, available ? biomeIcons[index] : "×", {',
-        'const icon = this.add.text(0, compactCard ? -40 : -26, available ? biomeIcons[index] : "×", {',
-      );
-      transformed = transformed.replace(
-        'const code = this.add.text(0, -6, available ? level.code : "VERROUILLÉ", {',
-        'const code = this.add.text(0, compactCard ? -6 : 8, available ? level.code : "VERROUILLÉ", {',
-      );
-      transformed = transformed.replace(
-        'const name = this.add.text(0, 22, level.name.toUpperCase(), {',
-        'const name = this.add.text(0, compactCard ? 22 : 38, level.name.toUpperCase(), {',
-      );
-      transformed = transformed.replace(
-        'const threat = this.add.text(0, 53, available ? waveLabel : level.code, {',
-        'const threat = this.add.text(0, 53, available ? waveLabel : (level.waves === null ? level.code : ""), {',
-      );
-
       return transformed === code ? null : { code: transformed, map: null };
     },
   };
