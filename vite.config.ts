@@ -9,6 +9,7 @@ import { fixSimplifiedHomeLayering } from "./homeSimplificationLayerFixPlugin";
 import { polishWorldSelection } from "./worldSelectPolishPlugin";
 import { greenhouseFixedOutline } from "./greenhouseFixedOutlinePlugin";
 import { polishGreenhouseLayout } from "./greenhouseLayoutPolishPlugin";
+import { restorePlacementFluidity } from "./placementFluidityRestorePlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -25,5 +26,6 @@ export default defineConfig({
     polishWorldSelection(),
     greenhouseFixedOutline(),
     polishGreenhouseLayout(),
+    restorePlacementFluidity(),
   ],
 });
