@@ -11,7 +11,7 @@ export function recoverLostDrops(): Plugin {
       const createAnchor = `  create(): void {\n    this.resetState();\n`;
       if (!code.includes(createAnchor)) return null;
 
-      const recovery = `  create(): void {\n    this.resetState();\n    try {\n      const recoveryKey = "chelie-greenhouse-test-compensation-20260828-v6";\n      if (localStorage.getItem(recoveryKey) !== "done") {\n        // Les gouttes dépensées pendant les essais de la régression Serre sont\n        // compensées une seule fois. On ne touche à aucune maîtrise ni aux mondes.\n        if (this.wateringCans < 200) this.wateringCans = 200;\n        this.savePermanentProgress();\n        localStorage.setItem(recoveryKey, "done");\n      }\n    } catch {\n      if (this.wateringCans < 200) this.wateringCans = 200;\n    }\n`;
+      const recovery = `  create(): void {\n    this.resetState();\n    try {\n      const recoveryKey = "chelie-greenhouse-test-compensation-20260828-v7";\n      if (localStorage.getItem(recoveryKey) !== "done") {\n        // Compensation unique des gouttes consommées pendant les essais de la\n        // régression Serre. Les maîtrises, mondes et records restent inchangés.\n        if (this.wateringCans < 200) this.wateringCans = 200;\n        this.savePermanentProgress();\n        localStorage.setItem(recoveryKey, "done");\n      }\n    } catch {\n      if (this.wateringCans < 200) this.wateringCans = 200;\n    }\n`;
 
       const transformed = code.replace(createAnchor, recovery);
       return transformed === code ? null : { code: transformed, map: null };
