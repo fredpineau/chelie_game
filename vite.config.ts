@@ -58,6 +58,15 @@ function staggeredPlacementFix(): Plugin {
         '      const shellLeft = this.add.arc(-12 * scale, 1 * scale, 19 * scale, 95, 265, false, 0x59462d).setStrokeStyle(2, 0x241b12);\n      const shellRight = this.add.arc(-4 * scale, 1 * scale, 19 * scale, -85, 85, false, 0x463823).setStrokeStyle(2, 0x241b12);',
       );
 
+      // Recalcul en cours de vague : on évite d'utiliser à nouveau la partie du
+      // trajet déjà parcourue. Si aucun autre chemin n'existe, le comportement
+      // historique reste disponible en dernier recours afin de ne jamais bloquer
+      // artificiellement un monstre.
+      const oldEnemyReroute = `    let bestRoute: { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null = null;\n    for (const exit of exits) {\n      let bestPathForExit: Phaser.Math.Vector2[] | null = null;\n      for (const start of candidates) {\n        const path = this.calculatePath(start, { col: exit.col, row: exit.row });\n        if (!path || (bestPathForExit && path.length >= bestPathForExit.length)) continue;\n        bestPathForExit = path;\n      }\n      if (!bestPathForExit) continue;\n      bestRoute = { path: bestPathForExit, exit };\n      break;\n    }`;
+      const newEnemyReroute = `    const alreadyTravelled = new Set<string>();\n    const travelledEnd = Math.max(0, enemy.pathIndex - 1);\n    enemy.path.slice(0, travelledEnd).forEach((point) => {\n      const col = Phaser.Math.Clamp(Math.round((point.x - GRID_X) / CELL), 0, GRID_COLS - 1);\n      const row = Phaser.Math.Clamp(Math.round((point.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);\n      alreadyTravelled.add(String(col) + "," + String(row));\n    });\n\n    const findRoute = (avoidTravelled: boolean): { path: Phaser.Math.Vector2[]; exit: typeof exits[number] } | null => {\n      for (const exit of exits) {\n        let bestPathForExit: Phaser.Math.Vector2[] | null = null;\n        for (const start of candidates) {\n          const path = this.calculatePath(start, { col: exit.col, row: exit.row });\n          if (!path || (bestPathForExit && path.length >= bestPathForExit.length)) continue;\n          if (avoidTravelled) {\n            const returnsToOldPath = path.slice(1).some((point) => {\n              const col = Phaser.Math.Clamp(Math.round((point.x - GRID_X) / CELL), 0, GRID_COLS - 1);\n              const row = Phaser.Math.Clamp(Math.round((point.y - GRID_Y) / CELL), 0, GRID_ROWS - 1);\n              return alreadyTravelled.has(String(col) + "," + String(row));\n            });\n            if (returnsToOldPath) continue;\n          }\n          bestPathForExit = path;\n        }\n        if (bestPathForExit) return { path: bestPathForExit, exit };\n      }\n      return null;\n    };\n\n    const bestRoute = findRoute(true) ?? findRoute(false);`;
+      if (!transformed.includes(oldEnemyReroute)) throw new Error("Enemy reroute block not found; backtracking guard was not applied.");
+      transformed = transformed.replace(oldEnemyReroute, newEnemyReroute);
+
       return { code: transformed, map: null };
     },
   };
