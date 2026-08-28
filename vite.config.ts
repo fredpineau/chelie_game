@@ -15,8 +15,18 @@ function staggeredPlacementFix(): Plugin {
         throw new Error("Placement collision block not found; staggered placement fix was not applied.");
       }
 
+      let transformed = code.replace(oldCollision, newCollision);
+
+      const oldClearance = "    const insectClearance = PLANT_FRAME_SIZE / 2;";
+      const newClearance = `    // La grille de déplacement est plus grossière que la grille de pose.\n    // Une demi-case ne doit donc pas condamner plusieurs nœuds de chemin à la fois.\n    // Cette marge conserve un obstacle autour de la plante tout en laissant les\n    // passages visibles entre deux rangées en quinconce.\n    const insectClearance = PLANT_HALF_STEP * 0.75;`;
+
+      if (!transformed.includes(oldClearance)) {
+        throw new Error("Path clearance block not found; staggered path fix was not applied.");
+      }
+      transformed = transformed.replace(oldClearance, newClearance);
+
       return {
-        code: code.replace(oldCollision, newCollision),
+        code: transformed,
         map: null,
       };
     },
