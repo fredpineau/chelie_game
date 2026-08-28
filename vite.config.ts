@@ -11,7 +11,6 @@ import { greenhouseFixedOutline } from "./greenhouseFixedOutlinePlugin";
 import { polishGreenhouseLayout } from "./greenhouseLayoutPolishPlugin";
 import { updateGameGoalGuide } from "./gameGoalGuideUpdatePlugin";
 import { recoverLostDrops } from "./dropRecoveryPlugin";
-import { fixGreenhouseSpending } from "./greenhouseSpendFixPlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -30,6 +29,5 @@ export default defineConfig({
     polishGreenhouseLayout(),
     updateGameGoalGuide(),
     recoverLostDrops(),
-    fixGreenhouseSpending(),
   ],
 });
