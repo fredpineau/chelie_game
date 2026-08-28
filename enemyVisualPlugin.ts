@@ -39,6 +39,25 @@ export function realisticEnemyVisuals(): Plugin {
           + transformed.slice(labelEnd);
       }
 
+      // Quand beaucoup d'ennemis sont présents, leur recalcul de chemin est étalé
+      // sur plusieurs frames pour préserver la fluidité. Les ennemis proches de la
+      // plante fraîchement posée doivent toutefois être recalculés immédiatement :
+      // sinon ils peuvent avancer brièvement sur leur ancien segment et traverser
+      // le point de contact de deux cadres en diagonale.
+      transformed = transformed.replace(
+        '    this.recalculateEnemyPaths();',
+        '    this.recalculateEnemyPaths(towerX, towerY);',
+      );
+
+      const recalcStartAnchor = '  private recalculateEnemyPaths(): void {';
+      const recalcEndAnchor = '  private hasGridPath(';
+      const recalcStart = transformed.indexOf(recalcStartAnchor);
+      const recalcEnd = transformed.indexOf(recalcEndAnchor, recalcStart);
+      if (recalcStart >= 0 && recalcEnd >= 0) {
+        const recalcBlock = `  private recalculateEnemyPaths(urgentX?: number, urgentY?: number): void {\n    const version = ++this.pathRecalculationVersion;\n    const activeEnemies = [...this.enemies];\n    const recalculate = (enemy: Enemy): void => {\n      if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;\n      this.recalculateEnemyPath(enemy);\n    };\n\n    let deferredEnemies = activeEnemies;\n    if (urgentX !== undefined && urgentY !== undefined) {\n      const urgentRadius = PLANT_FRAME_SIZE * 3;\n      const urgentRadiusSquared = urgentRadius * urgentRadius;\n      deferredEnemies = [];\n      activeEnemies.forEach((enemy) => {\n        const distanceSquared = Phaser.Math.Distance.Squared(enemy.body.x, enemy.body.y, urgentX, urgentY);\n        if (distanceSquared <= urgentRadiusSquared) recalculate(enemy);\n        else deferredEnemies.push(enemy);\n      });\n    }\n\n    const enemiesPerFrame = 6;\n    deferredEnemies.forEach((enemy, index) => {\n      const delay = 1 + Math.floor(index / enemiesPerFrame) * 16;\n      this.time.delayedCall(delay, () => recalculate(enemy));\n    });\n  }\n\n`;
+        transformed = transformed.slice(0, recalcStart) + recalcBlock + transformed.slice(recalcEnd);
+      }
+
       return { code: transformed, map: null };
     },
   };
