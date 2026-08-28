@@ -3,7 +3,7 @@ import type { Plugin } from "vite";
 export function realisticEnemyVisuals(): Plugin {
   return {
     name: "realistic-enemy-visuals",
-    enforce: "post",
+    enforce: "pre",
     transform(code, id) {
       if (!id.endsWith("/src/main.ts") && !id.endsWith("\\src\\main.ts")) return null;
 
@@ -23,9 +23,8 @@ export function realisticEnemyVisuals(): Plugin {
 
       transformed = transformed.slice(0, visualStart) + visualBlock + transformed.slice(visualEnd);
 
-      // Retire complètement les racines des cartes. Elles ne sont plus dessinées,
-      // ne bloquent plus la pose et ne participent plus au pathfinding. On pourra
-      // les réintroduire plus tard avec une règle dédiée, sans toucher au placement.
+      // Retire complètement les racines des cartes avant compilation TypeScript.
+      // Elles ne sont donc ni dessinées ni ajoutées au pathfinding.
       transformed = transformed.replace(
         '    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== "peat");',
         '    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== "peat" && kind !== "root");',
