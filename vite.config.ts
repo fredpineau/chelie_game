@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
+import { realisticEnemyVisuals } from "./enemyVisualPlugin";
 
 function staggeredPlacementFix(): Plugin {
   return {
@@ -82,6 +83,6 @@ function staggeredPlacementFix(): Plugin {
 
 export default defineConfig({
   base: "/",
-  plugins: [staggeredPlacementFix()],
+  plugins: [staggeredPlacementFix(), realisticEnemyVisuals()],
   build: { outDir: "dist" },
 });
