@@ -10,16 +10,22 @@ export function simplifyHomeProgression(): Plugin {
 
       let transformed = code;
 
+      // Aère la zone entre les onglets et la première rangée de mondes.
+      transformed = transformed.replace(
+        '    const cardRowStart = 427;',
+        '    const cardRowStart = 455;',
+      );
+
       const greenhouseStart = '    this.add.text(homeCenterX, 960, `SERRE PERMANENTE  ·  💧 ${this.wateringCans}`, {';
       const optionsAnchor = '    this.makeButton(homeCenterX, 1150, 330, 50, "OPTIONS ET AIDE", 0x315968, () => this.showHomeOptions())';
       const start = transformed.indexOf(greenhouseStart);
       const end = transformed.indexOf(optionsAnchor, start);
       if (start >= 0 && end >= 0) {
-        const compactHome = `    this.makeButton(homeCenterX, 1015, 430, 58, \`SERRE PERMANENTE  ·  💧 \${this.wateringCans}\`, 0x2f7180, () => this.showPermanentGreenhouse())\n      .setDepth(32);\n\n`;
+        const compactHome = `    const greenhouseGlow = this.add.rectangle(homeCenterX, 1025, 520, 78, 0x7de3d5, 0.12)\n      .setStrokeStyle(3, 0xa7f3e6, 0.65)\n      .setDepth(31);\n    const greenhouseButton = this.makeButton(homeCenterX, 1025, 500, 68, \`🌱 SERRE PERMANENTE  ·  💧 \${this.wateringCans}  ›\`, 0x0f766e, () => this.showPermanentGreenhouse())\n      .setDepth(32);\n    this.tweens.add({\n      targets: greenhouseGlow,\n      alpha: 0.28,\n      scaleX: 1.03,\n      scaleY: 1.08,\n      yoyo: true,\n      repeat: -1,\n      duration: 1400,\n      ease: "Sine.easeInOut",\n    });\n    greenhouseButton.on("pointerover", () => greenhouseButton.setScale(1.035));\n    greenhouseButton.on("pointerout", () => greenhouseButton.setScale(1));\n\n`;
         transformed = transformed.slice(0, start) + compactHome + transformed.slice(end);
         transformed = transformed.replace(
           '    this.makeButton(homeCenterX, 1150, 330, 50, "OPTIONS ET AIDE", 0x315968, () => this.showHomeOptions())',
-          '    this.makeButton(homeCenterX, 1100, 330, 50, "OPTIONS ET AIDE", 0x315968, () => this.showHomeOptions())',
+          '    this.makeButton(homeCenterX, 1125, 330, 50, "OPTIONS ET AIDE", 0x315968, () => this.showHomeOptions())',
         );
       }
 
