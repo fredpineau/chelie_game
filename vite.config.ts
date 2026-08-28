@@ -40,12 +40,11 @@ function staggeredPlacementFix(): Plugin {
       }
       transformed = transformed.replace(calculatePathFallback, calculatePathReplacement);
 
-      // Les zones de tourbe sont retirées de toutes les maps monde. Les autres
-      // particularités de terrain restent inchangées et le mode infini cauchemar
-      // ne génère plus de tourbe aléatoire non plus.
+      // Retire les zones de tourbe des cartes sans injecter de caractères
+      // d'échappement dans le TypeScript transformé.
       transformed = transformed.replace(
         "    let layout = layouts[this.levelIndex] ?? [];",
-        "    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== \\\"peat\\\");",
+        '    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== "peat");',
       );
       transformed = transformed.replace(
         '      const kinds: TerrainKind[] = ["root", "peat", "spore", "sticky", "parasite"];',
