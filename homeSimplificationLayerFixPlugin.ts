@@ -18,6 +18,10 @@ export function fixSimplifiedHomeLayering(): Plugin {
         '    greenhouse.add([veil, panel, title, balance, explanation, rewardHint, costCurve, close]);',
         '    greenhouse.add(close);',
       );
+      transformed = transformed.replace(
+        '        if (cost === null) return;\n        this.upgradePlantMastery(kind);',
+        '        if (cost === null || this.wateringCans < cost) return;\n        this.upgradePlantMastery(kind);',
+      );
       return transformed === code ? null : { code: transformed, map: null };
     },
   };
