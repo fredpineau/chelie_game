@@ -27,13 +27,15 @@ function staggeredPlacementFix(): Plugin {
       if (!transformed.includes(calculatePathFallback)) throw new Error("calculatePath fallback anchor not found; fine path fallback was not applied.");
       transformed = transformed.replace(calculatePathFallback, "    return this.calculateFinePath(start, end, extraBlocked);\n  }\n\n  private getBlockedPathCells");
 
+      // Retire tourbe ET racines directement dans le transform de placement stable.
+      // Aucun changement d'ordre de plugin n'est nécessaire.
       transformed = transformed.replace(
         "    let layout = layouts[this.levelIndex] ?? [];",
-        '    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== "peat");',
+        '    let layout = (layouts[this.levelIndex] ?? []).filter(([kind]) => kind !== "peat" && kind !== "root");',
       );
       transformed = transformed.replace(
         '      const kinds: TerrainKind[] = ["root", "peat", "spore", "sticky", "parasite"];',
-        '      const kinds: TerrainKind[] = ["root", "spore", "sticky", "parasite"];',
+        '      const kinds: TerrainKind[] = ["spore", "sticky", "parasite"];',
       );
 
       // Apparence uniquement : aucune image ni texture supplémentaire. On ne fait
