@@ -58,6 +58,32 @@ export function realisticEnemyVisuals(): Plugin {
         transformed = transformed.slice(0, recalcStart) + recalcBlock + transformed.slice(recalcEnd);
       }
 
+      // Affiche la progression des gouttes directement sur chaque carte de biome.
+      // Les récompenses déjà enregistrées par vague permettent de reconstruire le
+      // total gagné sans modifier la logique d'attribution des gouttes.
+      const oldCardAdd = '      card.add([background, iconHalo, icon, code, name, threat]);';
+      const newCardAdd = [
+        '      const earnedDrops = level.waves === null',
+        '        ? null',
+        '        : Object.entries(this.waveDropRecords)',
+        '          .filter(([recordKey]) => recordKey.startsWith(`v2:${level.code}:`))',
+        '          .reduce((sum, [, tier]) => sum + Number(tier), 0);',
+        '      const maxDrops = level.waves === null ? null : level.waves * 2 + Math.floor(level.waves / 5);',
+        '      const dropLabel = earnedDrops === null || maxDrops === null ? "💧 ∞" : `💧 ${earnedDrops}/${maxDrops}`;',
+        '      const dropProgress = this.add.text(118, -68, dropLabel, {',
+        '        fontFamily: "Arial",',
+        '        fontSize: "15px",',
+        '        color: available ? "#e8feff" : "#789399",',
+        '        fontStyle: "bold",',
+        '        backgroundColor: available ? "#173f47" : "#29464b",',
+        '        padding: { x: 6, y: 3 },',
+        '        stroke: "#0d292e",',
+        '        strokeThickness: 2,',
+        '      }).setOrigin(1, 0.5);',
+        '      card.add([background, iconHalo, icon, code, name, threat, dropProgress]);',
+      ].join("\n");
+      transformed = transformed.replace(oldCardAdd, newCardAdd);
+
       return { code: transformed, map: null };
     },
   };
