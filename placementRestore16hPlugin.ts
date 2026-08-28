@@ -27,6 +27,15 @@ export function restoreStablePlacement16h(): Plugin {
         transformed = transformed.slice(0, recalcStart) + stableRecalc + transformed.slice(recalcEnd);
       }
 
+      // Roots must block only their actual anchor/core in pathfinding. Their visual
+      // radius must not create an invisible halo that closes a corridor which is
+      // visibly still open. This deliberately does NOT change the rule preventing
+      // a plant from being placed directly on a root.
+      transformed = transformed.replaceAll(
+        "        const clearance = root.radius + 5;\n        return dx * dx + dy * dy < clearance * clearance;",
+        "        const rootCoreRadius = 8;\n        return dx * dx + dy * dy < rootCoreRadius * rootCoreRadius;",
+      );
+
       return transformed === code ? null : { code: transformed, map: null };
     },
   };
