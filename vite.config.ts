@@ -7,6 +7,7 @@ import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { simplifyHomeProgression } from "./homeSimplificationPlugin";
 import { fixSimplifiedHomeLayering } from "./homeSimplificationLayerFixPlugin";
 import { polishWorldSelection } from "./worldSelectPolishPlugin";
+import { greenhouseFixedOutline } from "./greenhouseFixedOutlinePlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -21,5 +22,6 @@ export default defineConfig({
     fixSimplifiedHomeLayering(),
     clearMasteryDisplay(),
     polishWorldSelection(),
+    greenhouseFixedOutline(),
   ],
 });
