@@ -27,7 +27,6 @@ export function polishWorldSelection(): Plugin {
       );
 
       // La version reste accessible dans Options et Aide : on la retire de l'écran principal.
-      // Suppression robuste, même si un autre plugin a modifié l'espacement ou le format du bloc.
       transformed = transformed.replace(
         /\s*this\.add\.text\(homeCenterX,\s*270,\s*`BÊTA\s*·\s*\$\{BETA_VERSION\}`,[\s\S]*?\)\.setOrigin\(0\.5\)\.setDepth\(32\);\s*/g,
         "\n",
@@ -51,11 +50,11 @@ export function polishWorldSelection(): Plugin {
         'homeCenterX + 215, 286, 190, 46, "MONDES 13–15"',
       );
 
-      // Supprime uniquement « MENACE CROISSANTE » sur les mondes 1 à 6.
-      // Toutes les autres cartes et tous les libellés spéciaux restent inchangés.
+      // Après le plugin endgame, le libellé est une ternaire enrichie. On ne
+      // touche qu'aux six premiers mondes : le reste des textes spéciaux reste intact.
       transformed = transformed.replace(
-        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";',
-        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : index < 6 ? "" : "MENACE CROISSANTE";',
+        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : index === 11 ? "ROUTES FRACTURÉES" : index === 12 ? "ESSAIMS HYBRIDES" : index === 13 ? "ALPHAS FRÉQUENTS" : index === 14 ? "ÉPREUVE FINALE" : "MENACE CROISSANTE";',
+        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : index < 6 ? "" : index === 11 ? "ROUTES FRACTURÉES" : index === 12 ? "ESSAIMS HYBRIDES" : index === 13 ? "ALPHAS FRÉQUENTS" : index === 14 ? "ÉPREUVE FINALE" : "MENACE CROISSANTE";',
       );
 
       return transformed === code ? null : { code: transformed, map: null };
