@@ -6,6 +6,7 @@ import { preserveAccessibleInfiniteMode } from "./infiniteDifficultyPlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { simplifyHomeProgression } from "./homeSimplificationPlugin";
 import { fixSimplifiedHomeLayering } from "./homeSimplificationLayerFixPlugin";
+import { polishWorldSelection } from "./worldSelectPolishPlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -19,5 +20,6 @@ export default defineConfig({
     simplifyHomeProgression(),
     fixSimplifiedHomeLayering(),
     clearMasteryDisplay(),
+    polishWorldSelection(),
   ],
 });
