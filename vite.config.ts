@@ -4,6 +4,7 @@ import { endgameProgression } from "./endgameProgressionPlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { preserveAccessibleInfiniteMode } from "./infiniteDifficultyPlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
+import { simplifyHomeProgression } from "./homeSimplificationPlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -14,6 +15,7 @@ export default defineConfig({
     endgameProgression(),
     endgameDropProgress(),
     preserveAccessibleInfiniteMode(),
+    simplifyHomeProgression(),
     clearMasteryDisplay(),
   ],
 });
