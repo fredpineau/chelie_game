@@ -20,6 +20,11 @@ export function polishGreenhouseLayout(): Plugin {
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "22px", color: "#edf8f7"', 'fontFamily: "Arial", fontSize: "24px", color: "#edf8f7"');
       transformed = transformed.replace('WIDTH / 2, 405,\n      "1re réussite', 'WIDTH / 2, 438,\n      "1re réussite');
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "18px", color: "#d9f4f2"', 'fontFamily: "Arial", fontSize: "20px", color: "#edf8f7"');
+      // Harmonise systématiquement la ligne des récompenses avec le texte explicatif au-dessus.
+      transformed = transformed.replace(
+        /(const rewardHint = this\.add\.text\([\s\S]*?fontFamily: "Arial", fontSize: "20px", color: ")#[0-9a-fA-F]{6}("[\s\S]*?\)\.setOrigin\(0\.5\);)/,
+        '$1#edf8f7$2',
+      );
       transformed = transformed.replace('WIDTH / 2, 458, "COÛTS PAR PLANTE', 'WIDTH / 2, 498, "COÛTS PAR PLANTE');
       transformed = transformed.replace('fontFamily: "Arial", fontSize: "18px", color: "#ffe7a3"', 'fontFamily: "Arial", fontSize: "19px", color: "#ffe7a3"');
       transformed = transformed.replace('const y = 598 + row * 190;', 'const y = 638 + row * 190;');
