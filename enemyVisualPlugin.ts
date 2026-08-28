@@ -41,9 +41,7 @@ export function realisticEnemyVisuals(): Plugin {
 
       // Quand beaucoup d'ennemis sont présents, leur recalcul de chemin est étalé
       // sur plusieurs frames pour préserver la fluidité. Les ennemis proches de la
-      // plante fraîchement posée doivent toutefois être recalculés immédiatement :
-      // sinon ils peuvent avancer brièvement sur leur ancien segment et traverser
-      // le point de contact de deux cadres en diagonale.
+      // plante fraîchement posée doivent toutefois être recalculés immédiatement.
       transformed = transformed.replace(
         '    this.recalculateEnemyPaths();',
         '    this.recalculateEnemyPaths(towerX, towerY);',
@@ -58,9 +56,37 @@ export function realisticEnemyVisuals(): Plugin {
         transformed = transformed.slice(0, recalcStart) + recalcBlock + transformed.slice(recalcEnd);
       }
 
+      // Progression permanente : les cinq paliers deviennent atteignables pendant
+      // la campagne, tout en conservant une vraie valeur aux gouttes du mode infini.
+      transformed = transformed.replace(
+        'const MASTERY_COSTS = [100, 200, 300, 400, 500];',
+        'const MASTERY_COSTS = [15, 30, 60, 100, 150];',
+      );
+
+      // Courbe des mondes lissée : chaque biome augmente à la fois la vie, la
+      // vitesse et la densité, sans le saut brutal qui existait entre 5 et 6.
+      const oldLevels = `const LEVELS: LevelDefinition[] = [\n  { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },\n  { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1.4, speedMultiplier: 1.08, swarmBonus: 4 },\n  { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.7, speedMultiplier: 1.17, swarmBonus: 6 },\n  { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 2.05, speedMultiplier: 1.25, swarmBonus: 8 },\n  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.25, speedMultiplier: 1.28, swarmBonus: 9 },\n  { name: "Fosse des spores", code: "BIOME 06", waves: 35, healthMultiplier: 2.9, speedMultiplier: 1.38, swarmBonus: 12 },\n  { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.4, speedMultiplier: 1.44, swarmBonus: 14 },\n  { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 4, speedMultiplier: 1.5, swarmBonus: 16 },\n  { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.7, speedMultiplier: 1.57, swarmBonus: 18 },\n  { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 5.5, speedMultiplier: 1.64, swarmBonus: 20 },\n  { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 6.4, speedMultiplier: 1.72, swarmBonus: 23 },\n  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 7.2, speedMultiplier: 1.8, swarmBonus: 26 },\n];`;
+      const newLevels = `const LEVELS: LevelDefinition[] = [\n  { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },\n  { name: "Canopée hostile", code: "BIOME 02", waves: 15, healthMultiplier: 1.38, speedMultiplier: 1.04, swarmBonus: 3 },\n  { name: "Serre écarlate", code: "BIOME 03", waves: 20, healthMultiplier: 1.65, speedMultiplier: 1.10, swarmBonus: 5 },\n  { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 1.95, speedMultiplier: 1.16, swarmBonus: 6 },\n  { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.30, speedMultiplier: 1.22, swarmBonus: 8 },\n  { name: "Fosse des spores", code: "BIOME 06", waves: 35, healthMultiplier: 2.70, speedMultiplier: 1.29, swarmBonus: 10 },\n  { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.15, speedMultiplier: 1.36, swarmBonus: 12 },\n  { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 3.65, speedMultiplier: 1.43, swarmBonus: 14 },\n  { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.20, speedMultiplier: 1.50, swarmBonus: 16 },\n  { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 4.85, speedMultiplier: 1.57, swarmBonus: 19 },\n  { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 5.60, speedMultiplier: 1.65, swarmBonus: 22 },\n  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 6.40, speedMultiplier: 1.72, swarmBonus: 24 },\n];`;
+      transformed = transformed.replace(oldLevels, newLevels);
+
+      // Les vagues contiennent déjà de plus en plus d'ennemis. La récompense par
+      // insecte progresse donc plus lentement et plafonne à 4 pièces afin que les
+      // choix de construction restent importants dans les mondes avancés.
+      const oldEnergyReward = `  private getEnemyEnergyReward(isBoss: boolean): number {\n    if (isBoss) return 20 + this.wave * 2 + this.levelIndex * 3;\n    const waveTier = Math.floor((this.wave - 1) / 3);\n    const worldTier = Math.floor(this.levelIndex / 4);\n    return Math.min(10, 1 + waveTier + worldTier);\n  }`;
+      const newEnergyReward = `  private getEnemyEnergyReward(isBoss: boolean): number {\n    if (isBoss) return 10 + this.wave + this.levelIndex * 2;\n    const waveTier = Math.floor((this.wave - 1) / 10);\n    const worldTier = Math.floor(this.levelIndex / 7);\n    return Math.min(4, 1 + waveTier + worldTier);\n  }`;
+      transformed = transformed.replace(oldEnergyReward, newEnergyReward);
+
+      // Le mode infini devient une vraie source de progression : toujours un
+      // versement tous les cinq paliers, mais son montant augmente avec la profondeur.
+      const oldInfiniteDrops = `      if (level.waves === null) {\n        if (this.wave % 5 === 0) {\n          dropReward = 1;\n          rewardLabel = "PALIER INFINI";\n        }\n      } else {`;
+      const newInfiniteDrops = `      if (level.waves === null) {\n        if (this.wave % 5 === 0) {\n          dropReward = Math.min(5, 1 + Math.floor(this.wave / 25));\n          rewardLabel = "PALIER INFINI";\n        }\n      } else {`;
+      transformed = transformed.replace(oldInfiniteDrops, newInfiniteDrops);
+      transformed = transformed.replace(
+        '• Mode infini : 1 goutte tous les 5 paliers',
+        '• Mode infini : bonus tous les 5 paliers, croissant avec la profondeur',
+      );
+
       // Affiche la progression des gouttes directement sur chaque carte de biome.
-      // Les récompenses déjà enregistrées par vague permettent de reconstruire le
-      // total gagné sans modifier la logique d'attribution des gouttes.
       const oldCardAdd = '      card.add([background, iconHalo, icon, code, name, threat]);';
       const newCardAdd = [
         '      const earnedDrops = level.waves === null',
