@@ -1,0 +1,59 @@
+name: Apply placement fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/apply-placement-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch collision rule
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/main.ts')
+          s = p.read_text(encoding='utf-8')
+          old = '''    if (this.towers.some((tower) =>
+      Math.abs(tower.body.x - placement.x) < PLANT_FRAME_SIZE - 1
+      && Math.abs(tower.body.y - placement.y) < PLANT_FRAME_SIZE - 1,
+    )) return { allowed: false, reason: "Cet emplacement est déjà occupé" };'''
+          new = '''    const occupied = this.towers.some((tower) => {
+      const deltaX = Math.abs(tower.body.x - placement.x);
+      const deltaY = Math.abs(tower.body.y - placement.y);
+      const axisTolerance = PLANT_HALF_STEP * 0.75;
+      const fullSpacing = PLANT_FRAME_SIZE - 1;
+
+      // Autorise le quinconce au demi-pas sur les deux axes, tout en
+      // interdisant le chevauchement direct sur une même ligne/colonne.
+      const tooCloseOnSameColumn = deltaX < axisTolerance && deltaY < fullSpacing;
+      const tooCloseOnSameRow = deltaY < axisTolerance && deltaX < fullSpacing;
+      return tooCloseOnSameColumn || tooCloseOnSameRow;
+    });
+    if (occupied) return { allowed: false, reason: "Cet emplacement est déjà occupé" };'''
+          if old not in s:
+              raise SystemExit('collision block not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Commit source fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.ts
+          git commit -m "fix: allow diagonal half-step plant placement"
+          git push
