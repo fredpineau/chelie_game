@@ -51,6 +51,13 @@ export function polishWorldSelection(): Plugin {
         'homeCenterX + 215, 286, 190, 46, "MONDES 13–15"',
       );
 
+      // Supprime uniquement « MENACE CROISSANTE » sur les mondes 1 à 6.
+      // Toutes les autres cartes et tous les libellés spéciaux restent inchangés.
+      transformed = transformed.replace(
+        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : "MENACE CROISSANTE";',
+        'const waveLabel = level.waves === null ? "VAGUES INFINIES" : index < 6 ? "" : "MENACE CROISSANTE";',
+      );
+
       return transformed === code ? null : { code: transformed, map: null };
     },
   };
