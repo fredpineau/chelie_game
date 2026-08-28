@@ -10,6 +10,7 @@ import { polishWorldSelection } from "./worldSelectPolishPlugin";
 import { greenhouseFixedOutline } from "./greenhouseFixedOutlinePlugin";
 import { polishGreenhouseLayout } from "./greenhouseLayoutPolishPlugin";
 import { restoreStablePlacement16h } from "./placementRestore16hPlugin";
+import { relaxRootPathClearance } from "./rootPathClearancePlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -27,5 +28,6 @@ export default defineConfig({
     greenhouseFixedOutline(),
     polishGreenhouseLayout(),
     restoreStablePlacement16h(),
+    relaxRootPathClearance(),
   ],
 });
