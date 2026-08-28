@@ -9,8 +9,6 @@ import { fixSimplifiedHomeLayering } from "./homeSimplificationLayerFixPlugin";
 import { polishWorldSelection } from "./worldSelectPolishPlugin";
 import { greenhouseFixedOutline } from "./greenhouseFixedOutlinePlugin";
 import { polishGreenhouseLayout } from "./greenhouseLayoutPolishPlugin";
-import { updateGameGoalGuide } from "./gameGoalGuideUpdatePlugin";
-import { recoverLostDrops } from "./dropRecoveryPlugin";
 
 const config = baseConfig as UserConfig;
 
@@ -27,7 +25,5 @@ export default defineConfig({
     polishWorldSelection(),
     greenhouseFixedOutline(),
     polishGreenhouseLayout(),
-    updateGameGoalGuide(),
-    recoverLostDrops(),
   ],
 });
