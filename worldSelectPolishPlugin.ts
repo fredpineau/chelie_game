@@ -27,8 +27,15 @@ export function polishWorldSelection(): Plugin {
       );
 
       // La version reste accessible dans Options et Aide : on la retire de l'écran principal.
-      const betaBlock = `    this.add.text(homeCenterX, 270, \`BÊTA · \${BETA_VERSION}\`, {\n      fontFamily: "Arial",\n      fontSize: "16px",\n      color: "#ccecef",\n      fontStyle: "bold",\n      letterSpacing: 1.5,\n      stroke: "#173943",\n      strokeThickness: 2,\n    }).setOrigin(0.5).setDepth(32);\n\n`;
-      transformed = transformed.replace(betaBlock, "");
+      // Suppression robuste, même si un autre plugin a modifié l'espacement ou le format du bloc.
+      transformed = transformed.replace(
+        /\s*this\.add\.text\(homeCenterX,\s*270,\s*`BÊTA\s*·\s*\$\{BETA_VERSION\}`,[\s\S]*?\)\.setOrigin\(0\.5\)\.setDepth\(32\);\s*/g,
+        "\n",
+      );
+      transformed = transformed.replace(
+        /\s*this\.add\.text\(homeCenterX,\s*270,\s*`BETA\s*·\s*\$\{BETA_VERSION\}`,[\s\S]*?\)\.setOrigin\(0\.5\)\.setDepth\(32\);\s*/g,
+        "\n",
+      );
 
       // Recentrage vertical après suppression du libellé bêta, sans remonter les cartes.
       transformed = transformed.replace(
