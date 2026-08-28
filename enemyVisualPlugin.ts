@@ -3,17 +3,17 @@ import type { Plugin } from "vite";
 export function realisticEnemyVisuals(): Plugin {
   return {
     name: "realistic-enemy-visuals",
-    enforce: "post",
+    // Important : le remplacement doit être fait sur le TypeScript source.
+    // En post-transform, Vite/esbuild a déjà réécrit les signatures de méthodes
+    // et le plugin ne trouvait plus create()/spawnEnemy(), donc les anciens
+    // monstres vectoriels restaient affichés.
+    enforce: "pre",
     transform(code, id) {
       const normalizedId = id.split("?")[0].replace(/\\/g, "/");
       if (!normalizedId.endsWith("/src/main.ts")) return null;
 
       const createAnchor = "  create(): void {";
       const spawnAnchor = "  private spawnEnemy(kind: EnemyKind, isBoss = false): void {";
-
-      // Certains passages de vite:build-html peuvent réutiliser un id lié au module
-      // tout en fournissant un contenu qui n'est pas celui de src/main.ts. Dans ce cas,
-      // on ignore simplement cette transformation au lieu de faire échouer le build.
       if (!code.includes(createAnchor) || !code.includes(spawnAnchor)) return null;
 
       const preloadBlock = `  preload(): void {\n    this.load.svg("enemy-ground-art", "/assets/enemies/beetle.svg", { width: 96, height: 96 });\n    this.load.svg("enemy-air-art", "/assets/enemies/wasp.svg", { width: 96, height: 96 });\n    this.load.svg("enemy-ground-boss-art", "/assets/enemies/beetle-boss.svg", { width: 112, height: 112 });\n    this.load.svg("enemy-air-boss-art", "/assets/enemies/wasp-boss.svg", { width: 112, height: 112 });\n  }\n\n`;
