@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "vite --config vite.restore.config.ts",
+    "build": "tsc && vite build --config vite.restore.config.ts",
+    "preview": "vite preview --config vite.restore.config.ts",
     "cap:sync": "npm run build && cap sync android",
     "android": "npm run cap:sync && cap open android"
   },
