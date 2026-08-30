@@ -15,7 +15,7 @@ export function greenhouseMapButton(): Plugin {
 
       const greenhouseButton = `
 
-    // Accès rapide à la serre permanente depuis la carte.
+    // Accès rapide au guide des gouttes depuis la carte.
     // Ce bloc est volontairement limité au HUD : aucune logique de placement
     // ou de pathfinding n'est modifiée.
     const greenhouseButton = this.add.container(77, HEIGHT - 42);
@@ -40,7 +40,7 @@ export function greenhouseMapButton(): Plugin {
     greenhouseButton.setSize(144, 76).setInteractive({ useHandCursor: true });
     greenhouseButton.on("pointerover", () => greenhouseButton.setScale(1.04));
     greenhouseButton.on("pointerout", () => greenhouseButton.setScale(1));
-    greenhouseButton.on("pointerdown", () => this.goToHome());`;
+    greenhouseButton.on("pointerdown", () => this.showWateringGuide());`;
 
       const transformed = code.replace(anchor, anchor + greenhouseButton);
       return { code: transformed, map: null };
