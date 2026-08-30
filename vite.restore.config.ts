@@ -7,6 +7,7 @@ import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
+import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
 
 export default defineConfig({
   ...baseConfig,
@@ -19,5 +20,6 @@ export default defineConfig({
     greenhouseMapButton(),
     wateringGuideMastery(),
     worldSelectionSpacing(),
+    worldVisualIdentity(),
   ],
 });
