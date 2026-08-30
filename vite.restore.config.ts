@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import baseConfig from "./vite.config";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { combatVisualPolish } from "./combatVisualPolishPlugin";
+import { deferredEnemyReroute } from "./deferredEnemyReroutePlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
@@ -27,5 +28,6 @@ export default defineConfig({
     waveCounterDisplay(),
     world2CanopyVisual(),
     combatVisualPolish(),
+    deferredEnemyReroute(),
   ],
 });
