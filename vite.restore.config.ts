@@ -9,6 +9,7 @@ import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
 import { waveCounterDisplay } from "./waveCounterDisplayPlugin";
+import { world2CanopyVisual } from "./world2CanopyVisualPlugin";
 
 export default defineConfig({
   ...baseConfig,
@@ -23,5 +24,6 @@ export default defineConfig({
     worldSelectionSpacing(),
     worldVisualIdentity(),
     waveCounterDisplay(),
+    world2CanopyVisual(),
   ],
 });
