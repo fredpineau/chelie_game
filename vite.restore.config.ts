@@ -7,7 +7,6 @@ import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
-import { mobileDeltaStress } from "./mobileDeltaStressPlugin";
 import { testUnlockWorld4 } from "./testUnlockWorld4Plugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
@@ -31,7 +30,6 @@ export default defineConfig({
     world2CanopyVisual(),
     combatVisualPolish(),
     deferredEnemyReroute(),
-    mobileDeltaStress(),
     testUnlockWorld4(),
   ],
 });
