@@ -5,7 +5,6 @@ import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
-import { realisticEnemyVisuals } from "./enemyVisualPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 
@@ -20,6 +19,5 @@ export default defineConfig({
     greenhouseMapButton(),
     wateringGuideMastery(),
     worldSelectionSpacing(),
-    realisticEnemyVisuals(),
   ],
 });
