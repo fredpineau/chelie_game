@@ -22,6 +22,9 @@ export function wateringGuideMastery(): Plugin {
         );
       }
 
+      // Renomme uniquement le titre de la page.
+      transformed = transformed.replace('"GUIDE DES GOUTTES"', '"SERRE PERMANENTE"');
+
       // Évite une double injection si le plugin est exécuté plusieurs fois.
       if (transformed.includes('"Touchez une fleur pour utiliser vos gouttes')) {
         return transformed === code ? null : { code: transformed, map: null };
