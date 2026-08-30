@@ -34,17 +34,7 @@ export function wateringGuideMastery(): Plugin {
       const guideMasteryPattern = /    const levelsTitle = this\.add\.text\(guideCenterX, \d+, "NIVEAUX PERMANENTS", \{[\s\S]*?    guide\.add\(\[veil, panel, title, balance, explanation, rewards, levelsTitle, \.\.\.rows, total, distinction, close\]\);/;
 
       if (guideMasteryPattern.test(transformed)) {
-        const interactiveGuide = `    const levelsTitle = this.add.text(guideCenterX, 515, "SERRE PERMANENTE", {
-      fontFamily: "Arial",
-      fontSize: "27px",
-      color: "#ffffff",
-      fontStyle: "bold",
-      stroke: "#12353d",
-      strokeThickness: 4,
-      letterSpacing: 1.5,
-    }).setOrigin(0.5);
-
-    const greenhouseHint = this.add.text(guideCenterX, 555,
+        const interactiveGuide = `    const greenhouseHint = this.add.text(guideCenterX, 555,
       "Touchez une fleur pour utiliser vos gouttes et l'améliorer définitivement.", {
         fontFamily: "Arial",
         fontSize: "18px",
@@ -130,7 +120,7 @@ export function wateringGuideMastery(): Plugin {
         wordWrap: { width: 600 },
       }).setOrigin(0.5);
     const close = this.makeButton(guideCenterX, 1125, 260, 56, "FERMER", 0x0f766e, () => guide.destroy(true));
-    guide.add([veil, panel, title, balance, explanation, rewards, levelsTitle, greenhouseHint, ...masteryCards, distinction, close]);`;
+    guide.add([veil, panel, title, balance, explanation, rewards, greenhouseHint, ...masteryCards, distinction, close]);`;
 
         transformed = transformed.replace(guideMasteryPattern, interactiveGuide);
       }
