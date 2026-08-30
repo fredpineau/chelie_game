@@ -9,7 +9,7 @@ import type { Plugin } from "vite";
 export function combatVisualPolish(): Plugin {
   return {
     name: "combat-visual-polish",
-    enforce: "post",
+    enforce: "pre",
     transform(code, id) {
       const normalizedId = id.split("?")[0].replace(/\\/g, "/");
       if (!normalizedId.endsWith("/src/main.ts")) return null;
@@ -24,22 +24,22 @@ export function combatVisualPolish(): Plugin {
       0.08,
     ).setStrokeStyle(3, TOWERS[tower.kind].color, 0.72).setDepth(10);`;
       const rangeReplacement = `    const biomeRangeColors = [
-      0x1f6feb, // 01 sable clair -> bleu vif
-      0xfff23d, // 02 vert -> jaune vif
-      0x39ff88, // 03 rouge/terracotta -> vert néon
-      0xffe45c, // 04 gris-violet -> jaune
-      0xff5bd7, // 05 vert -> rose vif
-      0x5dffec, // 06 violet -> cyan
-      0xffef5a, // 07 turquoise -> jaune
-      0xff5bd7, // 08 vert -> rose vif
-      0xffe45c, // 09 bleu nuit -> jaune
-      0x5dffec, // 10 mauve -> cyan
-      0x55e8ff, // 11 brun/or -> cyan clair
-      0xffe45c, // 12 gris-vert -> jaune
-      0x55ff9a, // 13 violet -> vert vif
-      0x55e8ff, // 14 rouge/brun -> cyan
-      0xffe45c, // 15 bleu-violet -> jaune
-      0x55ff9a, // infini sombre -> vert vif
+      0x1f6feb,
+      0xfff23d,
+      0x39ff88,
+      0xffe45c,
+      0xff5bd7,
+      0x5dffec,
+      0xffef5a,
+      0xff5bd7,
+      0xffe45c,
+      0x5dffec,
+      0x55e8ff,
+      0xffe45c,
+      0x55ff9a,
+      0x55e8ff,
+      0xffe45c,
+      0x55ff9a,
     ];
     const rangeColor = biomeRangeColors[this.levelIndex] ?? 0xffe45c;
     this.towerRangeIndicator = this.add.circle(
