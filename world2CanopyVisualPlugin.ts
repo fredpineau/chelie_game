@@ -1,6 +1,7 @@
 import type { Plugin } from "vite";
 
 /** Visual-only identity for BIOME 02. No gameplay logic is changed. */
+// Deployment marker: forces Vercel to rebuild this known-good revision without changing runtime behavior.
 export function world2CanopyVisual(): Plugin {
   return {
     name: "world-2-canopy-visual",
