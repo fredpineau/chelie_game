@@ -13,9 +13,14 @@ export function greenhouseMapButton(): Plugin {
         throw new Error("Pause button anchor not found; greenhouse map button was not applied.");
       }
 
+      let transformed = code.replace(
+        "const attackButton = this.add.container(WIDTH / 2 - 25, HEIGHT - 42);",
+        "const attackButton = this.add.container(WIDTH / 2, HEIGHT - 42);",
+      );
+
       const greenhouseButton = `
 
-    // Accès rapide au guide des gouttes depuis la carte.
+    // Accès rapide à la serre permanente depuis la carte.
     // Ce bloc est volontairement limité au HUD : aucune logique de placement
     // ou de pathfinding n'est modifiée.
     const greenhouseButton = this.add.container(77, HEIGHT - 42);
@@ -42,7 +47,7 @@ export function greenhouseMapButton(): Plugin {
     greenhouseButton.on("pointerout", () => greenhouseButton.setScale(1));
     greenhouseButton.on("pointerdown", () => this.showWateringGuide());`;
 
-      const transformed = code.replace(anchor, anchor + greenhouseButton);
+      transformed = transformed.replace(anchor, anchor + greenhouseButton);
       return { code: transformed, map: null };
     },
   };
