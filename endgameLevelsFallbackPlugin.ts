@@ -9,8 +9,10 @@ export function endgameLevelsFallback(): Plugin {
       if (!normalizedId.endsWith("/src/main.ts")) return null;
       if (code.includes('code: "BIOME 15"')) return null;
 
-      const infiniteLine = '  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 6.40, speedMultiplier: 1.72, swarmBonus: 24 },';
-      if (!code.includes(infiniteLine)) return null;
+      // Ancre stable : on repère la ligne MODE INFINI sans dépendre de ses
+      // multiplicateurs, qui peuvent évoluer avec l'équilibrage du jeu.
+      const infiniteLinePattern = /^  \{ name: "Floraison éternelle", code: "MODE INFINI", waves: null,[^\n]+\},$/m;
+      if (!infiniteLinePattern.test(code)) return null;
 
       const replacement = [
         '  { name: "Marais fracturé", code: "BIOME 12", waves: 48, healthMultiplier: 6.15, speedMultiplier: 1.69, swarmBonus: 24 },',
@@ -20,7 +22,7 @@ export function endgameLevelsFallback(): Plugin {
         '  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 8.60, speedMultiplier: 1.86, swarmBonus: 30 },',
       ].join("\n");
 
-      return { code: code.replace(infiniteLine, replacement), map: null };
+      return { code: code.replace(infiniteLinePattern, replacement), map: null };
     },
   };
 }
