@@ -4,6 +4,7 @@ import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
+import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 
 export default defineConfig({
   ...baseConfig,
@@ -13,5 +14,6 @@ export default defineConfig({
     endgameDropProgress(),
     clearMasteryDisplay(),
     greenhouseMapButton(),
+    wateringGuideMastery(),
   ],
 });
