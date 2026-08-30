@@ -8,6 +8,7 @@ import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
+import { waveCounterDisplay } from "./waveCounterDisplayPlugin";
 
 export default defineConfig({
   ...baseConfig,
@@ -21,5 +22,6 @@ export default defineConfig({
     wateringGuideMastery(),
     worldSelectionSpacing(),
     worldVisualIdentity(),
+    waveCounterDisplay(),
   ],
 });
