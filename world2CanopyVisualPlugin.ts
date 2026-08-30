@@ -17,7 +17,7 @@ export function world2CanopyVisual(): Plugin {
     background.fillGradientStyle(0xc8bb94, 0xd8cba5, 0xb9ad88, 0xcdbf98, 1);`;
       const biomeBackground = `    const background = this.add.graphics();
     if (this.levelIndex === 1) {
-      background.fillGradientStyle(0x4f8a68, 0x72a879, 0x386f58, 0x5b9369, 1);
+      background.fillGradientStyle(0x73a985, 0x96bf91, 0x5d9275, 0x7eaa80, 1);
     } else {
       background.fillGradientStyle(0xc8bb94, 0xd8cba5, 0xb9ad88, 0xcdbf98, 1);
     }`;
