@@ -8,6 +8,7 @@ import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
+import { waveSpeedControl } from "./waveSpeedControlPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
 import { waveCounterDisplay } from "./waveCounterDisplayPlugin";
@@ -29,5 +30,6 @@ export default defineConfig({
     world2CanopyVisual(),
     combatVisualPolish(),
     deferredEnemyReroute(),
+    waveSpeedControl(),
   ],
 });
