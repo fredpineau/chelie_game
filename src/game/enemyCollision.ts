@@ -7,11 +7,22 @@ export type PlantLike = {
   };
 };
 
+export function isEnemyInsidePlant(
+  x: number,
+  y: number,
+  towers: readonly PlantLike[],
+  halfPlant: number,
+): boolean {
+  return towers.some((tower) =>
+    Math.abs(x - tower.body.x) < halfPlant
+    && Math.abs(y - tower.body.y) < halfPlant,
+  );
+}
+
 /**
  * Returns true when the proposed movement would enter/cross a plant.
- * If the enemy is already inside a newly placed plant, only movement that
- * strictly increases its distance from that plant is allowed so it can escape
- * instead of remaining trapped underneath it.
+ * During a controlled retreat, an enemy that is already inside a newly placed
+ * plant may keep following its historical path until it leaves that plant.
  */
 export function isEnemyMovementBlocked(
   currentX: number,
@@ -20,6 +31,7 @@ export function isEnemyMovementBlocked(
   nextY: number,
   towers: readonly PlantLike[],
   halfPlant: number,
+  allowRetreatFromInside = false,
 ): boolean {
   const movement = new Phaser.Geom.Line(currentX, currentY, nextX, nextY);
 
@@ -34,6 +46,8 @@ export function isEnemyMovementBlocked(
       && Math.abs(currentY - tower.body.y) < halfPlant;
     const nextInside = Math.abs(nextX - tower.body.x) < halfPlant
       && Math.abs(nextY - tower.body.y) < halfPlant;
+
+    if (currentInside && allowRetreatFromInside) return false;
 
     if (currentInside) {
       const currentDx = currentX - tower.body.x;
