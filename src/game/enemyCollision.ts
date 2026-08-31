@@ -7,6 +7,12 @@ export type PlantLike = {
   };
 };
 
+/**
+ * Returns true when the proposed movement would enter/cross a plant.
+ * If the enemy is already inside a newly placed plant, only movement that
+ * strictly increases its distance from that plant is allowed so it can escape
+ * instead of remaining trapped underneath it.
+ */
 export function isEnemyMovementBlocked(
   currentX: number,
   currentY: number,
@@ -29,6 +35,17 @@ export function isEnemyMovementBlocked(
     const nextInside = Math.abs(nextX - tower.body.x) < halfPlant
       && Math.abs(nextY - tower.body.y) < halfPlant;
 
-    return currentInside || nextInside || Phaser.Geom.Intersects.LineToRectangle(movement, rect);
+    if (currentInside) {
+      const currentDx = currentX - tower.body.x;
+      const currentDy = currentY - tower.body.y;
+      const nextDx = nextX - tower.body.x;
+      const nextDy = nextY - tower.body.y;
+      const currentDistance = (currentDx * currentDx) + (currentDy * currentDy);
+      const nextDistance = (nextDx * nextDx) + (nextDy * nextDy);
+
+      return nextInside && nextDistance <= currentDistance;
+    }
+
+    return nextInside || Phaser.Geom.Intersects.LineToRectangle(movement, rect);
   });
 }
