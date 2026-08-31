@@ -10,7 +10,30 @@ import {
   RECALCULATE_ALL_REPLACEMENT,
 } from "./enemyRerouteTransform";
 
-/** Applies the enemy reroute transformation to src/main.ts. */
+type Replacement = {
+  label: string;
+  anchor: string;
+  replacement: string;
+};
+
+const REPLACEMENTS: Replacement[] = [
+  { label: "import", anchor: IMPORT_ANCHOR, replacement: IMPORT_REPLACEMENT },
+  { label: "field", anchor: FIELD_ANCHOR, replacement: FIELD_REPLACEMENT },
+  { label: "followPath", anchor: FOLLOW_PATH_ANCHOR, replacement: FOLLOW_PATH_REPLACEMENT },
+  { label: "batch", anchor: RECALCULATE_ALL_ANCHOR, replacement: RECALCULATE_ALL_REPLACEMENT },
+];
+
+function applyRequiredReplacement(code: string, change: Replacement): string {
+  if (!code.includes(change.anchor)) {
+    throw new Error(`Deferred reroute ${change.label} anchor not found.`);
+  }
+  return code.replace(change.anchor, change.replacement);
+}
+
+/**
+ * Thin compatibility layer while the scene remains in src/main.ts.
+ * Runtime navigation rules live in src/game; this file only wires them in.
+ */
 export function deferredEnemyReroute(): Plugin {
   return {
     name: "deferred-enemy-reroute",
@@ -19,16 +42,7 @@ export function deferredEnemyReroute(): Plugin {
       const normalizedId = id.split("?")[0].replace(/\\/g, "/");
       if (!normalizedId.endsWith("/src/main.ts")) return null;
 
-      if (!code.includes(IMPORT_ANCHOR)) throw new Error("Deferred reroute import anchor not found.");
-      if (!code.includes(FIELD_ANCHOR)) throw new Error("Deferred reroute field anchor not found.");
-      if (!code.includes(FOLLOW_PATH_ANCHOR)) throw new Error("Deferred reroute followPath anchor not found.");
-      if (!code.includes(RECALCULATE_ALL_ANCHOR)) throw new Error("Deferred reroute batch anchor not found.");
-
-      let transformed = code.replace(IMPORT_ANCHOR, IMPORT_REPLACEMENT);
-      transformed = transformed.replace(FIELD_ANCHOR, FIELD_REPLACEMENT);
-      transformed = transformed.replace(FOLLOW_PATH_ANCHOR, FOLLOW_PATH_REPLACEMENT);
-      transformed = transformed.replace(RECALCULATE_ALL_ANCHOR, RECALCULATE_ALL_REPLACEMENT);
-
+      const transformed = REPLACEMENTS.reduce(applyRequiredReplacement, code);
       return { code: transformed, map: null };
     },
   };

@@ -1,4 +1,5 @@
 export type RoutePoint = { x: number; y: number };
+export type GridPoint = { col: number; row: number };
 export type PlantPosition = { body: { x: number; y: number } };
 
 export type GridGeometry = {
@@ -10,12 +11,18 @@ export type GridGeometry = {
   plantHalfSize: number;
 };
 
-export type SafeGridWaypoint = {
+export type SafeGridWaypoint = GridPoint & RoutePoint & {
   pathIndex: number;
-  col: number;
-  row: number;
-  x: number;
-  y: number;
+};
+
+export type ExitChoice<Id extends string = string> = GridPoint & RoutePoint & {
+  id: Id;
+};
+
+export type ReroutePlan<Id extends string = string> = {
+  waypoint: SafeGridWaypoint;
+  exit: ExitChoice<Id>;
+  route: RoutePoint[];
 };
 
 const clamp = (value: number, min: number, max: number): number =>
@@ -23,8 +30,7 @@ const clamp = (value: number, min: number, max: number): number =>
 
 /**
  * Returns previous path waypoints that are exact grid points and are not inside
- * a plant. The order is preserved from nearest previous waypoint to oldest.
- * Route selection remains the caller's responsibility.
+ * a plant. The order is nearest previous waypoint first, then older waypoints.
  */
 export function getPreviousSafeGridWaypoints(
   path: readonly RoutePoint[],
@@ -63,4 +69,44 @@ export function getPreviousSafeGridWaypoints(
   }
 
   return result;
+}
+
+/** Keeps the current exit first while preserving the fallback exit order. */
+export function orderExitChoices<Id extends string>(
+  preferredId: Id,
+  exits: readonly ExitChoice<Id>[],
+): ExitChoice<Id>[] {
+  return [
+    ...exits.filter((exit) => exit.id === preferredId),
+    ...exits.filter((exit) => exit.id !== preferredId),
+  ];
+}
+
+/**
+ * Selects the first reachable pair using the exact existing priority:
+ * nearest previous safe waypoint first, preferred exit before fallback exit.
+ * It does not mutate the enemy or the scene.
+ */
+export function findFirstReachableReroute<Id extends string>(
+  safeWaypoints: readonly SafeGridWaypoint[],
+  exits: readonly ExitChoice<Id>[],
+  calculatePath: (from: GridPoint, to: GridPoint) => readonly RoutePoint[] | null,
+): ReroutePlan<Id> | null {
+  for (const waypoint of safeWaypoints) {
+    for (const exit of exits) {
+      const route = calculatePath(
+        { col: waypoint.col, row: waypoint.row },
+        { col: exit.col, row: exit.row },
+      );
+      if (!route) continue;
+
+      return {
+        waypoint,
+        exit,
+        route: [...route],
+      };
+    }
+  }
+
+  return null;
 }
