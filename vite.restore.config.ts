@@ -12,6 +12,7 @@ import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
 import { waveCounterDisplay } from "./waveCounterDisplayPlugin";
 import { world2CanopyVisual } from "./world2CanopyVisualPlugin";
+import { testUnlockWorlds } from "./testUnlockWorldsPlugin";
 
 export default defineConfig({
   ...baseConfig,
@@ -29,5 +30,6 @@ export default defineConfig({
     world2CanopyVisual(),
     combatVisualPolish(),
     deferredEnemyReroute(),
+    testUnlockWorlds(),
   ],
 });
