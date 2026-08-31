@@ -78,6 +78,7 @@ export function combatVisualPolish(): Plugin {
       );
 
       // Remplace exactement les deux feuilles décoratives par deux épées.
+      // FE0E force le rendu texte sur Android afin que la couleur Phaser soit respectée.
       const leavesAnchor = `    const leftLeaf = this.add.ellipse(-118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(-0.68);
     const rightLeaf = this.add.ellipse(118, 0, 17, 31, 0x5cae7b, 0.75).setRotation(0.68);
     const attackText = this.add.text(0, 0, "À L’ATTAQUE", {
@@ -85,11 +86,11 @@ export function combatVisualPolish(): Plugin {
       stroke: "#0a2925", strokeThickness: 4, letterSpacing: 1.5,
     }).setOrigin(0.5);
     attackButton.add([attackShadow, attackBackground, leftLeaf, rightLeaf, attackText]);`;
-      const swordsReplacement = `    const leftSword = this.add.text(-118, 0, "⚔", {
+      const swordsReplacement = `    const leftSword = this.add.text(-118, 0, "⚔︎", {
       fontFamily: "Arial", fontSize: "28px", color: "#ffe36e", fontStyle: "bold",
       stroke: "#0a2925", strokeThickness: 3,
     }).setOrigin(0.5);
-    const rightSword = this.add.text(118, 0, "⚔", {
+    const rightSword = this.add.text(118, 0, "⚔︎", {
       fontFamily: "Arial", fontSize: "28px", color: "#ffe36e", fontStyle: "bold",
       stroke: "#0a2925", strokeThickness: 3,
     }).setOrigin(0.5);
