@@ -1,6 +1,9 @@
 import type { Plugin } from "vite";
 
-/** Test-only helper: unlock every world on validation branches. */
+/**
+ * Test-only helper: unlock every world on validation branches.
+ * Kept isolated from production progression and enabled only by the test config.
+ */
 export function testUnlockWorlds(): Plugin {
   return {
     name: "test-unlock-worlds",
