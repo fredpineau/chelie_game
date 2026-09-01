@@ -8,6 +8,7 @@ import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
+import { testUnlockWorlds } from "./testUnlockWorldsPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { waveSpeedControl } from "./waveSpeedControlPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
@@ -33,5 +34,6 @@ export default defineConfig({
     deferredEnemyReroute(),
     waveSpeedControl(),
     bottomExitPlacementClearance(),
+    testUnlockWorlds(),
   ],
 });
