@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import baseConfig from "./vite.config";
+import { betaVersionDisplay } from "./betaVersionPlugin";
 import { bottomExitPlacementClearance } from "./bottomExitPlacementClearancePlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { combatVisualPolish } from "./combatVisualPolishPlugin";
@@ -19,6 +20,7 @@ export default defineConfig({
   ...baseConfig,
   plugins: [
     ...(baseConfig.plugins ?? []),
+    betaVersionDisplay(),
     endgameProgression(),
     endgameLevelsFallback(),
     endgameDropProgress(),
