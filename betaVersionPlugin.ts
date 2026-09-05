@@ -12,7 +12,7 @@ export function betaVersionDisplay(): Plugin {
       if (!normalizedId.endsWith("/src/main.ts")) return null;
 
       const currentVersion = `const BETA_VERSION = "0.2.0-beta.1";`;
-      const nextVersion = `const BETA_VERSION = "0.3.0-beta.1";`;
+      const nextVersion = `const BETA_VERSION = "0.2";`;
       if (!code.includes(currentVersion)) {
         throw new Error("Beta version anchor not found.");
       }
