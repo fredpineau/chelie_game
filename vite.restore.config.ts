@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import baseConfig from "./vite.config";
+import { bottomExitPlacementClearance } from "./bottomExitPlacementClearancePlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { combatVisualPolish } from "./combatVisualPolishPlugin";
 import { deferredEnemyReroute } from "./deferredEnemyReroutePlugin";
@@ -31,5 +32,6 @@ export default defineConfig({
     combatVisualPolish(),
     deferredEnemyReroute(),
     waveSpeedControl(),
+    bottomExitPlacementClearance(),
   ],
 });
