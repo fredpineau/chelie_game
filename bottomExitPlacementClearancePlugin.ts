@@ -23,12 +23,15 @@ export function bottomExitPlacementClearance(): Plugin {
 
       let transformed = code.replace(placementAnchor, guard);
 
-      const routeAnchor = `    const routeStates = this.getRouteOptions().map((route) => ({\n      route,\n      open: this.hasGridPath(route.entry, route.destination, blockedCells),\n    }));`;
+      // staggeredPlacementFix runs before this plugin and has already augmented
+      // the route check with calculateFinePath. Target that final stable form so
+      // both validation systems remain active.
+      const routeAnchor = `    const routeStates = this.getRouteOptions().map((route) => ({\n      route,\n      // On conserve le pathfinding historique en priorité. Le calcul fin ne\n      // s'active que lorsqu'il déclare à tort un passage fermé entre deux\n      // placements au demi-pas.\n      open: this.hasGridPath(route.entry, route.destination, blockedCells)\n        || this.calculateFinePath(route.entry, route.destination, extraBlocked) !== null,\n    }));`;
       if (!transformed.includes(routeAnchor)) {
         throw new Error("Bottom exit symmetric route-validation anchor not found.");
       }
 
-      const symmetricRouteValidation = `    // The bottom opening sits between columns 10 and 11. During placement\n    // validation only, either middle cell is a valid approach to the same\n    // physical opening. This removes the left/right bias without changing the\n    // route actually selected or followed by enemies during a wave.\n    const alternateBottomDestination = { col: BOTTOM_EXIT_COL + 1, row: BOTTOM_EXIT_ROW };\n    const routeStates = this.getRouteOptions().map((route) => {\n      const primaryOpen = this.hasGridPath(route.entry, route.destination, blockedCells);\n      const isBottomRoute = route.exit === "bottom";\n      return {\n        route,\n        open: primaryOpen || (\n          isBottomRoute\n          && this.hasGridPath(route.entry, alternateBottomDestination, blockedCells)\n        ),\n      };\n    });`;
+      const symmetricRouteValidation = `    // The physical bottom opening lies between the two middle grid columns.\n    // For placement validation, both approaches represent the same opening.\n    // Keep both the normal and fine-grid checks, but do not change wave routing\n    // or enemy movement here.\n    const alternateBottomDestination = { col: BOTTOM_EXIT_COL + 1, row: BOTTOM_EXIT_ROW };\n    const routeStates = this.getRouteOptions().map((route) => {\n      const primaryOpen = this.hasGridPath(route.entry, route.destination, blockedCells)\n        || this.calculateFinePath(route.entry, route.destination, extraBlocked) !== null;\n      const alternateBottomOpen = route.exit === "bottom"\n        && (\n          this.hasGridPath(route.entry, alternateBottomDestination, blockedCells)\n          || this.calculateFinePath(route.entry, alternateBottomDestination, extraBlocked) !== null\n        );\n      return { route, open: primaryOpen || alternateBottomOpen };\n    });`;
 
       transformed = transformed.replace(routeAnchor, symmetricRouteValidation);
       return { code: transformed, map: null };
