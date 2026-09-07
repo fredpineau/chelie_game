@@ -30,7 +30,7 @@ export function pathfindingStability(): Plugin {
     const visited = new Set<string>([key(startFine.col, startFine.row)]);
     const previous = new Map<string, { col: number; row: number }>();`;
       const fineFrontierReplacement = `    const frontier = [startFine];
-    const usePlantAttraction = !this.waveEntryTop && this.waveExitId === "right";
+    const usePlantAttraction = !this.waveEntryTop && this.waveExitId === "bottom";
     const visited = new Set<string>([key(startFine.col, startFine.row)]);
     const costs = new Map<string, number>([[key(startFine.col, startFine.row), 0]]);
     const processed = new Set<string>();
