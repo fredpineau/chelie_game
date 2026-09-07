@@ -32,6 +32,11 @@ export function alphaDropBonus(): Plugin {
       const destroyReplacement = `  private destroyEnemy(enemy: Enemy): void {\n    const index = this.enemies.indexOf(enemy);\n    if (index === -1) return;\n\n    if (enemy.isBoss) {\n      const level = LEVELS[this.levelIndex];\n      const alphaRecordKey = \`alpha:v1:\${level.code}:\${this.wave}\`;\n      const alreadyRewarded = level.waves !== null && Number(this.waveDropRecords[alphaRecordKey] ?? 0) >= 3;\n      if (!alreadyRewarded) {\n        this.wateringCans += 3;\n        if (level.waves !== null) this.waveDropRecords[alphaRecordKey] = 3;\n        this.savePermanentProgress();\n        this.showWateringCanReward(3, "ALPHA DIGÉRÉ");\n      }\n    }\n\n    this.energy += enemy.energyReward;`;
       transformed = transformed.replace(destroyAnchor, destroyReplacement);
 
+      transformed = transformed.replace(
+        "• Boss parfait : jusqu’à 3 gouttes au total",
+        "• Alpha digéré : +3 gouttes bonus",
+      );
+
       return { code: transformed, map: null };
     },
   };
