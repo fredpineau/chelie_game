@@ -4,6 +4,7 @@ import { betaVersionDisplay } from "./betaVersionPlugin";
 import { bottomExitPlacementClearance } from "./bottomExitPlacementClearancePlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { combatVisualPolish } from "./combatVisualPolishPlugin";
+import { crypteOpeningBalance } from "./crypteOpeningBalancePlugin";
 import { deferredEnemyReroute } from "./deferredEnemyReroutePlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
@@ -35,5 +36,6 @@ export default defineConfig({
     deferredEnemyReroute(),
     waveSpeedControl(),
     bottomExitPlacementClearance(),
+    crypteOpeningBalance(),
   ],
 });
