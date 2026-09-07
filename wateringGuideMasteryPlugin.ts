@@ -10,6 +10,34 @@ export function wateringGuideMastery(): Plugin {
 
       let transformed = code;
 
+      // Répare une seule fois les profils touchés par l'ancienne réinitialisation
+      // qui vidait la réserve alors que l'historique de récompenses restait présent.
+      const loadProgressAnchor = `      (Object.keys(TOWERS) as TowerKind[]).forEach((kind) => {
+        this.plantMastery[kind] = Phaser.Math.Clamp(Number(stored[kind] ?? 0), 0, MASTERY_COSTS.length);
+      });`;
+      if (transformed.includes(loadProgressAnchor)) {
+        transformed = transformed.replace(
+          loadProgressAnchor,
+          `${loadProgressAnchor}
+      const reserveRecoveryMarker = "chelie-drop-reserve-recovery-v1";
+      const masteryIsReset = (Object.keys(TOWERS) as TowerKind[])
+        .every((kind) => this.plantMastery[kind] === 0);
+      if (localStorage.getItem(reserveRecoveryMarker) !== "done") {
+        if (this.wateringCans === 0 && masteryIsReset) {
+          const recoveredDrops = Object.entries(this.waveDropRecords).reduce((sum, [key, value]) => {
+            if (!key.startsWith("v2:") && !key.startsWith("alpha:v1:")) return sum;
+            return sum + Math.max(0, Number(value) || 0);
+          }, 0);
+          if (recoveredDrops > 0) {
+            this.wateringCans = recoveredDrops;
+            localStorage.setItem("chelie-watering-cans", String(this.wateringCans));
+          }
+        }
+        localStorage.setItem(reserveRecoveryMarker, "done");
+      }`,
+        );
+      }
+
       // Retire uniquement le bloc de maîtrise permanente de la page des mondes.
       const homeMasteryPattern = /\n    this\.add\.text\(homeCenterX, \d+, `SERRE PERMANENTE[\s\S]*?\n    this\.makeButton\(homeCenterX, \d+, \d+, \d+, "OPTIONS ET AIDE"[\s\S]*?\.setDepth\(32\);/;
       if (homeMasteryPattern.test(transformed)) {
@@ -69,13 +97,13 @@ export function wateringGuideMastery(): Plugin {
         stroke: "#12353d",
         strokeThickness: 3,
       }).setOrigin(0.5);
-      const level = this.add.text(12, -20, \`NIV. \${mastery}/5\`, {
+      const level = this.add.text(12, -20, `NIV. ${mastery}/5`, {
         fontFamily: "Arial",
         fontSize: "18px",
         color: mastery >= MASTERY_COSTS.length ? "#ffe89a" : "#dffaff",
         fontStyle: "bold",
       }).setOrigin(0.5);
-      const costText = this.add.text(12, 18, cost === null ? "MAX" : \`PROCHAIN · 💧 \${cost}\`, {
+      const costText = this.add.text(12, 18, cost === null ? "MAX" : `PROCHAIN · 💧 ${cost}`, {
         fontFamily: "Arial",
         fontSize: "17px",
         color: cost === null ? "#ffe89a" : this.wateringCans >= cost ? "#e6fbff" : "#86aeb3",
