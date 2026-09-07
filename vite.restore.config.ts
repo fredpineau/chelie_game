@@ -3,6 +3,7 @@ import baseConfig from "./vite.config";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
 import { combatVisualPolish } from "./combatVisualPolishPlugin";
 import { deferredEnemyReroute } from "./deferredEnemyReroutePlugin";
+import { enemyFineReroute } from "./enemyFineReroutePlugin";
 import { enemyRerouteAtomic } from "./enemyRerouteAtomicPlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
@@ -32,6 +33,7 @@ export default defineConfig({
     combatVisualPolish(),
     deferredEnemyReroute(),
     enemyRerouteAtomic(),
+    enemyFineReroute(),
     testUnlockWorlds(),
   ],
 });
