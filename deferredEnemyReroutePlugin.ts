@@ -1,19 +1,16 @@
 import type { Plugin } from "vite";
 
 /**
- * Keeps the original enemy movement and pathfinder intact.
- * After a plant placement/removal, enemies recalculate immediately from their
- * current position. The only extra guard prevents a movement step from
- * crossing a plant rectangle (the edge-to-edge/mobile tunnelling case).
+ * Keeps enemy movement responsive when the player changes the maze.
  *
- * Every reroute start candidate must also be directly reachable from the
- * enemy's real current position without crossing a plant. This prevents the
- * recalculation loop where a mathematically valid route starts with an
- * impossible connector segment.
- *
- * If the normal reroute still cannot find a route from its nearest free start
- * cells, a rare fallback looks slightly farther away with the same connector
- * validation.
+ * - Movement can never tunnel through a plant rectangle.
+ * - Reroutes start only from cells that are directly reachable from the
+ *   enemy's real position.
+ * - Placement/removal reroutes are spread over several frames and enemies
+ *   waiting for their scheduled reroute no longer trigger a second synchronous
+ *   pathfinding pass from followPath. This removes the visible placement hitch.
+ * - The west -> east route guide stays level with the west entrance instead of
+ *   attracting enemies toward the north of the map.
  */
 export function deferredEnemyReroute(): Plugin {
   return {
@@ -25,10 +22,18 @@ export function deferredEnemyReroute(): Plugin {
 
       const followPathAnchor = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    const step = speed * (delta / 1000);\n    if (distance <= step) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n    enemy.body.x += ((target.x - enemy.body.x) / distance) * step;\n    enemy.body.y += ((target.y - enemy.body.y) / distance) * step;\n  }`;
 
-      const followPathReplacement = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    if (distance <= 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n\n    const step = Math.min(distance, speed * (delta / 1000));\n    const nextX = enemy.body.x + ((target.x - enemy.body.x) / distance) * step;\n    const nextY = enemy.body.y + ((target.y - enemy.body.y) / distance) * step;\n    const halfPlant = PLANT_FRAME_SIZE / 2 - 1;\n    const movement = new Phaser.Geom.Line(enemy.body.x, enemy.body.y, nextX, nextY);\n    const movementBlocked = this.towers.some((tower) => {\n      const rect = new Phaser.Geom.Rectangle(\n        tower.body.x - halfPlant,\n        tower.body.y - halfPlant,\n        halfPlant * 2,\n        halfPlant * 2,\n      );\n      const currentInside = Math.abs(enemy.body.x - tower.body.x) < halfPlant\n        && Math.abs(enemy.body.y - tower.body.y) < halfPlant;\n      if (currentInside) return false;\n      return Phaser.Geom.Intersects.LineToRectangle(movement, rect);\n    });\n\n    if (movementBlocked) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    enemy.body.setPosition(nextX, nextY);\n    if (step >= distance - 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n    }\n  }`;
+      const followPathReplacement = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      const rerouteState = enemy as Enemy & { reroutePending?: boolean };\n      if (!rerouteState.reroutePending) this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    if (distance <= 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n\n    const step = Math.min(distance, speed * (delta / 1000));\n    const nextX = enemy.body.x + ((target.x - enemy.body.x) / distance) * step;\n    const nextY = enemy.body.y + ((target.y - enemy.body.y) / distance) * step;\n    const halfPlant = PLANT_FRAME_SIZE / 2 - 1;\n    const movement = new Phaser.Geom.Line(enemy.body.x, enemy.body.y, nextX, nextY);\n    const movementBlocked = this.towers.some((tower) => {\n      const rect = new Phaser.Geom.Rectangle(\n        tower.body.x - halfPlant,\n        tower.body.y - halfPlant,\n        halfPlant * 2,\n        halfPlant * 2,\n      );\n      const currentInside = Math.abs(enemy.body.x - tower.body.x) < halfPlant\n        && Math.abs(enemy.body.y - tower.body.y) < halfPlant;\n      if (currentInside) return false;\n      return Phaser.Geom.Intersects.LineToRectangle(movement, rect);\n    });\n\n    if (movementBlocked) {\n      const rerouteState = enemy as Enemy & { reroutePending?: boolean };\n      if (!rerouteState.reroutePending) this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    enemy.body.setPosition(nextX, nextY);\n    if (step >= distance - 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n    }\n  }`;
 
       if (!code.includes(followPathAnchor)) {
         throw new Error("Deferred reroute followPath anchor not found.");
+      }
+
+      const recalculateAllAnchor = `  private recalculateEnemyPaths(): void {\n    const version = ++this.pathRecalculationVersion;\n    const activeEnemies = [...this.enemies];\n    const enemiesPerFrame = 6;\n    activeEnemies.forEach((enemy, index) => {\n      const delay = 1 + Math.floor(index / enemiesPerFrame) * 16;\n      const recalculate = (): void => {\n        if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;\n        this.recalculateEnemyPath(enemy);\n      };\n      this.time.delayedCall(delay, recalculate);\n    });\n  }`;
+
+      const recalculateAllReplacement = `  private recalculateEnemyPaths(): void {\n    const version = ++this.pathRecalculationVersion;\n    const activeEnemies = [...this.enemies];\n    // Deux pathfindings maximum par frame : assez rapide pour que les ennemis\n    // réagissent à la nouvelle plante, sans bloquer le rendu pendant la pose.\n    const enemiesPerFrame = 2;\n    activeEnemies.forEach((enemy, index) => {\n      const rerouteState = enemy as Enemy & { reroutePending?: boolean };\n      rerouteState.reroutePending = true;\n      const delay = 1 + Math.floor(index / enemiesPerFrame) * 16;\n      const recalculate = (): void => {\n        rerouteState.reroutePending = false;\n        if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;\n        this.recalculateEnemyPath(enemy);\n      };\n      this.time.delayedCall(delay, recalculate);\n    });\n  }`;
+
+      if (!code.includes(recalculateAllAnchor)) {
+        throw new Error("Deferred reroute batch anchor not found.");
       }
 
       const candidateRouteAnchor = `        for (const start of candidates) {\n          const path = this.calculatePath(start, { col: exit.col, row: exit.row });`;
@@ -46,9 +51,17 @@ export function deferredEnemyReroute(): Plugin {
         throw new Error("Deferred reroute failure anchor not found.");
       }
 
+      const westEastGuideAnchor = `{ top: false, exit: "right", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: 16, row: 8 } }`;
+      const westEastGuideReplacement = `{ top: false, exit: "right", entry: { col: BOTTOM_ENTRY_COL, row: BOTTOM_ENTRY_ROW }, destination: { col: TOP_EXIT_COL, row: TOP_EXIT_ROW }, guide: { col: Math.floor(GRID_COLS / 2), row: BOTTOM_ENTRY_ROW } }`;
+      if (!code.includes(westEastGuideAnchor)) {
+        throw new Error("West entry route guide anchor not found.");
+      }
+
       let transformed = code.replace(followPathAnchor, followPathReplacement);
+      transformed = transformed.replace(recalculateAllAnchor, recalculateAllReplacement);
       transformed = transformed.replace(candidateRouteAnchor, candidateRouteReplacement);
       transformed = transformed.replace(rerouteFailureAnchor, rerouteFailureReplacement);
+      transformed = transformed.replace(westEastGuideAnchor, westEastGuideReplacement);
       return { code: transformed, map: null };
     },
   };
