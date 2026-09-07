@@ -11,7 +11,6 @@ import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { pathfindingStability } from "./pathfindingStabilityPlugin";
-import { testDropSeed } from "./testDropSeedPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { waveSpeedControl } from "./waveSpeedControlPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
@@ -29,7 +28,6 @@ export default defineConfig({
     endgameDropProgress(),
     clearMasteryDisplay(),
     greenhouseMapButton(),
-    testDropSeed(),
     wateringGuideMastery(),
     worldSelectionSpacing(),
     worldVisualIdentity(),
