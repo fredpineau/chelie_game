@@ -10,7 +10,7 @@ import type { Plugin } from "vite";
 export function alphaDropBonus(): Plugin {
   return {
     name: "alpha-drop-bonus",
-    enforce: "post",
+    enforce: "pre",
     transform(code, id) {
       const normalizedId = id.split("?")[0].replace(/\\/g, "/");
       if (!normalizedId.endsWith("/src/main.ts")) return null;
