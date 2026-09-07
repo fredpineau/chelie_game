@@ -11,6 +11,7 @@ import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { pathfindingStability } from "./pathfindingStabilityPlugin";
+import { testWorldUnlock } from "./testWorldUnlockPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
 import { waveSpeedControl } from "./waveSpeedControlPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
@@ -36,6 +37,7 @@ export default defineConfig({
     combatVisualPolish(),
     deferredEnemyReroute(),
     pathfindingStability(),
+    testWorldUnlock(),
     waveSpeedControl(),
     bottomExitPlacementClearance(),
     crypteOpeningBalance(),
