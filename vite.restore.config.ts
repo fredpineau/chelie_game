@@ -11,6 +11,7 @@ import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
 import { greenhouseMapButton } from "./greenhouseMapButtonPlugin";
 import { wateringGuideMastery } from "./wateringGuideMasteryPlugin";
+import { testUnlockWorlds } from "./testUnlockWorldsPlugin";
 import { waveSpeedControl } from "./waveSpeedControlPlugin";
 import { worldSelectionSpacing } from "./worldSelectionSpacingPlugin";
 import { worldVisualIdentity } from "./worldVisualIdentityPlugin";
@@ -37,5 +38,6 @@ export default defineConfig({
     waveSpeedControl(),
     bottomExitPlacementClearance(),
     crypteOpeningBalance(),
+    testUnlockWorlds(),
   ],
 });
