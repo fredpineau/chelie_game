@@ -5,6 +5,7 @@ import { combatVisualPolish } from "./combatVisualPolishPlugin";
 import { deferredEnemyReroute } from "./deferredEnemyReroutePlugin";
 import { enemyFineReroute } from "./enemyFineReroutePlugin";
 import { enemyRerouteAtomic } from "./enemyRerouteAtomicPlugin";
+import { enemyRouteContinuity } from "./enemyRouteContinuityPlugin";
 import { endgameDropProgress } from "./endgameDropProgressPlugin";
 import { endgameLevelsFallback } from "./endgameLevelsFallbackPlugin";
 import { endgameProgression } from "./endgameProgressionPlugin";
@@ -32,6 +33,7 @@ export default defineConfig({
     world2CanopyVisual(),
     combatVisualPolish(),
     deferredEnemyReroute(),
+    enemyRouteContinuity(),
     enemyRerouteAtomic(),
     enemyFineReroute(),
     testUnlockWorlds(),
