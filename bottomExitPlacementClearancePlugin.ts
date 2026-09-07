@@ -39,28 +39,6 @@ export function bottomExitPlacementClearance(): Plugin {
       const symmetricRouteValidation = `    const alternateBottomDestination = { col: BOTTOM_EXIT_COL + 1, row: BOTTOM_EXIT_ROW };\n    const routeStates = this.getRouteOptions().map((route) => {\n      const primaryOpen = this.hasGridPath(route.entry, route.destination, blockedCells)\n        || this.calculateFinePath(route.entry, route.destination, extraBlocked) !== null;\n      const alternateBottomOpen = route.exit === "bottom"\n        && (\n          this.hasGridPath(route.entry, alternateBottomDestination, blockedCells)\n          || this.calculateFinePath(route.entry, alternateBottomDestination, extraBlocked) !== null\n        );\n      return { route, open: primaryOpen || alternateBottomOpen };\n    });`;
 
       transformed = transformed.replace(routeAnchor, symmetricRouteValidation);
-
-      // Placement already accepts either middle column for the centred bottom
-      // opening. Runtime spawning must use the same rule, otherwise a valid
-      // placement can leave column +1 open while new enemies still insist on
-      // the blocked primary column.
-      const spawnExitAnchor = `    const exitRow = this.waveExitId === "right" ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;\n    const exitCol = this.waveExitId === "right" ? TOP_EXIT_COL : BOTTOM_EXIT_COL;`;
-      const spawnExitReplacement = `    const exitRow = this.waveExitId === "right" ? TOP_EXIT_ROW : BOTTOM_EXIT_ROW;\n    const bottomPrimaryOpen = this.calculatePath(\n      { col: entryCol, row: entryRow },\n      { col: BOTTOM_EXIT_COL, row: BOTTOM_EXIT_ROW },\n    ) !== null;\n    const bottomExitApproachCol = bottomPrimaryOpen ? BOTTOM_EXIT_COL : BOTTOM_EXIT_COL + 1;\n    const exitCol = this.waveExitId === "right" ? TOP_EXIT_COL : bottomExitApproachCol;`;
-      if (!transformed.includes(spawnExitAnchor)) {
-        throw new Error("Bottom exit spawn approach anchor not found.");
-      }
-      transformed = transformed.replace(spawnExitAnchor, spawnExitReplacement);
-
-      // deferredEnemyReroute runs before this plugin. Give its reroute logic the
-      // same two physical approaches so an enemy can continue through whichever
-      // side of the centred mouth remains genuinely reachable.
-      const rerouteExitAnchor = `    const bottomExit = {\n      id: "bottom" as ExitId,\n      col: BOTTOM_EXIT_COL,\n      row: BOTTOM_EXIT_ROW,\n      x: MAP_CENTER_X,\n      y: this.gridToWorldY(BOTTOM_EXIT_ROW),\n    };\n    // Conserve la sortie prévue en priorité, mais utilise l'autre si une\n    // nouvelle plante ferme ce trajet tout en laissant un passage réel.\n    const exits = enemy.exitId === "right" ? [rightExit, bottomExit] : [bottomExit, rightExit];`;
-      const rerouteExitReplacement = `    const bottomExitPrimary = {\n      id: "bottom" as ExitId,\n      col: BOTTOM_EXIT_COL,\n      row: BOTTOM_EXIT_ROW,\n      x: MAP_CENTER_X,\n      y: this.gridToWorldY(BOTTOM_EXIT_ROW),\n    };\n    const bottomExitAlternate = {\n      id: "bottom" as ExitId,\n      col: BOTTOM_EXIT_COL + 1,\n      row: BOTTOM_EXIT_ROW,\n      x: MAP_CENTER_X,\n      y: this.gridToWorldY(BOTTOM_EXIT_ROW),\n    };\n    // Conserve la sortie prévue en priorité, mais pour la sortie basse essaie\n    // les deux colonnes qui desservent la même ouverture physique centrée.\n    const exits = enemy.exitId === "right"\n      ? [rightExit, bottomExitPrimary, bottomExitAlternate]\n      : [bottomExitPrimary, bottomExitAlternate, rightExit];`;
-      if (!transformed.includes(rerouteExitAnchor)) {
-        throw new Error("Bottom exit reroute approach anchor not found.");
-      }
-      transformed = transformed.replace(rerouteExitAnchor, rerouteExitReplacement);
-
       return { code: transformed, map: null };
     },
   };
