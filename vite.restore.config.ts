@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import baseConfig from "./vite.config";
+import { alphaDropBonus } from "./alphaDropBonusPlugin";
 import { betaVersionDisplay } from "./betaVersionPlugin";
 import { bottomExitPlacementClearance } from "./bottomExitPlacementClearancePlugin";
 import { clearMasteryDisplay } from "./masteryDisplayPlugin";
@@ -36,6 +37,7 @@ export default defineConfig({
     combatVisualPolish(),
     deferredEnemyReroute(),
     pathfindingStability(),
+    alphaDropBonus(),
     waveSpeedControl(),
     bottomExitPlacementClearance(),
     crypteOpeningBalance(),
