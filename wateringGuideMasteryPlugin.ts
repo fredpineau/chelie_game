@@ -97,13 +97,13 @@ export function wateringGuideMastery(): Plugin {
         stroke: "#12353d",
         strokeThickness: 3,
       }).setOrigin(0.5);
-      const level = this.add.text(12, -20, `NIV. ${mastery}/5`, {
+      const level = this.add.text(12, -20, "NIV. " + mastery + "/5", {
         fontFamily: "Arial",
         fontSize: "18px",
         color: mastery >= MASTERY_COSTS.length ? "#ffe89a" : "#dffaff",
         fontStyle: "bold",
       }).setOrigin(0.5);
-      const costText = this.add.text(12, 18, cost === null ? "MAX" : `PROCHAIN · 💧 ${cost}`, {
+      const costText = this.add.text(12, 18, cost === null ? "MAX" : "PROCHAIN · 💧 " + cost, {
         fontFamily: "Arial",
         fontSize: "17px",
         color: cost === null ? "#ffe89a" : this.wateringCans >= cost ? "#e6fbff" : "#86aeb3",
