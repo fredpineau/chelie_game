@@ -56,7 +56,7 @@ export function wateringGuideMastery(): Plugin {
       const guideMasteryPattern = /    const levelsTitle = this\.add\.text\(guideCenterX, \d+, "NIVEAUX PERMANENTS", \{[\s\S]*?    guide\.add\(\[veil, panel, title, balance, explanation, rewards, levelsTitle, \.\.\.rows, total, distinction, close\]\);/;
 
       if (guideMasteryPattern.test(transformed)) {
-        const interactiveGuide = `    const greenhouseHint = this.add.text(guideCenterX, 575,
+        const interactiveGuide = `    const greenhouseHint = this.add.text(guideCenterX, 590,
       "Touchez une fleur pour utiliser vos gouttes et l'améliorer définitivement.", {
         fontFamily: "Arial",
         fontSize: "18px",
