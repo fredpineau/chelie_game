@@ -41,6 +41,7 @@ export function worldSelectionSpacing(): Plugin {
       );
 
       // Retire la ligne de menace / difficulté en bas de chaque cadre.
+      // Les badges des modes infinis restent indépendants et visibles.
       transformed = transformed.replace(
         /\n      const threat = this\.add\.text\(0, 53, available \? waveLabel : level\.code, \{[\s\S]*?\n      \}\)\.setOrigin\(0\.5\);/,
         "",
@@ -48,6 +49,21 @@ export function worldSelectionSpacing(): Plugin {
       transformed = transformed.replace(
         "card.add([background, iconHalo, icon, code, name, threat]);",
         "card.add([background, iconHalo, icon, code, name]);",
+      );
+
+      transformed = transformed.replace(
+        '          threat.setY(35).setText("MODE CLASSIQUE");\n',
+        "",
+      );
+      transformed = transformed.replace(
+        '          threat.setY(35).setText("INFINI NORMAL");\n',
+        "",
+      );
+
+      // Rend le premier mode infini immédiatement identifiable sur le monde 6.
+      transformed = transformed.replace(
+        'const firstInfinite = this.add.text(0, 55, "INFINI ÉVOLUTIF",',
+        'const firstInfinite = this.add.text(0, 57, "∞  INFINI ÉVOLUTIF",',
       );
 
       return transformed === code ? null : { code: transformed, map: null };
