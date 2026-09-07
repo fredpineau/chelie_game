@@ -117,9 +117,8 @@ export function wateringGuideMastery(): Plugin {
     const resetDrops = this.makeButton(guideCenterX - 170, 1125, 300, 56, "RÉINITIALISER", 0x7f1d2d, () => {
       const confirmed = typeof window === "undefined"
         ? true
-        : window.confirm("Réinitialiser la réserve disponible et les améliorations permanentes ? Les gouttes déjà gagnées par vague restent enregistrées.");
+        : window.confirm("Réinitialiser uniquement les améliorations permanentes des fleurs ? La réserve et l'historique des gouttes seront conservés.");
       if (!confirmed) return;
-      this.wateringCans = 0;
       this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
       this.savePermanentProgress();
       guide.destroy(true);
