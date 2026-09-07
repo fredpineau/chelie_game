@@ -11,9 +11,6 @@ export function wateringGuideMastery(): Plugin {
       let transformed = code;
 
       // Retire uniquement le bloc de maîtrise permanente de la page des mondes.
-      // Le plugin s'exécute tôt, avant les plugins d'affichage, afin de travailler
-      // sur la structure originale de main.ts. Si le bloc n'est pas présent,
-      // on laisse simplement le code inchangé au lieu de casser le build.
       const homeMasteryPattern = /\n    this\.add\.text\(homeCenterX, \d+, `SERRE PERMANENTE[\s\S]*?\n    this\.makeButton\(homeCenterX, \d+, \d+, \d+, "OPTIONS ET AIDE"[\s\S]*?\.setDepth\(32\);/;
       if (homeMasteryPattern.test(transformed)) {
         transformed = transformed.replace(
@@ -22,15 +19,12 @@ export function wateringGuideMastery(): Plugin {
         );
       }
 
-      // Renomme uniquement le titre de la page.
       transformed = transformed.replace('"GUIDE DES GOUTTES"', '"SERRE PERMANENTE"');
 
-      // Évite une double injection si le plugin est exécuté plusieurs fois.
       if (transformed.includes('"Touchez une fleur pour utiliser vos gouttes')) {
         return transformed === code ? null : { code: transformed, map: null };
       }
 
-      // Remplace uniquement la section statique des niveaux permanents du guide.
       const guideMasteryPattern = /    const levelsTitle = this\.add\.text\(guideCenterX, \d+, "NIVEAUX PERMANENTS", \{[\s\S]*?    guide\.add\(\[veil, panel, title, balance, explanation, rewards, levelsTitle, \.\.\.rows, total, distinction, close\]\);/;
 
       if (guideMasteryPattern.test(transformed)) {
@@ -119,8 +113,21 @@ export function wateringGuideMastery(): Plugin {
         align: "center",
         wordWrap: { width: 600 },
       }).setOrigin(0.5);
-    const close = this.makeButton(guideCenterX, 1125, 260, 56, "FERMER", 0x0f766e, () => guide.destroy(true));
-    guide.add([veil, panel, title, balance, explanation, rewards, greenhouseHint, ...masteryCards, distinction, close]);`;
+
+    const resetDrops = this.makeButton(guideCenterX - 170, 1125, 300, 56, "RÉINITIALISER", 0x7f1d2d, () => {
+      const confirmed = typeof window === "undefined"
+        ? true
+        : window.confirm("Réinitialiser toutes les gouttes et les améliorations permanentes ? Cette action est irréversible.");
+      if (!confirmed) return;
+      this.wateringCans = 0;
+      this.waveDropRecords = {};
+      this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
+      this.savePermanentProgress();
+      guide.destroy(true);
+      this.goToHome();
+    });
+    const close = this.makeButton(guideCenterX + 170, 1125, 220, 56, "FERMER", 0x0f766e, () => guide.destroy(true));
+    guide.add([veil, panel, title, balance, explanation, rewards, greenhouseHint, ...masteryCards, distinction, resetDrops, close]);`;
 
         transformed = transformed.replace(guideMasteryPattern, interactiveGuide);
       }
