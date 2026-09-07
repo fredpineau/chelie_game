@@ -3201,9 +3201,11 @@ class DefenseScene extends Phaser.Scene {
         let scentStrength = 0;
         attractors.forEach((tower) => {
           const distance = Math.abs(next.col - tower.col) + Math.abs(next.row - tower.row);
-          if (distance <= 2) scentStrength += 0.34;
-          else if (distance <= 4) scentStrength += 0.14;
-          else if (distance <= 6) scentStrength += 0.05;
+          const towerScent = distance <= 2 ? 0.34
+            : distance <= 4 ? 0.14
+              : distance <= 6 ? 0.05
+                : 0;
+          scentStrength = Math.max(scentStrength, towerScent);
         });
         const guideDistance = Math.abs(next.col - this.waveRouteGuide.col) + Math.abs(next.row - this.waveRouteGuide.row);
         const routeAttraction = Math.max(0, 0.24 - guideDistance * 0.0175);
