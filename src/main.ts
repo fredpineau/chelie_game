@@ -205,6 +205,7 @@ class DefenseScene extends Phaser.Scene {
   private lastPlacementPreview?: TowerPlacement;
   private lastPlacementHapticAt = 0;
   private placementDragActive = false;
+  private placementPointerVisitedMap = false;
   private placementBattleDelta = 0;
   private placementEnemyMarkers?: Phaser.GameObjects.Graphics;
   private pathRecalculationVersion = 0;
@@ -332,6 +333,7 @@ class DefenseScene extends Phaser.Scene {
     this.lastPlacementPreviewAllowed = undefined;
     this.lastPlacementHapticAt = 0;
     this.placementDragActive = false;
+    this.placementPointerVisitedMap = false;
     this.placementBattleDelta = 0;
     this.placementEnemyMarkers = undefined;
     this.pathRecalculationVersion = 0;
@@ -1720,7 +1722,10 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private createPlacementZone(): void {
+    const mapLeft = GRID_X - CELL / 2;
+    const mapRight = mapLeft + GRID_COLS * CELL;
     const mapTop = GRID_Y - CELL / 2;
+    const mapBottom = mapTop + GRID_ROWS * CELL;
     const commandDeckTop = HEIGHT - 270;
     // La bande libre entre la carte et le panneau inférieur prolonge la zone
     // tactile. Elle permet d'atteindre la dernière ligne avec l'aperçu encore
@@ -1739,6 +1744,7 @@ class DefenseScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
       if (this.selectedTower === null) return;
+      this.placementPointerVisitedMap = true;
       const isTouch = pointer.event instanceof TouchEvent;
       // Décale suffisamment l'aperçu au-dessus du doigt sur téléphone afin que
       // la case reste visible. Près du bas, le décalage diminue progressivement
@@ -1764,12 +1770,27 @@ class DefenseScene extends Phaser.Scene {
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) this.hidePlacementPreview();
     });
-    this.input.on("pointerup", () => {
+    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
       // Un relâchement sur le bouton de l'herbier ne doit pas quitter la pause
       // tactique. Celle-ci se termine seulement après un passage sur la carte
       // (pose ou relâchement du doigt hors de la zone).
       if (this.placementDragActive && this.lastPlacementPreview) {
-        this.time.delayedCall(0, () => this.endPlacementDrag());
+        const preview = this.lastPlacementPreview;
+        const validBottomTouchRelease = pointer.event instanceof TouchEvent
+          && this.placementPointerVisitedMap
+          && this.lastPlacementPreviewAllowed === true
+          && pointer.worldX >= mapLeft
+          && pointer.worldX <= mapRight
+          && pointer.worldY >= commandDeckTop
+          && pointer.worldY <= mapBottom + 88;
+        this.time.delayedCall(0, () => {
+          // Le gestionnaire de la carte reste prioritaire. Ce secours ne pose
+          // la fleur que si le doigt a été relâché sous sa limite tactile.
+          if (validBottomTouchRelease && this.selectedTower !== null && this.lastPlacementPreview === preview) {
+            this.placeTower(pointer.worldX, pointer.worldY, preview);
+          }
+          this.endPlacementDrag();
+        });
       }
     });
   }
@@ -1786,6 +1807,7 @@ class DefenseScene extends Phaser.Scene {
   private beginPlacementDrag(): void {
     if (this.placementDragActive) return;
     this.placementDragActive = true;
+    this.placementPointerVisitedMap = false;
     this.enablePlacementEnemyMarkers();
   }
 
@@ -1829,6 +1851,7 @@ class DefenseScene extends Phaser.Scene {
   private endPlacementDrag(): void {
     if (!this.placementDragActive) return;
     this.placementDragActive = false;
+    this.placementPointerVisitedMap = false;
     if (this.selectedTower === null) this.disablePlacementEnemyMarkers();
     else this.enablePlacementEnemyMarkers();
   }
@@ -1870,6 +1893,7 @@ class DefenseScene extends Phaser.Scene {
   private cancelTowerSelection(message = "Sélection annulée"): void {
     this.selectedTower = null;
     this.placementDragActive = false;
+    this.placementPointerVisitedMap = false;
     this.placementBattleDelta = 0;
     this.hidePlacementPreview(true);
     this.disablePlacementEnemyMarkers();
