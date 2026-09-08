@@ -26,6 +26,13 @@ export function pathfindingStability(): Plugin {
 
       let transformed = code.replace(failureAnchor, recovery);
 
+      const currentWaypointRecovery = "      const firstResumeIndex = Math.max(0, Math.min(enemy.pathIndex, enemy.path.length - 1));";
+      const nextWaypointRecovery = "      const firstResumeIndex = Math.max(0, Math.min(enemy.pathIndex + 1, enemy.path.length - 1));";
+      if (!transformed.includes(currentWaypointRecovery)) {
+        throw new Error("Pathfinding next-waypoint recovery anchor not found.");
+      }
+      transformed = transformed.replace(currentWaypointRecovery, nextWaypointRecovery);
+
       const teleportFallback = `    enemy.body.setPosition(enemy.exitX, enemy.exitY);
     enemy.path = [new Phaser.Math.Vector2(enemy.exitX, enemy.exitY)];
     enemy.pathIndex = 1;`;
