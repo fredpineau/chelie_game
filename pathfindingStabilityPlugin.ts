@@ -33,6 +33,37 @@ export function pathfindingStability(): Plugin {
       }
       transformed = transformed.replace(currentWaypointRecovery, nextWaypointRecovery);
 
+      const recoveryConnectorAnchor = `        if (connectorBlocked) continue;
+
+        enemy.path = [`;
+      const recoveryConnectorReplacement = `        if (connectorBlocked) continue;
+
+        // Le raccord peut être libre alors qu'une portion plus éloignée de
+        // l'ancien trajet traverse la fleur qui vient d'être posée. Dans ce
+        // cas, abandonner tout le suffixe évite une boucle de recalcul immobile.
+        const remainingPath = enemy.path.slice(resumeIndex);
+        const remainingPathBlocked = remainingPath.some((point, index) => {
+          if (index === 0) return false;
+          const previousPoint = remainingPath[index - 1];
+          const segment = new Phaser.Geom.Line(previousPoint.x, previousPoint.y, point.x, point.y);
+          return this.towers.some((tower) => Phaser.Geom.Intersects.LineToRectangle(
+            segment,
+            new Phaser.Geom.Rectangle(
+              tower.body.x - recoveryHalfPlant,
+              tower.body.y - recoveryHalfPlant,
+              recoveryHalfPlant * 2,
+              recoveryHalfPlant * 2,
+            ),
+          ));
+        });
+        if (remainingPathBlocked) continue;
+
+        enemy.path = [`;
+      if (!transformed.includes(recoveryConnectorAnchor)) {
+        throw new Error("Pathfinding remaining-route validation anchor not found.");
+      }
+      transformed = transformed.replace(recoveryConnectorAnchor, recoveryConnectorReplacement);
+
       const teleportFallback = `    enemy.body.setPosition(enemy.exitX, enemy.exitY);
     enemy.path = [new Phaser.Math.Vector2(enemy.exitX, enemy.exitY)];
     enemy.pathIndex = 1;`;
