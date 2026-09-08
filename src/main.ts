@@ -1617,8 +1617,11 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private getUnlockedLevel(): number {
-    // TEST PREVIEW ONLY — must be removed before merging this branch.
-    return LEVELS.length - 1;
+    try {
+      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
+    } catch {
+      return 0;
+    }
   }
 
   private saveUnlockedLevel(index: number): void {
