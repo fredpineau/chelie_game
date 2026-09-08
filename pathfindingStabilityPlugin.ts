@@ -26,11 +26,73 @@ export function pathfindingStability(): Plugin {
 
       let transformed = code.replace(failureAnchor, recovery);
 
+      const teleportFallback = `    enemy.body.setPosition(enemy.exitX, enemy.exitY);
+    enemy.path = [new Phaser.Math.Vector2(enemy.exitX, enemy.exitY)];
+    enemy.pathIndex = 1;`;
+      const exactPositionRecovery = `    // Le raccord à l'ancienne route a échoué : on repart de la position
+    // exacte de l'ennemi sur la grille fine, sans téléportation visible.
+    for (const recoveryExit of exits) {
+      const fineRecoveryPath = this.calculateFinePath(
+        { col: approximateCol, row: approximateRow },
+        { col: recoveryExit.col, row: recoveryExit.row },
+        undefined,
+        { x: enemy.body.x, y: enemy.body.y },
+      );
+      if (!fineRecoveryPath) continue;
+      enemy.exitId = recoveryExit.id;
+      enemy.exitCol = recoveryExit.col;
+      enemy.exitRow = recoveryExit.row;
+      enemy.exitX = recoveryExit.x;
+      enemy.exitY = recoveryExit.y;
+      enemy.path = [
+        new Phaser.Math.Vector2(enemy.body.x, enemy.body.y),
+        ...fineRecoveryPath,
+        new Phaser.Math.Vector2(recoveryExit.x, recoveryExit.y),
+      ];
+      enemy.pathIndex = 1;
+      return;
+    }
+
+    // Cas physiquement impossible uniquement : terminer l'ennemi vaut mieux
+    // que recréer le tableau vide qui bloquait toute la partie.
+    enemy.body.setPosition(enemy.exitX, enemy.exitY);
+    enemy.path = [new Phaser.Math.Vector2(enemy.exitX, enemy.exitY)];
+    enemy.pathIndex = 1;`;
+      if (!transformed.includes(teleportFallback)) {
+        throw new Error("Pathfinding teleport fallback anchor not found.");
+      }
+      transformed = transformed.replace(teleportFallback, exactPositionRecovery);
+
+      const finePathSignatureAnchor = `  private calculateFinePath(
+    start: { col: number; row: number },
+    end: { col: number; row: number },
+    extraBlocked?: { col: number; row: number; x?: number; y?: number },
+  ): Phaser.Math.Vector2[] | null {`;
+      const finePathSignatureReplacement = `  private calculateFinePath(
+    start: { col: number; row: number },
+    end: { col: number; row: number },
+    extraBlocked?: { col: number; row: number; x?: number; y?: number },
+    startWorld?: { x: number; y: number },
+  ): Phaser.Math.Vector2[] | null {`;
+      const fineStartAnchor = "    const startFine = toFine(this.gridToWorldX(start.col, start.row), this.gridToWorldY(start.row));";
+      const fineStartReplacement = `    const startFine = startWorld
+      ? toFine(startWorld.x, startWorld.y)
+      : toFine(this.gridToWorldX(start.col, start.row), this.gridToWorldY(start.row));`;
+      const fineBlockedAnchor = "    if (isBlocked(startFine.col, startFine.row) || isBlocked(endFine.col, endFine.row)) return null;";
+      const fineBlockedReplacement = "    if ((!startWorld && isBlocked(startFine.col, startFine.row)) || isBlocked(endFine.col, endFine.row)) return null;";
+      if (!transformed.includes(finePathSignatureAnchor)
+        || !transformed.includes(fineStartAnchor)
+        || !transformed.includes(fineBlockedAnchor)) {
+        throw new Error("Fine path exact-start anchors not found.");
+      }
+      transformed = transformed.replace(finePathSignatureAnchor, finePathSignatureReplacement);
+      transformed = transformed.replace(fineStartAnchor, fineStartReplacement);
+      transformed = transformed.replace(fineBlockedAnchor, fineBlockedReplacement);
+
       const finePathAnchor = "    const frontier = [startFine];";
-      const leftBottomAttraction = `    const isLeftToBottomRoute = !this.waveEntryTop
-      && this.waveExitId === "bottom"
-      && end.row === BOTTOM_EXIT_ROW;
-    if (isLeftToBottomRoute) {
+      const leftEntryAttraction = `    const isLeftEntryRoute = !this.waveEntryTop
+      && !(start.col === TOP_ENTRY_COL && start.row === TOP_ENTRY_ROW);
+    if (isLeftEntryRoute) {
       type FineQueueNode = { col: number; row: number; cost: number; priority: number };
       const queue: FineQueueNode[] = [];
       const weightedCosts = new Map<string, number>([[key(startFine.col, startFine.row), 0]]);
@@ -133,7 +195,7 @@ export function pathfindingStability(): Plugin {
       if (!transformed.includes(finePathAnchor)) {
         throw new Error("Fine path insertion anchor not found.");
       }
-      transformed = transformed.replace(finePathAnchor, leftBottomAttraction + finePathAnchor);
+      transformed = transformed.replace(finePathAnchor, leftEntryAttraction + finePathAnchor);
 
       return { code: transformed, map: null };
     },
