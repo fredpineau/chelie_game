@@ -136,6 +136,7 @@ const UPGRADE_DURATIONS = [0, 3_000, 7_000, 14_000, 25_000];
 const MASTERY_COSTS = [100, 200, 300, 400, 500];
 const SELL_REFUND_RATE = 0.7;
 const TEMP_LEVEL_COLORS = [0x7a3038, 0x315d86, 0x3f7049, 0x644a7e, 0x8a7435];
+const CROWDED_WAVE_THRESHOLD = 24;
 
 const LEVELS: LevelDefinition[] = [
   { name: "Marais affamé", code: "BIOME 01", waves: 10, healthMultiplier: 1.15, speedMultiplier: 0.98, swarmBonus: 2 },
@@ -2601,6 +2602,15 @@ class DefenseScene extends Phaser.Scene {
         this.applyTowerHit(tower, target, definition);
         continue;
       }
+      if (this.enemies.length >= CROWDED_WAVE_THRESHOLD) {
+        // Même délai et même validation de cible que le projectile normal,
+        // sans ajouter un objet graphique et un tween lors des grosses vagues.
+        this.time.delayedCall(180, () => {
+          if (!target.body.active) return;
+          this.applyTowerHit(tower, target, definition);
+        });
+        continue;
+      }
       const projectile = this.add.circle(tower.body.x, tower.body.y, 5, definition.color);
       this.tweens.add({
         targets: projectile,
@@ -2670,7 +2680,7 @@ class DefenseScene extends Phaser.Scene {
 
     if (mastery < 4) return;
     const stickyRadius = 82;
-    if (this.selectedTower === null) {
+    if (this.selectedTower === null && this.enemies.length < CROWDED_WAVE_THRESHOLD) {
       const stickyZone = this.add.circle(impactX, impactY, stickyRadius, 0x67a3a6, 0.1)
         .setStrokeStyle(3, 0xa5f3fc, 0.62);
       this.tweens.add({
@@ -2704,7 +2714,9 @@ class DefenseScene extends Phaser.Scene {
     const effectiveDamage = ignoresArmor ? damage : Math.max(1, Math.round(damage * (1 - enemy.armor)));
     enemy.hp -= effectiveDamage;
     enemy.healthBar.width = enemy.healthBarWidth * Math.max(0, enemy.hp / enemy.maxHp);
-    if (this.selectedTower === null) this.createImpact(enemy.body.x, enemy.body.y, color);
+    if (this.selectedTower === null && this.enemies.length < CROWDED_WAVE_THRESHOLD) {
+      this.createImpact(enemy.body.x, enemy.body.y, color);
+    }
     if (enemy.hp <= 0) this.destroyEnemy(enemy);
   }
 
@@ -2712,14 +2724,21 @@ class DefenseScene extends Phaser.Scene {
     const index = this.enemies.indexOf(enemy);
     if (index === -1) return;
     this.energy += enemy.energyReward;
-    if (this.selectedTower === null) {
+    const crowdedWave = this.enemies.length >= CROWDED_WAVE_THRESHOLD;
+    if (this.selectedTower === null && (!crowdedWave || enemy.isBoss)) {
       this.showEnergyReward(enemy.body.x, enemy.body.y, enemy.energyReward, enemy.isBoss);
     }
     enemy.body.destroy();
     this.enemies.splice(index, 1);
-    this.updateHud(enemy.isBoss
-      ? `Insecte alpha ${enemy.kind === "air" ? "volant" : "rampant"} digéré`
-      : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
+    if (crowdedWave && !enemy.isBoss) {
+      // Les autres libellés n'ont pas changé : seul le compteur de pièces a
+      // besoin d'être rafraîchi à chaque élimination.
+      this.energyText?.setText(`● ${this.energy}`);
+    } else {
+      this.updateHud(enemy.isBoss
+        ? `Insecte alpha ${enemy.kind === "air" ? "volant" : "rampant"} digéré`
+        : `${enemy.kind === "air" ? "Insecte volant" : "Insecte rampant"} digéré`);
+    }
   }
 
   private showWateringCanReward(amount: number, reason: string): void {

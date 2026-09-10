@@ -25,7 +25,7 @@ export function deferredEnemyReroute(): Plugin {
 
       const followPathAnchor = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    const step = speed * (delta / 1000);\n    if (distance <= step) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n    enemy.body.x += ((target.x - enemy.body.x) / distance) * step;\n    enemy.body.y += ((target.y - enemy.body.y) / distance) * step;\n  }`;
 
-      const followPathReplacement = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    if (distance <= 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n\n    const step = Math.min(distance, speed * (delta / 1000));\n    const nextX = enemy.body.x + ((target.x - enemy.body.x) / distance) * step;\n    const nextY = enemy.body.y + ((target.y - enemy.body.y) / distance) * step;\n    const halfPlant = PLANT_FRAME_SIZE / 2 - 1;\n    const movement = new Phaser.Geom.Line(enemy.body.x, enemy.body.y, nextX, nextY);\n    const movementBlocked = this.towers.some((tower) => {\n      const rect = new Phaser.Geom.Rectangle(\n        tower.body.x - halfPlant,\n        tower.body.y - halfPlant,\n        halfPlant * 2,\n        halfPlant * 2,\n      );\n      const currentInside = Math.abs(enemy.body.x - tower.body.x) < halfPlant\n        && Math.abs(enemy.body.y - tower.body.y) < halfPlant;\n      if (currentInside) return false;\n      return Phaser.Geom.Intersects.LineToRectangle(movement, rect);\n    });\n\n    if (movementBlocked) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    enemy.body.setPosition(nextX, nextY);\n    if (step >= distance - 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n    }\n  }`;
+      const followPathReplacement = `  private followPath(enemy: Enemy, delta: number, speed: number): void {\n    const target = enemy.path[enemy.pathIndex];\n    if (!target) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    const distance = Phaser.Math.Distance.Between(enemy.body.x, enemy.body.y, target.x, target.y);\n    if (distance <= 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n      return;\n    }\n\n    const step = Math.min(distance, speed * (delta / 1000));\n    const nextX = enemy.body.x + ((target.x - enemy.body.x) / distance) * step;\n    const nextY = enemy.body.y + ((target.y - enemy.body.y) / distance) * step;\n    const halfPlant = PLANT_FRAME_SIZE / 2 - 1;\n    const movement = new Phaser.Geom.Line(enemy.body.x, enemy.body.y, nextX, nextY);\n    const movementMinX = Math.min(enemy.body.x, nextX) - halfPlant;\n    const movementMaxX = Math.max(enemy.body.x, nextX) + halfPlant;\n    const movementMinY = Math.min(enemy.body.y, nextY) - halfPlant;\n    const movementMaxY = Math.max(enemy.body.y, nextY) + halfPlant;\n    const movementBlocked = this.towers.some((tower) => {\n      // Écarte seulement les fleurs trop éloignées pour couper le segment.\n      // Le contrôle géométrique historique reste inchangé à proximité.\n      if (tower.body.x < movementMinX || tower.body.x > movementMaxX\n        || tower.body.y < movementMinY || tower.body.y > movementMaxY) return false;\n      const rect = new Phaser.Geom.Rectangle(\n        tower.body.x - halfPlant,\n        tower.body.y - halfPlant,\n        halfPlant * 2,\n        halfPlant * 2,\n      );\n      const currentInside = Math.abs(enemy.body.x - tower.body.x) < halfPlant\n        && Math.abs(enemy.body.y - tower.body.y) < halfPlant;\n      if (currentInside) return false;\n      return Phaser.Geom.Intersects.LineToRectangle(movement, rect);\n    });\n\n    if (movementBlocked) {\n      this.recalculateEnemyPath(enemy);\n      return;\n    }\n\n    enemy.body.setPosition(nextX, nextY);\n    if (step >= distance - 0.001) {\n      enemy.body.setPosition(target.x, target.y);\n      enemy.pathIndex += 1;\n    }\n  }`;
 
       if (!code.includes(followPathAnchor)) {
         throw new Error("Deferred reroute followPath anchor not found.");
@@ -49,6 +49,25 @@ export function deferredEnemyReroute(): Plugin {
       let transformed = code.replace(followPathAnchor, followPathReplacement);
       transformed = transformed.replace(candidateRouteAnchor, candidateRouteReplacement);
       transformed = transformed.replace(rerouteFailureAnchor, rerouteFailureReplacement);
+      // Phaser inclut le bord du rectangle dans LineToRectangle. La garde doit
+      // employer la même limite inclusive (avec une tolérance sous-pixel),
+      // sinon les ennemis posés exactement sur ce bord recalculent en boucle.
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.x - tower.body.x) < halfPlant",
+        "Math.abs(enemy.body.x - tower.body.x) <= halfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.y - tower.body.y) < halfPlant",
+        "Math.abs(enemy.body.y - tower.body.y) <= halfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.x - tower.body.x) < fallbackHalfPlant",
+        "Math.abs(enemy.body.x - tower.body.x) <= fallbackHalfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.y - tower.body.y) < fallbackHalfPlant",
+        "Math.abs(enemy.body.y - tower.body.y) <= fallbackHalfPlant + 0.5",
+      );
       return { code: transformed, map: null };
     },
   };

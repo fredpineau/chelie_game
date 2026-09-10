@@ -235,6 +235,17 @@ export function pathfindingStability(): Plugin {
       }
       transformed = transformed.replace(finePathAnchor, leftEntryAttraction + finePathAnchor);
 
+      // Même frontière inclusive que LineToRectangle : un ennemi couvert par
+      // une fleur nouvellement posée doit pouvoir rejoindre un point libre.
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.x - tower.body.x) < recoveryHalfPlant",
+        "Math.abs(enemy.body.x - tower.body.x) <= recoveryHalfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.y - tower.body.y) < recoveryHalfPlant",
+        "Math.abs(enemy.body.y - tower.body.y) <= recoveryHalfPlant + 0.5",
+      );
+
       return { code: transformed, map: null };
     },
   };
