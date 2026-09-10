@@ -49,6 +49,25 @@ export function deferredEnemyReroute(): Plugin {
       let transformed = code.replace(followPathAnchor, followPathReplacement);
       transformed = transformed.replace(candidateRouteAnchor, candidateRouteReplacement);
       transformed = transformed.replace(rerouteFailureAnchor, rerouteFailureReplacement);
+      // Phaser inclut le bord du rectangle dans LineToRectangle. La garde doit
+      // employer la même limite inclusive (avec une tolérance sous-pixel),
+      // sinon les ennemis posés exactement sur ce bord recalculent en boucle.
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.x - tower.body.x) < halfPlant",
+        "Math.abs(enemy.body.x - tower.body.x) <= halfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.y - tower.body.y) < halfPlant",
+        "Math.abs(enemy.body.y - tower.body.y) <= halfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.x - tower.body.x) < fallbackHalfPlant",
+        "Math.abs(enemy.body.x - tower.body.x) <= fallbackHalfPlant + 0.5",
+      );
+      transformed = transformed.replaceAll(
+        "Math.abs(enemy.body.y - tower.body.y) < fallbackHalfPlant",
+        "Math.abs(enemy.body.y - tower.body.y) <= fallbackHalfPlant + 0.5",
+      );
       return { code: transformed, map: null };
     },
   };
