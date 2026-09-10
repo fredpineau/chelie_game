@@ -216,6 +216,8 @@ class DefenseScene extends Phaser.Scene {
   private exitCrunchAudioContext?: AudioContext;
   private exitCrunchBuffer?: AudioBuffer;
   private lastExitCrunchAt = 0;
+  private lastTowerShotSoundAt = 0;
+  private nextMonsterAmbienceAt = 0;
 
   constructor() {
     super("defense");
@@ -267,6 +269,7 @@ class DefenseScene extends Phaser.Scene {
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
+    this.playMonsterAmbience(time);
     this.updateTowerUpgrades(time);
     if (this.selectedTower !== null) this.enablePlacementEnemyMarkers();
 
@@ -346,6 +349,7 @@ class DefenseScene extends Phaser.Scene {
     this.placementEnemyMarkers = undefined;
     this.pathRecalculationVersion = 0;
     this.blockedPathCache = undefined;
+    this.nextMonsterAmbienceAt = 0;
   }
 
   private drawWorld(): void {
@@ -814,6 +818,83 @@ class DefenseScene extends Phaser.Scene {
     gain.gain.value = 0.16;
     source.connect(filter).connect(gain).connect(context.destination);
     source.start();
+  }
+
+  private playTowerShotSound(kind: TowerKind): void {
+    const context = this.exitCrunchAudioContext;
+    if (!context || context.state !== "running") return;
+
+    // Une grosse défense peut tirer des dizaines de fois à la même image. On
+    // conserve un tir sonore représentatif sans empiler toutes les voix audio.
+    if (context.currentTime - this.lastTowerShotSoundAt < 0.055) return;
+    this.lastTowerShotSoundAt = context.currentTime;
+
+    const profiles: Record<TowerKind, {
+      wave: OscillatorType;
+      startFrequency: number;
+      endFrequency: number;
+      duration: number;
+      volume: number;
+    }> = {
+      harpoon: { wave: "square", startFrequency: 760, endFrequency: 170, duration: 0.09, volume: 0.038 },
+      flak: { wave: "sawtooth", startFrequency: 1080, endFrequency: 470, duration: 0.065, volume: 0.026 },
+      pulse: { wave: "triangle", startFrequency: 210, endFrequency: 510, duration: 0.14, volume: 0.045 },
+      cryo: { wave: "sine", startFrequency: 390, endFrequency: 85, duration: 0.18, volume: 0.052 },
+    };
+    const profile = profiles[kind];
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+
+    oscillator.type = profile.wave;
+    oscillator.frequency.setValueAtTime(profile.startFrequency * Phaser.Math.FloatBetween(0.94, 1.06), now);
+    oscillator.frequency.exponentialRampToValueAtTime(profile.endFrequency, now + profile.duration);
+    filter.type = "lowpass";
+    filter.frequency.value = kind === "flak" ? 2200 : 1500;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(profile.volume, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + profile.duration);
+
+    oscillator.connect(filter).connect(gain).connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + profile.duration + 0.01);
+  }
+
+  private playMonsterAmbience(time: number): void {
+    if (!this.waveActive || this.enemies.length === 0 || time < this.nextMonsterAmbienceAt) return;
+    this.nextMonsterAmbienceAt = time + Phaser.Math.Between(1500, 2800);
+
+    const context = this.exitCrunchAudioContext;
+    if (!context || context.state !== "running") return;
+    const now = context.currentTime;
+    const duration = Phaser.Math.FloatBetween(0.24, 0.42);
+    const baseFrequency = Phaser.Math.FloatBetween(82, 132);
+    const voice = context.createOscillator();
+    const wobble = context.createOscillator();
+    const wobbleDepth = context.createGain();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+
+    voice.type = Phaser.Math.Between(0, 1) === 0 ? "sawtooth" : "triangle";
+    voice.frequency.setValueAtTime(baseFrequency, now);
+    voice.frequency.exponentialRampToValueAtTime(baseFrequency * Phaser.Math.FloatBetween(0.68, 1.35), now + duration);
+    wobble.type = "sine";
+    wobble.frequency.value = Phaser.Math.FloatBetween(16, 28);
+    wobbleDepth.gain.value = Phaser.Math.FloatBetween(9, 18);
+    wobble.connect(wobbleDepth).connect(voice.frequency);
+    filter.type = "lowpass";
+    filter.frequency.value = 520;
+    filter.Q.value = 2.2;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.018, now + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    voice.connect(filter).connect(gain).connect(context.destination);
+    wobble.start(now);
+    voice.start(now);
+    wobble.stop(now + duration + 0.01);
+    voice.stop(now + duration + 0.01);
   }
 
   private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
@@ -2687,6 +2768,7 @@ class DefenseScene extends Phaser.Scene {
       if (!target) continue;
 
       tower.lastShot = time;
+      this.playTowerShotSound(tower.kind);
       const definition = TOWERS[tower.kind];
       if (this.selectedTower !== null) {
         // En mode placement, le tir reste effectif (dégâts, morts et pièces),
