@@ -863,13 +863,19 @@ class DefenseScene extends Phaser.Scene {
 
   private playMonsterAmbience(time: number): void {
     if (!this.waveActive || this.enemies.length === 0 || time < this.nextMonsterAmbienceAt) return;
-    this.nextMonsterAmbienceAt = time + Phaser.Math.Between(1500, 2800);
+    this.nextMonsterAmbienceAt = time + Phaser.Math.Between(900, 1800);
 
     const context = this.exitCrunchAudioContext;
     if (!context || context.state !== "running") return;
     const now = context.currentTime;
-    const duration = Phaser.Math.FloatBetween(0.24, 0.42);
-    const baseFrequency = Phaser.Math.FloatBetween(82, 132);
+    const duration = Phaser.Math.FloatBetween(0.3, 0.52);
+    const flyingCreaturePresent = this.enemies.some((enemy) => enemy.kind === "air");
+    // Les graves de la première version étaient presque inaudibles sur les
+    // haut-parleurs mobiles. Cette plage médium conserve le côté créature tout
+    // en restant clairement perceptible sur téléphone.
+    const baseFrequency = flyingCreaturePresent
+      ? Phaser.Math.FloatBetween(340, 520)
+      : Phaser.Math.FloatBetween(190, 310);
     const voice = context.createOscillator();
     const wobble = context.createOscillator();
     const wobbleDepth = context.createGain();
@@ -880,14 +886,14 @@ class DefenseScene extends Phaser.Scene {
     voice.frequency.setValueAtTime(baseFrequency, now);
     voice.frequency.exponentialRampToValueAtTime(baseFrequency * Phaser.Math.FloatBetween(0.68, 1.35), now + duration);
     wobble.type = "sine";
-    wobble.frequency.value = Phaser.Math.FloatBetween(16, 28);
-    wobbleDepth.gain.value = Phaser.Math.FloatBetween(9, 18);
+    wobble.frequency.value = Phaser.Math.FloatBetween(18, 34);
+    wobbleDepth.gain.value = Phaser.Math.FloatBetween(18, 34);
     wobble.connect(wobbleDepth).connect(voice.frequency);
     filter.type = "lowpass";
-    filter.frequency.value = 520;
-    filter.Q.value = 2.2;
+    filter.frequency.value = 1250;
+    filter.Q.value = 1.8;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.018, now + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.035);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
     voice.connect(filter).connect(gain).connect(context.destination);
