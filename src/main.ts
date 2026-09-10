@@ -220,7 +220,8 @@ class DefenseScene extends Phaser.Scene {
 
   init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; infiniteNightmare?: boolean } = {}): void {
     this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
-    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? this.getLastPlayedSelectionPage(), 0, 1);
+    const lastSelectionPage = Math.max(0, Math.ceil(LEVELS.length / 6) - 1);
+    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? this.getLastPlayedSelectionPage(), 0, lastSelectionPage);
     this.infiniteNightmare = data.infiniteNightmare ?? false;
   }
 
@@ -1622,11 +1623,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private getUnlockedLevel(): number {
-    try {
-      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
-    } catch {
-      return 0;
-    }
+    // TEST PR #32 : tous les mondes sont accessibles sur la preview.
+    // À retirer impérativement avant la fusion vers main.
+    return LEVELS.length - 1;
   }
 
   private getLastPlayedSelectionPage(): number {
