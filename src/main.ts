@@ -217,7 +217,6 @@ class DefenseScene extends Phaser.Scene {
   private exitCrunchBuffer?: AudioBuffer;
   private lastExitCrunchAt = 0;
   private lastTowerShotSoundAt = 0;
-  private nextMonsterAmbienceAt = 0;
 
   constructor() {
     super("defense");
@@ -269,7 +268,6 @@ class DefenseScene extends Phaser.Scene {
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
     this.fireTowers(time);
-    this.playMonsterAmbience(time);
     this.updateTowerUpgrades(time);
     if (this.selectedTower !== null) this.enablePlacementEnemyMarkers();
 
@@ -349,7 +347,6 @@ class DefenseScene extends Phaser.Scene {
     this.placementEnemyMarkers = undefined;
     this.pathRecalculationVersion = 0;
     this.blockedPathCache = undefined;
-    this.nextMonsterAmbienceAt = 0;
   }
 
   private drawWorld(): void {
@@ -859,27 +856,6 @@ class DefenseScene extends Phaser.Scene {
     oscillator.connect(filter).connect(gain).connect(context.destination);
     oscillator.start(now);
     oscillator.stop(now + profile.duration + 0.01);
-  }
-
-  private playMonsterAmbience(time: number): void {
-    if (!this.waveActive || this.enemies.length === 0 || time < this.nextMonsterAmbienceAt) return;
-    this.nextMonsterAmbienceAt = time + Phaser.Math.Between(1400, 2500);
-
-    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return;
-    // Ne met jamais plusieurs cris en attente pendant une vague chargée.
-    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) return;
-
-    const ouch = new SpeechSynthesisUtterance("Aïe !");
-    ouch.lang = "fr-FR";
-    ouch.rate = Phaser.Math.FloatBetween(1.55, 1.85);
-    ouch.pitch = Phaser.Math.FloatBetween(1.15, 1.45);
-    ouch.volume = 0.18;
-    const frenchVoices = window.speechSynthesis.getVoices()
-      .filter((voice) => voice.lang.toLowerCase().startsWith("fr"));
-    if (frenchVoices.length > 0) {
-      ouch.voice = frenchVoices[Phaser.Math.Between(0, frenchVoices.length - 1)];
-    }
-    window.speechSynthesis.speak(ouch);
   }
 
   private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
