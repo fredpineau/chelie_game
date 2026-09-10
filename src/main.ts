@@ -220,7 +220,7 @@ class DefenseScene extends Phaser.Scene {
 
   init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; infiniteNightmare?: boolean } = {}): void {
     this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
-    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? 0, 0, 1);
+    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? this.getLastPlayedSelectionPage(), 0, 1);
     this.infiniteNightmare = data.infiniteNightmare ?? false;
   }
 
@@ -1083,6 +1083,7 @@ class DefenseScene extends Phaser.Scene {
       "chelie-plant-mastery",
       "chelie-unlocked-level",
       "chelie-wave-drop-records",
+      "chelie-last-played-level",
     ].forEach((key) => localStorage.removeItem(key));
     window.alert("La progression a été réinitialisée. Le jeu va revenir au premier monde.");
     this.scene.restart({ home: true, selectionPage: 0 });
@@ -1567,6 +1568,7 @@ class DefenseScene extends Phaser.Scene {
 
   private beginLevel(index: number): void {
     this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
+    this.saveLastPlayedLevel(this.levelIndex);
     this.levelStarted = true;
     this.levelText.setText(this.infiniteNightmare ? "INFINI CAUCHEMAR" : LEVELS[this.levelIndex].name.toUpperCase());
     this.setStartButtonEnabled(true);
@@ -1624,6 +1626,27 @@ class DefenseScene extends Phaser.Scene {
       return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
     } catch {
       return 0;
+    }
+  }
+
+  private getLastPlayedSelectionPage(): number {
+    try {
+      const storedLevel = Number(localStorage.getItem("chelie-last-played-level") ?? 0);
+      if (!Number.isFinite(storedLevel)) return 0;
+      return Math.floor(Phaser.Math.Clamp(storedLevel, 0, LEVELS.length - 1) / 6);
+    } catch {
+      return 0;
+    }
+  }
+
+  private saveLastPlayedLevel(index: number): void {
+    try {
+      localStorage.setItem(
+        "chelie-last-played-level",
+        String(Phaser.Math.Clamp(index, 0, LEVELS.length - 1)),
+      );
+    } catch {
+      // Le menu revient sur la première page si le stockage est désactivé.
     }
   }
 
