@@ -213,6 +213,10 @@ class DefenseScene extends Phaser.Scene {
   private blockedPathCache?: Set<string>;
   private waveRouteWarning?: Phaser.GameObjects.Container;
   private exitTraps = new Map<ExitId, TrapJawPair[]>();
+  private exitCrunchAudioContext?: AudioContext;
+  private exitCrunchBuffer?: AudioBuffer;
+  private lastExitCrunchAt = 0;
+  private lastTowerShotSoundAt = 0;
 
   constructor() {
     super("defense");
@@ -227,6 +231,9 @@ class DefenseScene extends Phaser.Scene {
 
   create(): void {
     this.resetState();
+    // Les navigateurs mobiles autorisent le son seulement après une action du
+    // joueur. On prépare donc le léger effet audio au premier toucher/clic.
+    this.input.once("pointerdown", () => this.prepareExitCrunchSound());
     if (this.requestedLevelIndex !== null) {
       this.levelIndex = Phaser.Math.Clamp(this.requestedLevelIndex, 0, LEVELS.length - 1);
     }
@@ -722,6 +729,7 @@ class DefenseScene extends Phaser.Scene {
   private snapExitTrap(exitId: ExitId): void {
     const jawPairs = this.exitTraps.get(exitId);
     if (!jawPairs) return;
+    this.playExitCrunchSound();
     jawPairs.forEach((pair, index) => {
       this.tweens.killTweensOf([pair.leftJaw, pair.rightJaw]);
       pair.leftJaw.setPosition(pair.leftX, pair.y).setRotation(pair.leftRotation);
@@ -746,6 +754,108 @@ class DefenseScene extends Phaser.Scene {
         ease: "Cubic.easeIn",
       });
     });
+  }
+
+  private prepareExitCrunchSound(): void {
+    if (this.exitCrunchAudioContext && this.exitCrunchBuffer) {
+      if (this.exitCrunchAudioContext.state === "suspended") {
+        void this.exitCrunchAudioContext.resume();
+      }
+      return;
+    }
+
+    const AudioContextClass = window.AudioContext
+      ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const context = new AudioContextClass();
+    const duration = 0.18;
+    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+    const samples = buffer.getChannelData(0);
+    const crackTimes = [0.012, 0.041, 0.076, 0.112];
+
+    for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex += 1) {
+      const time = sampleIndex / context.sampleRate;
+      const overallEnvelope = Math.pow(1 - time / duration, 2.4);
+      let crackEnvelope = 0;
+      for (const crackTime of crackTimes) {
+        const distance = time - crackTime;
+        if (distance >= 0 && distance < 0.014) {
+          crackEnvelope += Math.pow(1 - distance / 0.014, 4);
+        }
+      }
+      const dryCrunch = (Math.random() * 2 - 1) * (0.18 + crackEnvelope * 0.82);
+      samples[sampleIndex] = dryCrunch * overallEnvelope;
+    }
+
+    this.exitCrunchAudioContext = context;
+    this.exitCrunchBuffer = buffer;
+    if (context.state === "suspended") void context.resume();
+  }
+
+  private playExitCrunchSound(): void {
+    const context = this.exitCrunchAudioContext;
+    const buffer = this.exitCrunchBuffer;
+    if (!context || !buffer) return;
+
+    // Plusieurs insectes peuvent atteindre une sortie à la même image. Un son
+    // toutes les 90 ms garde le croquement lisible sans surcharge ni cacophonie.
+    if (context.currentTime - this.lastExitCrunchAt < 0.09) return;
+    this.lastExitCrunchAt = context.currentTime;
+    if (context.state === "suspended") void context.resume();
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = 0.96 + Math.random() * 0.08;
+    filter.type = "bandpass";
+    filter.frequency.value = 2400;
+    filter.Q.value = 0.75;
+    gain.gain.value = 0.16;
+    source.connect(filter).connect(gain).connect(context.destination);
+    source.start();
+  }
+
+  private playTowerShotSound(kind: TowerKind): void {
+    const context = this.exitCrunchAudioContext;
+    if (!context || context.state !== "running") return;
+
+    // Une grosse défense peut tirer des dizaines de fois à la même image. On
+    // conserve un tir sonore représentatif sans empiler toutes les voix audio.
+    if (context.currentTime - this.lastTowerShotSoundAt < 0.055) return;
+    this.lastTowerShotSoundAt = context.currentTime;
+
+    const profiles: Record<TowerKind, {
+      wave: OscillatorType;
+      startFrequency: number;
+      endFrequency: number;
+      duration: number;
+      volume: number;
+    }> = {
+      harpoon: { wave: "square", startFrequency: 760, endFrequency: 170, duration: 0.09, volume: 0.038 },
+      flak: { wave: "sawtooth", startFrequency: 1080, endFrequency: 470, duration: 0.065, volume: 0.026 },
+      pulse: { wave: "triangle", startFrequency: 210, endFrequency: 510, duration: 0.14, volume: 0.045 },
+      cryo: { wave: "sine", startFrequency: 390, endFrequency: 85, duration: 0.18, volume: 0.052 },
+    };
+    const profile = profiles[kind];
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+
+    oscillator.type = profile.wave;
+    oscillator.frequency.setValueAtTime(profile.startFrequency * Phaser.Math.FloatBetween(0.94, 1.06), now);
+    oscillator.frequency.exponentialRampToValueAtTime(profile.endFrequency, now + profile.duration);
+    filter.type = "lowpass";
+    filter.frequency.value = kind === "flak" ? 2200 : 1500;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(profile.volume, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + profile.duration);
+
+    oscillator.connect(filter).connect(gain).connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + profile.duration + 0.01);
   }
 
   private createCreatureGate(x: number, y: number, _label: string, rotation: number, _isExit: boolean): void {
@@ -2619,6 +2729,7 @@ class DefenseScene extends Phaser.Scene {
       if (!target) continue;
 
       tower.lastShot = time;
+      this.playTowerShotSound(tower.kind);
       const definition = TOWERS[tower.kind];
       if (this.selectedTower !== null) {
         // En mode placement, le tir reste effectif (dégâts, morts et pièces),
