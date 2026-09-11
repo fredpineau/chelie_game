@@ -1733,9 +1733,11 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private getUnlockedLevel(): number {
-    // TEST : tous les mondes sont accessibles uniquement sur cette preview.
-    // À retirer avant toute fusion vers main.
-    return LEVELS.length - 1;
+    try {
+      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
+    } catch {
+      return 0;
+    }
   }
 
   private getLastPlayedSelectionPage(): number {
