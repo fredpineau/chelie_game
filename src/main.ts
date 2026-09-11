@@ -1880,7 +1880,9 @@ class DefenseScene extends Phaser.Scene {
     const previewAtPointer = (pointer: Phaser.Input.Pointer): void => {
       if (this.selectedTower === null) return;
       this.placementPointerVisitedMap = true;
-      const isTouch = pointer.event instanceof TouchEvent;
+      // `wasTouch` est normalisé par Phaser pour Android, iOS et les
+      // navigateurs qui exposent un PointerEvent plutôt qu'un TouchEvent.
+      const isTouch = pointer.wasTouch;
       // Décale suffisamment l'aperçu au-dessus du doigt sur téléphone afin que
       // la case reste visible. Près du bas, le décalage diminue progressivement
       // pour que la dernière rangée reste atteignable sans sortir de la carte.
@@ -1898,45 +1900,48 @@ class DefenseScene extends Phaser.Scene {
         this.selectNearestTower(pointer.worldX, pointer.worldY);
         return;
       }
-      const touchOffset = pointer.event instanceof TouchEvent ? this.getPlacementTouchOffset(pointer.worldY) : 0;
+      const touchOffset = pointer.wasTouch ? this.getPlacementTouchOffset(pointer.worldY) : 0;
       this.placeTower(pointer.worldX, pointer.worldY - touchOffset, this.lastPlacementPreview);
       this.endPlacementDrag();
     });
     zone.on("pointerout", (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) this.hidePlacementPreview();
     });
-    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+    const finalizeBottomTouchPlacement = (pointer: Phaser.Input.Pointer): void => {
       // Un relâchement sur le bouton de l'herbier ne doit pas quitter la pause
       // tactique. Celle-ci se termine seulement après un passage sur la carte
       // (pose ou relâchement du doigt hors de la zone).
       if (this.placementDragActive && this.lastPlacementPreview) {
         const preview = this.lastPlacementPreview;
-        const validBottomTouchRelease = pointer.event instanceof TouchEvent
+        const previewIsOnBottomRows = preview.y >= mapBottom - PLANT_FRAME_SIZE * 1.5;
+        const validBottomTouchRelease = pointer.wasTouch
           && this.placementPointerVisitedMap
           && this.lastPlacementPreviewAllowed === true
-          && pointer.worldX >= mapLeft
-          && pointer.worldX <= mapRight
-          && pointer.worldY >= commandDeckTop
-          && pointer.worldY <= mapBottom + 88;
+          && preview.x >= mapLeft
+          && preview.x <= mapRight
+          && previewIsOnBottomRows;
         this.time.delayedCall(0, () => {
           // Le gestionnaire de la carte reste prioritaire. Ce secours ne pose
-          // la fleur que si le doigt a été relâché sous sa limite tactile.
+          // la fleur que si la dernière case basse affichée était bien verte.
           if (validBottomTouchRelease && this.selectedTower !== null && this.lastPlacementPreview === preview) {
             this.placeTower(pointer.worldX, pointer.worldY, preview);
           }
           this.endPlacementDrag();
         });
       }
-    });
+    };
+    this.input.on("pointerup", finalizeBottomTouchPlacement);
+    this.input.on("pointerupoutside", finalizeBottomTouchPlacement);
   }
 
   private getPlacementTouchOffset(pointerY: number): number {
     const mapBottom = GRID_Y - CELL / 2 + GRID_ROWS * CELL;
     const fadeHeight = 150;
     const remainingSpace = mapBottom - pointerY;
-    // L'aide ne descend jamais sous 60 px : la plante reste visible même sur
-    // la dernière ligne. La zone tactile prolongée fournit l'espace manquant.
-    return 60 + 28 * Phaser.Math.Clamp(remainingSpace / fadeHeight, 0, 1);
+    // Le décalage reste important sur le reste de la carte, mais descend à
+    // 32 px près du bas. La dernière rangée dispose ainsi d'une zone tactile
+    // nettement plus large sur tous les formats de téléphone.
+    return 32 + 56 * Phaser.Math.Clamp(remainingSpace / fadeHeight, 0, 1);
   }
 
   private beginPlacementDrag(): void {
@@ -3193,16 +3198,89 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private recalculateEnemyPaths(): void {
-    const version = ++this.pathRecalculationVersion;
+    ++this.pathRecalculationVersion;
     const activeEnemies = [...this.enemies];
-    const enemiesPerFrame = 6;
-    activeEnemies.forEach((enemy, index) => {
-      const delay = 1 + Math.floor(index / enemiesPerFrame) * 16;
-      const recalculate = (): void => {
-        if (version !== this.pathRecalculationVersion || !enemy.body.active || !this.enemies.includes(enemy)) return;
+    if (activeEnemies.length === 0) return;
+
+    // Tous les insectes de la vague doivent rejoindre le même trajet après une
+    // pose. L'ancien recalcul individuel et différé pouvait mélanger l'ancien
+    // et le nouveau chemin pendant plusieurs images dans une grosse vague.
+    const routesForEntry = this.getRouteOptions().filter((route) => route.top === this.waveEntryTop);
+    const orderedRoutes = [
+      ...routesForEntry.filter((route) => route.exit === this.waveExitId),
+      ...routesForEntry.filter((route) => route.exit !== this.waveExitId),
+    ];
+    let sharedRoute: { route: typeof orderedRoutes[number]; path: Phaser.Math.Vector2[] } | undefined;
+    for (const route of orderedRoutes) {
+      const path = this.calculatePath(route.entry, route.destination);
+      if (!path) continue;
+      sharedRoute = { route, path };
+      break;
+    }
+
+    if (!sharedRoute) {
+      // La validation de pose doit normalement rendre ce cas impossible. On
+      // conserve néanmoins la récupération historique comme filet de sécurité.
+      activeEnemies.forEach((enemy) => this.recalculateEnemyPath(enemy));
+      return;
+    }
+
+    this.waveExitId = sharedRoute.route.exit;
+    const exitX = this.gridToWorldX(sharedRoute.route.destination.col, sharedRoute.route.destination.row);
+    const exitY = this.gridToWorldY(sharedRoute.route.destination.row);
+    const sharedPath = [
+      ...sharedRoute.path,
+      new Phaser.Math.Vector2(exitX, exitY),
+    ];
+    const halfPlant = PLANT_FRAME_SIZE / 2 - 1;
+    const maxDirectJoinDistanceSquared = (CELL * 2.25) ** 2;
+
+    activeEnemies.forEach((enemy) => {
+      if (!enemy.body.active || !this.enemies.includes(enemy)) return;
+      let bestJoinIndex = -1;
+      let bestJoinScore = Infinity;
+      for (let pathIndex = 0; pathIndex < sharedPath.length; pathIndex += 1) {
+        const point = sharedPath[pathIndex];
+        const distanceSquared = Phaser.Math.Distance.Squared(enemy.body.x, enemy.body.y, point.x, point.y);
+        if (distanceSquared > maxDirectJoinDistanceSquared) continue;
+        const connector = new Phaser.Geom.Line(enemy.body.x, enemy.body.y, point.x, point.y);
+        const connectorBlocked = this.towers.some((tower) => {
+          const currentInside = Math.abs(enemy.body.x - tower.body.x) <= halfPlant + 0.5
+            && Math.abs(enemy.body.y - tower.body.y) <= halfPlant + 0.5;
+          if (currentInside) return false;
+          return Phaser.Geom.Intersects.LineToRectangle(
+            connector,
+            new Phaser.Geom.Rectangle(
+              tower.body.x - halfPlant,
+              tower.body.y - halfPlant,
+              halfPlant * 2,
+              halfPlant * 2,
+            ),
+          );
+        });
+        if (connectorBlocked) continue;
+
+        // À distance égale, le point le plus avancé évite un demi-tour visible.
+        const score = distanceSquared + (sharedPath.length - pathIndex) * 0.001;
+        if (score >= bestJoinScore) continue;
+        bestJoinScore = score;
+        bestJoinIndex = pathIndex;
+      }
+
+      if (bestJoinIndex < 0) {
         this.recalculateEnemyPath(enemy);
-      };
-      this.time.delayedCall(delay, recalculate);
+        return;
+      }
+      enemy.exitId = sharedRoute.route.exit;
+      enemy.exitCol = sharedRoute.route.destination.col;
+      enemy.exitRow = sharedRoute.route.destination.row;
+      enemy.exitX = exitX;
+      enemy.exitY = exitY;
+      enemy.path = [
+        new Phaser.Math.Vector2(enemy.body.x, enemy.body.y),
+        ...sharedPath.slice(bestJoinIndex),
+      ];
+      enemy.pathIndex = 1;
     });
   }
 
