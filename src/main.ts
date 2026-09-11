@@ -113,14 +113,14 @@ type LevelDefinition = {
 
 const TOWERS: Record<TowerKind, TowerDefinition> = {
   harpoon: { name: "Dionée", icon: "D", color: 0x66845b, target: "sea", cost: 5, damage: 24, range: 190, fireDelay: 820, effect: "standard", unlockLevel: 0 },
-  flak: { name: "Sarracénie", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 270, fireDelay: 520, effect: "standard", unlockLevel: 0 },
+  flak: { name: "Sarracenia", icon: "S", color: 0x9a5938, target: "air", cost: 10, damage: 16, range: 270, fireDelay: 520, effect: "standard", unlockLevel: 0 },
   pulse: { name: "Drosera", icon: "R", color: 0x8d596d, target: "all", cost: 20, damage: 11, range: 230, fireDelay: 700, effect: "standard", unlockLevel: 0 },
   cryo: { name: "Népenthès", icon: "N", color: 0x5f898c, target: "all", cost: 30, damage: 8, range: 150, fireDelay: 1050, effect: "slow", unlockLevel: 0 },
 };
 
 const TOWER_EVOLUTIONS: Record<TowerKind, [string, string, string]> = {
   harpoon: ["Dionée", "Dionée vorace", "Dionée titan"],
-  flak: ["Sarracénie", "Sarracénie chasseuse", "Sarracénie céleste"],
+  flak: ["Sarracenia", "Sarracenia chasseuse", "Sarracenia céleste"],
   pulse: ["Drosera", "Drosera pourpre", "Drosera écarlate"],
   cryo: ["Népenthès", "Népenthès brumeuse", "Népenthès polaire"],
 };
@@ -1233,7 +1233,7 @@ class DefenseScene extends Phaser.Scene {
       "",
       "LES PLANTES",
       "• Dionée : terrestre, économique, efficace contre les blindés.",
-      "• Sarracénie : grande portée, spécialisée contre les volants.",
+      "• Sarracenia : grande portée, spécialisée contre les volants.",
       "• Drosera : polyvalente contre tous les insectes.",
       "• Népenthès : ralentit les ennemis, surtout les plus rapides.",
       "",
@@ -3526,6 +3526,14 @@ class DefenseScene extends Phaser.Scene {
     this.nextWaveAt = 0;
     this.setStartButtonEnabled(false);
     const overlay = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x022c2b, 0.82);
+    const defeat = this.add.text(WIDTH / 2, HEIGHT / 2 - 145, "PERDU", {
+      fontFamily: "Arial",
+      fontSize: "58px",
+      color: "#fb7185",
+      fontStyle: "bold",
+      stroke: "#3f1018",
+      strokeThickness: 6,
+    }).setOrigin(0.5);
     const title = this.add.text(WIDTH / 2, HEIGHT / 2 - 70, "20 INSECTES SE SONT ÉCHAPPÉS", {
       fontFamily: "Arial",
       fontSize: "42px",
@@ -3538,6 +3546,7 @@ class DefenseScene extends Phaser.Scene {
     }));
     const menu = this.makeButton(WIDTH / 2, HEIGHT / 2 + 78, 210, 42, "CHOIX DU BIOME", 0x334155, () => this.goToHome());
     overlay.setDepth(20);
+    defeat.setDepth(21);
     title.setDepth(21);
     retry.setDepth(21);
     menu.setDepth(21);
