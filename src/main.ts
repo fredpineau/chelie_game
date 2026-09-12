@@ -43,6 +43,7 @@ type TerrainKind = "root" | "peat" | "spore" | "sticky" | "parasite";
 type TerrainFeature = { kind: TerrainKind; x: number; y: number; radius: number; cooldownUntil: number };
 type TowerPlacement = { x: number; y: number; col: number; row: number };
 type PlacementCheck = { allowed: boolean; reason: string };
+type BetaFeedbackKind = "bug" | "survey";
 
 type Enemy = {
   body: Phaser.GameObjects.Container;
@@ -1039,7 +1040,7 @@ class DefenseScene extends Phaser.Scene {
       fontFamily: "Arial", fontSize: "20px", color: "#dfc8e9", fontStyle: "bold", letterSpacing: 1,
     }).setOrigin(0.5);
     const explanation = this.add.text(WIDTH / 2, 280,
-      "Aidez-nous à améliorer la tourbière.\nLes retours peuvent être partagés ou copiés depuis votre téléphone.", {
+      "Aidez-nous à améliorer la tourbière.\nVos retours sont envoyés directement au créateur du jeu.", {
         fontFamily: "Arial", fontSize: "20px", color: "#edf8f7", fontStyle: "bold",
         align: "center", lineSpacing: 7, wordWrap: { width: 570 },
       }).setOrigin(0.5);
@@ -1079,7 +1080,12 @@ class DefenseScene extends Phaser.Scene {
       `Étapes : ${steps?.trim() || "Non précisées"}`,
       `Résultat attendu : ${expected?.trim() || "Non précisé"}`,
     ].join("\n");
-    void this.shareBetaText("rapport-bug-chelie.txt", "Rapport de bug Chelie", report);
+    void this.sendBetaFeedback(
+      "bug",
+      "rapport-bug-chelie.txt",
+      `Rapport de bug · ${problem.trim().slice(0, 80)}`,
+      report,
+    );
   }
 
   private createBetaSurvey(): void {
@@ -1101,7 +1107,66 @@ class DefenseScene extends Phaser.Scene {
       `Élément préféré : ${favorite?.trim() || "Non répondu"}`,
       `Amélioration prioritaire : ${improvement?.trim() || "Non répondu"}`,
     ].join("\n");
-    void this.shareBetaText("questionnaire-beta-chelie.txt", "Questionnaire bêta Chelie", answers);
+    void this.sendBetaFeedback(
+      "survey",
+      "questionnaire-beta-chelie.txt",
+      `Questionnaire bêta · ${new Date().toLocaleDateString("fr-FR")}`,
+      answers,
+    );
+  }
+
+  private getBetaFeedbackEndpoint(): string {
+    const viteEnvironment = (import.meta as ImportMeta & {
+      env?: Record<string, string | undefined>;
+    }).env;
+    const configuredEndpoint = viteEnvironment?.VITE_BETA_FEEDBACK_URL?.trim();
+    if (configuredEndpoint) return configuredEndpoint;
+
+    const capacitorWindow = window as Window & { Capacitor?: unknown };
+    const isNativeApp = capacitorWindow.Capacitor !== undefined
+      || window.location.protocol === "capacitor:";
+    return isNativeApp
+      ? "https://chelie-game.vercel.app/api/beta-feedback"
+      : "/api/beta-feedback";
+  }
+
+  private async sendBetaFeedback(
+    kind: BetaFeedbackKind,
+    filename: string,
+    title: string,
+    content: string,
+  ): Promise<void> {
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 10_000);
+      let response: Response;
+      try {
+        response = await fetch(this.getBetaFeedbackEndpoint(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind,
+            title,
+            content,
+            sourceUrl: window.location.href,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+
+      if (!response.ok) throw new Error(`beta-feedback-${response.status}`);
+      window.alert("Merci ! Votre retour a bien été envoyé au créateur du jeu.");
+      return;
+    } catch (error) {
+      console.warn("Envoi automatique du retour bêta impossible.", error);
+      window.alert(
+        "L’envoi automatique n’a pas abouti. Le partage ou la copie va être proposé pour ne pas perdre votre retour.",
+      );
+    }
+
+    await this.shareBetaText(filename, title, content);
   }
 
   private async shareBetaText(filename: string, title: string, content: string): Promise<void> {
