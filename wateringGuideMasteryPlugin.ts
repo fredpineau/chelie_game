@@ -34,6 +34,25 @@ export function wateringGuideMastery(): Plugin {
           }
         }
         localStorage.setItem(reserveRecoveryMarker, "done");
+      }
+      const reserveReconciliationMarker = "chelie-drop-reserve-reconciliation-v2";
+      if (localStorage.getItem(reserveReconciliationMarker) !== "done") {
+        const recordedDrops = Object.entries(this.waveDropRecords).reduce((sum, [key, value]) => {
+          if (!key.startsWith("v2:") && !key.startsWith("alpha:v1:")) return sum;
+          return sum + Math.max(0, Number(value) || 0);
+        }, 0);
+        const investedDrops = (Object.keys(TOWERS) as TowerKind[]).reduce((total, kind) => {
+          const mastery = this.plantMastery[kind];
+          return total + MASTERY_COSTS
+            .slice(0, mastery)
+            .reduce((plantTotal, cost) => plantTotal + cost, 0);
+        }, 0);
+        const minimumExpectedReserve = Math.max(0, recordedDrops - investedDrops);
+        if (this.wateringCans < minimumExpectedReserve) {
+          this.wateringCans = minimumExpectedReserve;
+          localStorage.setItem("chelie-watering-cans", String(this.wateringCans));
+        }
+        localStorage.setItem(reserveReconciliationMarker, "done");
       }`,
         );
       }
@@ -145,8 +164,15 @@ export function wateringGuideMastery(): Plugin {
     const resetDrops = this.makeButton(guideCenterX - 170, 1125, 300, 56, "RÉINITIALISER", 0x7f1d2d, () => {
       const confirmed = typeof window === "undefined"
         ? true
-        : window.confirm("Réinitialiser uniquement les améliorations permanentes des fleurs ? La réserve et l'historique des gouttes seront conservés.");
+        : window.confirm("Réinitialiser les améliorations permanentes des fleurs ? Toutes les gouttes dépensées seront remboursées dans votre réserve.");
       if (!confirmed) return;
+      const refundedDrops = (Object.keys(TOWERS) as TowerKind[]).reduce((total, kind) => {
+        const mastery = this.plantMastery[kind];
+        return total + MASTERY_COSTS
+          .slice(0, mastery)
+          .reduce((plantTotal, cost) => plantTotal + cost, 0);
+      }, 0);
+      this.wateringCans += refundedDrops;
       this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
       this.savePermanentProgress();
       guide.destroy(true);
