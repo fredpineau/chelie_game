@@ -141,12 +141,16 @@ export function wateringGuideMastery(): Plugin {
       card.on("pointerover", () => card.setScale(1.025));
       card.on("pointerout", () => card.setScale(1));
       card.on("pointerdown", () => {
-        const previousMastery = this.plantMastery[kind];
-        this.upgradePlantMastery(kind);
-        if (this.plantMastery[kind] !== previousMastery) {
-          guide.destroy(true);
-          this.showWateringGuide();
+        if (cost === null) return;
+        if (this.wateringCans < cost) {
+          this.cameras.main.shake(110, 0.0015);
+          return;
         }
+        this.wateringCans -= cost;
+        this.plantMastery[kind] += 1;
+        this.savePermanentProgress();
+        guide.destroy(true);
+        this.showWateringGuide();
       });
       masteryCards.push(card);
     });
