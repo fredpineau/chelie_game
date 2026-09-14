@@ -180,7 +180,7 @@ export function wateringGuideMastery(): Plugin {
       this.plantMastery = { harpoon: 0, flak: 0, pulse: 0, cryo: 0 };
       this.savePermanentProgress();
       guide.destroy(true);
-      this.goToHome();
+      this.showWateringGuide();
     });
     const close = this.makeButton(guideCenterX + 170, 1125, 220, 56, "FERMER", 0x0f766e, () => guide.destroy(true));
     guide.add([veil, panel, title, balance, explanation, rewards, greenhouseHint, ...masteryCards, distinction, resetDrops, close]);`;
