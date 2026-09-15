@@ -2554,33 +2554,7 @@ class DefenseScene extends Phaser.Scene {
     const healthY = isBoss ? -58 : -40;
     const healthBg = this.add.rectangle(0, healthY, healthBarWidth, isBoss ? 8 : 5, 0x020617, 0.9);
     const healthBar = this.add.rectangle(-healthBarWidth / 2, healthY, healthBarWidth, isBoss ? 8 : 5, color).setOrigin(0, 0.5);
-    const typeName = kind === "air" ? "VOLANT" : "TERRIEN";
-    const bossLabel = isBoss ? this.add.text(0, healthY - 16, `ALPHA · ${typeName}`, {
-      fontFamily: "Arial",
-      fontSize: "12px",
-      color: kind === "air" ? "#d9fbff" : "#ffe1b5",
-      fontStyle: "bold",
-      letterSpacing: 1,
-      backgroundColor: kind === "air" ? "#174b59" : "#594025",
-      padding: { x: 5, y: 2 },
-    }).setOrigin(0.5) : null;
-    const traitNames: Record<EnemyTrait, string> = {
-      normal: "",
-      armored: "CARAPACE",
-      swift: "VIF",
-      regenerator: "RÉGÉN.",
-    };
-    const traitSuffix = trait === "normal" ? "" : ` · ${traitNames[trait]}`;
-    const traitLabel = !isBoss ? this.add.text(0, healthY - 14, `${typeName}${traitSuffix}`, {
-      fontFamily: "Arial",
-      fontSize: "11px",
-      color: kind === "air" ? "#d9fbff" : "#ffe1b5",
-      fontStyle: "bold",
-      letterSpacing: 0.5,
-      backgroundColor: kind === "air" ? "#174b59" : "#594025",
-      padding: { x: 4, y: 2 },
-    }).setOrigin(0.5) : null;
-    container.add([insectSprite, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
+    container.add([insectSprite, healthBg, healthBar]);
 
     const level = this.getActiveLevel();
     const traitHealthMultiplier = trait === "swift" ? 0.78 : trait === "armored" ? 1.28 : 1;
