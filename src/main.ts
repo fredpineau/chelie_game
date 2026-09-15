@@ -46,6 +46,9 @@ type PlacementCheck = { allowed: boolean; reason: string };
 
 type Enemy = {
   body: Phaser.GameObjects.Container;
+  sprite: Phaser.GameObjects.Image;
+  baseTint?: number;
+  slowVisualActive: boolean;
   kind: EnemyKind;
   hp: number;
   maxHp: number;
@@ -59,6 +62,7 @@ type Enemy = {
   energyReward: number;
   slowedUntil: number;
   slowMultiplier: number;
+  slowReservedUntil: number;
   swiftSuppressedUntil: number;
   exitCol: number;
   exitRow: number;
@@ -220,6 +224,15 @@ class DefenseScene extends Phaser.Scene {
 
   constructor() {
     super("defense");
+  }
+
+  preload(): void {
+    // Une texture unique remplace les nombreuses formes Phaser qui composaient
+    // chaque insecte. Les quatre SVG existent déjà dans les assets du jeu.
+    this.load.svg("enemy-wasp", "/assets/enemies/wasp.svg", { width: 96, height: 96 });
+    this.load.svg("enemy-wasp-boss", "/assets/enemies/wasp-boss.svg", { width: 112, height: 112 });
+    this.load.svg("enemy-beetle", "/assets/enemies/beetle.svg", { width: 96, height: 96 });
+    this.load.svg("enemy-beetle-boss", "/assets/enemies/beetle-boss.svg", { width: 112, height: 112 });
   }
 
   init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; infiniteNightmare?: boolean } = {}): void {
@@ -1733,11 +1746,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private getUnlockedLevel(): number {
-    try {
-      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
-    } catch {
-      return 0;
-    }
+    // TEST PREVIEW ONLY : accès direct aux grosses vagues pour mesurer le rendu.
+    // Ce déblocage doit être retiré avant toute fusion vers main.
+    return LEVELS.length - 1;
   }
 
   private getLastPlayedSelectionPage(): number {
@@ -1962,7 +1973,9 @@ class DefenseScene extends Phaser.Scene {
     for (const enemy of this.enemies) {
       if (!enemy.body.active) continue;
       enemy.body.setVisible(false);
-      const color = enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
+      const color = this.time.now < enemy.slowedUntil
+        ? 0x67d8e8
+        : enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
       const radius = enemy.isBoss ? 10 : 7;
       markers.fillStyle(color, 0.94);
       markers.fillCircle(enemy.body.x, enemy.body.y, radius);
@@ -2522,59 +2535,23 @@ class DefenseScene extends Phaser.Scene {
       : this.gridToWorldX(BOTTOM_EXIT_COL, BOTTOM_EXIT_ROW);
     const exitY = this.waveExitId === "right" ? this.gridToWorldY(TOP_EXIT_ROW) : this.gridToWorldY(BOTTOM_EXIT_ROW);
     const container = this.add.container(spawnX, spawnY);
-    const scale = isBoss ? 1.15 : 0.72;
-    const shadow = this.add.ellipse(
-      0,
-      kind === "air" ? 25 : 17,
-      (kind === "air" ? 44 : 58) * scale,
-      (kind === "air" ? 9 : 12) * scale,
-      0x010403,
-      kind === "air" ? 0.3 : 0.62,
-    );
-    const movementMarker = this.add.ellipse(
-      0,
-      kind === "air" ? 15 : 18,
-      (kind === "air" ? 52 : 64) * scale,
-      (kind === "air" ? 15 : 18) * scale,
-      kind === "air" ? 0x8ddce6 : 0x8a6538,
-      0.1,
-    ).setStrokeStyle(2, kind === "air" ? 0xb9f3f7 : 0xb38a52, kind === "air" ? 0.72 : 0.5);
-    const insectParts: Phaser.GameObjects.GameObject[] = [shadow, movementMarker];
-    if (kind === "air") {
-      const leftWing = this.add.triangle(-17 * scale, -4 * scale, -3, 8, -36, -3, -8, -23, 0xb9e8ed, 0.68)
-        .setStrokeStyle(2, 0x5b8f98, 0.95);
-      const rightWing = this.add.triangle(17 * scale, -4 * scale, 3, 8, 36, -3, 8, -23, 0xb9e8ed, 0.68)
-        .setStrokeStyle(2, 0x5b8f98, 0.95);
-      const abdomen = this.add.ellipse(0, 5 * scale, 14 * scale, 39 * scale, color).setStrokeStyle(2, 0x171612, 0.95);
-      const abdomenRidge = this.add.rectangle(0, 7 * scale, 3 * scale, 31 * scale, 0x171612, 0.8);
-      const thorax = this.add.ellipse(0, -10 * scale, 18 * scale, 20 * scale, 0x26251f).setStrokeStyle(2, 0x11110e);
-      const head = this.add.triangle(0, -23 * scale, -8, 7, 0, -8, 8, 7, 0x171713);
-      const leftAntenna = this.add.line(0, 0, -4 * scale, -27 * scale, -13 * scale, -36 * scale, 0x12130f).setLineWidth(2);
-      const rightAntenna = this.add.line(0, 0, 4 * scale, -27 * scale, 13 * scale, -36 * scale, 0x12130f).setLineWidth(2);
-      const leftVein = this.add.line(0, 0, -7 * scale, -6 * scale, -28 * scale, -4 * scale, 0x303832, 0.55).setLineWidth(1);
-      const rightVein = this.add.line(0, 0, 7 * scale, -6 * scale, 28 * scale, -4 * scale, 0x303832, 0.55).setLineWidth(1);
-      insectParts.push(leftWing, rightWing, leftVein, rightVein, abdomen, abdomenRidge, thorax, head, leftAntenna, rightAntenna);
-      this.tweens.add({ targets: leftWing, angle: -7, yoyo: true, repeat: -1, duration: 85 });
-      this.tweens.add({ targets: rightWing, angle: 7, yoyo: true, repeat: -1, duration: 85 });
-    } else {
-      for (let leg = -2; leg <= 2; leg += 1) {
-        const offsetY = leg * 6 * scale;
-        insectParts.push(this.add.line(0, 0, -12 * scale, offsetY, -31 * scale, offsetY + leg * 3, 0x11120f, 0.95).setLineWidth(3));
-        insectParts.push(this.add.line(0, 0, 12 * scale, offsetY, 31 * scale, offsetY + leg * 3, 0x11120f, 0.95).setLineWidth(3));
-      }
-      const abdomen = this.add.ellipse(-7 * scale, 0, 39 * scale, 28 * scale, color).setStrokeStyle(isBoss ? 3 : 2, 0x151612, 0.95);
-      const shellLeft = this.add.arc(-10 * scale, 0, 17 * scale, 95, 265, false, 0x344b47).setStrokeStyle(1, 0x171916);
-      const shellRight = this.add.arc(-4 * scale, 0, 17 * scale, -85, 85, false, 0x2d413e).setStrokeStyle(1, 0x171916);
-      const thorax = this.add.ellipse(14 * scale, 0, 21 * scale, 25 * scale, 0x242620).setStrokeStyle(2, 0x11120f);
-      const head = this.add.triangle(27 * scale, 0, -8, -9, 11, 0, -8, 9, 0x171815);
-      const upperMandible = this.add.triangle(39 * scale, -5 * scale, -8, -3, 7, 0, -7, 6, 0x090a08).setRotation(-0.25);
-      const lowerMandible = this.add.triangle(39 * scale, 5 * scale, -8, 3, 7, 0, -7, -6, 0x090a08).setRotation(0.25);
-      insectParts.push(abdomen, shellLeft, shellRight, thorax, head, upperMandible, lowerMandible);
-    }
-    const eye = this.add.circle(kind === "air" ? 3 * scale : 29 * scale, -3 * scale, isBoss ? 3 : 1.5, 0x991b1b, 0.8);
-    insectParts.push(eye);
+    const textureKey = kind === "air"
+      ? (isBoss ? "enemy-wasp-boss" : "enemy-wasp")
+      : (isBoss ? "enemy-beetle-boss" : "enemy-beetle");
+    const insectSprite = this.add.image(0, 0, textureKey)
+      .setDisplaySize(isBoss ? 96 : 64, isBoss ? 96 : 64);
+
+    // Les variantes restent immédiatement identifiables sans recréer le corps
+    // du monstre avec une dizaine d'objets graphiques indépendants.
+    const traitTints: Record<Exclude<EnemyTrait, "normal">, number> = {
+      armored: 0xb8c1bf,
+      swift: 0xffdd88,
+      regenerator: 0x9ddd9a,
+    };
+    const baseTint = !isBoss && trait !== "normal" ? traitTints[trait] : undefined;
+    if (baseTint !== undefined) insectSprite.setTint(baseTint);
     const healthBarWidth = isBoss ? 82 : 48;
-    const healthY = isBoss ? -45 : -28;
+    const healthY = isBoss ? -58 : -40;
     const healthBg = this.add.rectangle(0, healthY, healthBarWidth, isBoss ? 8 : 5, 0x020617, 0.9);
     const healthBar = this.add.rectangle(-healthBarWidth / 2, healthY, healthBarWidth, isBoss ? 8 : 5, color).setOrigin(0, 0.5);
     const typeName = kind === "air" ? "VOLANT" : "TERRIEN";
@@ -2603,13 +2580,16 @@ class DefenseScene extends Phaser.Scene {
       backgroundColor: kind === "air" ? "#174b59" : "#594025",
       padding: { x: 4, y: 2 },
     }).setOrigin(0.5) : null;
-    container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
+    container.add([insectSprite, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
 
     const level = this.getActiveLevel();
     const traitHealthMultiplier = trait === "swift" ? 0.78 : trait === "armored" ? 1.28 : 1;
     const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1) * traitHealthMultiplier);
     this.enemies.push({
       body: container,
+      sprite: insectSprite,
+      baseTint,
+      slowVisualActive: false,
       kind,
       hp,
       maxHp: hp,
@@ -2630,6 +2610,7 @@ class DefenseScene extends Phaser.Scene {
       energyReward: this.getEnemyEnergyReward(isBoss),
       slowedUntil: 0,
       slowMultiplier: 1,
+      slowReservedUntil: 0,
       swiftSuppressedUntil: 0,
       exitCol,
       exitRow,
@@ -2704,6 +2685,7 @@ class DefenseScene extends Phaser.Scene {
       const slowFactor = time < enemy.slowedUntil ? enemy.slowMultiplier : 1;
       const swiftFactor = enemy.trait === "swift" && time < enemy.swiftSuppressedUntil ? 1 / 1.42 : 1;
       const speed = enemy.speed * slowFactor * swiftFactor * this.getTerrainSpeedFactor(enemy);
+      if (enemy.slowVisualActive && time >= enemy.slowedUntil) this.setEnemySlowVisual(enemy, false);
       if (enemy.regeneration > 0 && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
         enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.maxHp * enemy.regeneration * (delta / 1000));
         enemy.healthBar.width = enemy.healthBarWidth * (enemy.hp / enemy.maxHp);
@@ -2734,6 +2716,11 @@ class DefenseScene extends Phaser.Scene {
       if (!target) continue;
 
       tower.lastShot = time;
+      if (tower.kind === "cryo") {
+        // Évite que plusieurs Népenthès tirant pendant la même image réservent
+        // toutes la même cible avant l'arrivée de leur projectile.
+        target.slowReservedUntil = Math.max(target.slowReservedUntil, time + 220);
+      }
       this.playTowerShotSound(tower.kind);
       const definition = TOWERS[tower.kind];
       if (this.selectedTower !== null) {
@@ -2772,6 +2759,8 @@ class DefenseScene extends Phaser.Scene {
     const rangeSquared = tower.range * tower.range;
     let bestTarget: Enemy | undefined;
     let bestScore = tower.priority === "strong" ? -Infinity : Infinity;
+    let bestAlreadySlowed: Enemy | undefined;
+    let bestAlreadySlowedScore = bestScore;
     for (const enemy of this.enemies) {
       if (definition.target !== "all" && definition.target !== enemy.kind) continue;
       const deltaX = tower.body.x - enemy.body.x;
@@ -2782,12 +2771,22 @@ class DefenseScene extends Phaser.Scene {
         : tower.priority === "weak"
           ? enemy.hp
           : enemy.path.length - enemy.pathIndex;
+      if (tower.kind === "cryo" && this.time.now < Math.max(enemy.slowedUntil, enemy.slowReservedUntil)) {
+        const isBetterFallback = tower.priority === "strong"
+          ? score > bestAlreadySlowedScore
+          : score < bestAlreadySlowedScore;
+        if (isBetterFallback) {
+          bestAlreadySlowedScore = score;
+          bestAlreadySlowed = enemy;
+        }
+        continue;
+      }
       const isBetter = tower.priority === "strong" ? score > bestScore : score < bestScore;
       if (!isBetter) continue;
       bestScore = score;
       bestTarget = enemy;
     }
-    return bestTarget;
+    return bestTarget ?? bestAlreadySlowed;
   }
 
   private applyTowerHit(tower: Tower, target: Enemy, definition: TowerDefinition): void {
@@ -2844,9 +2843,22 @@ class DefenseScene extends Phaser.Scene {
     if (this.time.now >= enemy.slowedUntil) enemy.slowMultiplier = multiplier;
     else enemy.slowMultiplier = Math.min(enemy.slowMultiplier, multiplier);
     enemy.slowedUntil = Math.max(enemy.slowedUntil, this.time.now + duration);
+    enemy.slowReservedUntil = 0;
+    this.setEnemySlowVisual(enemy, true);
     if (suppressSwift && enemy.trait === "swift") {
       enemy.swiftSuppressedUntil = Math.max(enemy.swiftSuppressedUntil, this.time.now + duration);
     }
+  }
+
+  private setEnemySlowVisual(enemy: Enemy, active: boolean): void {
+    if (enemy.slowVisualActive === active) return;
+    enemy.slowVisualActive = active;
+    if (active) {
+      enemy.sprite.setTint(0x8deaff);
+      return;
+    }
+    if (enemy.baseTint !== undefined) enemy.sprite.setTint(enemy.baseTint);
+    else enemy.sprite.clearTint();
   }
 
   private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
