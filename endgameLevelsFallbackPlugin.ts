@@ -15,10 +15,10 @@ export function endgameLevelsFallback(): Plugin {
       if (!infiniteLinePattern.test(code)) return null;
 
       const replacement = [
-        '  { name: "Marais fracturé", code: "BIOME 12", waves: 48, healthMultiplier: 6.15, speedMultiplier: 1.69, swarmBonus: 24 },',
-        '  { name: "Essaim chimérique", code: "BIOME 13", waves: 50, healthMultiplier: 6.75, speedMultiplier: 1.73, swarmBonus: 25 },',
-        '  { name: "Ruche des alphas", code: "BIOME 14", waves: 55, healthMultiplier: 7.40, speedMultiplier: 1.77, swarmBonus: 27 },',
-        '  { name: "Nexus carnivore", code: "BIOME 15", waves: 60, healthMultiplier: 8.10, speedMultiplier: 1.82, swarmBonus: 29 },',
+        '  { name: "Marais fracturé", code: "BIOME 12", waves: 48, healthMultiplier: 6.00, speedMultiplier: 1.64, swarmBonus: 22 },',
+        '  { name: "Essaim chimérique", code: "BIOME 13", waves: 50, healthMultiplier: 6.55, speedMultiplier: 1.68, swarmBonus: 24 },',
+        '  { name: "Ruche des alphas", code: "BIOME 14", waves: 55, healthMultiplier: 7.15, speedMultiplier: 1.72, swarmBonus: 26 },',
+        '  { name: "Nexus carnivore", code: "BIOME 15", waves: 60, healthMultiplier: 7.80, speedMultiplier: 1.76, swarmBonus: 28 },',
         '  { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 8.60, speedMultiplier: 1.86, swarmBonus: 30 },',
       ].join("\n");
 
