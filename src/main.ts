@@ -1392,7 +1392,9 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private showLevelSelection(): void {
-    const unlocked = this.getUnlockedLevel();
+    // TEST PREVIEW ONLY : affiche tous les mondes sans fausser le niveau réel
+    // utilisé pour équilibrer le mode infini évolutif.
+    const unlocked = LEVELS.length - 1;
     const homeCenterX = WIDTH / 2;
     const cardColumnOffset = 155;
     const cardRowStart = 427;
@@ -1710,14 +1712,26 @@ class DefenseScene extends Phaser.Scene {
   private getActiveLevel(): LevelDefinition {
     const level = LEVELS[this.levelIndex];
     if (this.levelIndex !== LEVELS.length - 1) return level;
-    const bestWorld = Phaser.Math.Clamp(this.getUnlockedLevel(), 6, LEVELS.length - 2);
-    const reference = LEVELS[bestWorld];
-    const nightmareMultiplier = this.infiniteNightmare ? 1.55 : 1.08;
+    if (this.infiniteNightmare) {
+      const bestWorld = Phaser.Math.Clamp(this.getUnlockedLevel(), 6, LEVELS.length - 2);
+      const reference = LEVELS[bestWorld];
+      return {
+        ...level,
+        healthMultiplier: reference.healthMultiplier * 1.55,
+        speedMultiplier: reference.speedMultiplier * 1.16,
+        swarmBonus: reference.swarmBonus + 9,
+      };
+    }
+    const lastCompletedWorld = Phaser.Math.Clamp(this.getUnlockedLevel() - 1, 5, LEVELS.length - 2);
+    const reference = LEVELS[lastCompletedWorld];
+    const waveHealthBase = 56 + this.wave * 16;
+    const levelIndexCompensation = (waveHealthBase + lastCompletedWorld * 10)
+      / (waveHealthBase + this.levelIndex * 10);
     return {
       ...level,
-      healthMultiplier: reference.healthMultiplier * nightmareMultiplier,
-      speedMultiplier: reference.speedMultiplier * (this.infiniteNightmare ? 1.16 : 1.04),
-      swarmBonus: reference.swarmBonus + (this.infiniteNightmare ? 9 : 3),
+      healthMultiplier: reference.healthMultiplier * 1.03 * levelIndexCompensation,
+      speedMultiplier: reference.speedMultiplier * 1.01,
+      swarmBonus: reference.swarmBonus + 1,
     };
   }
 
@@ -1753,9 +1767,11 @@ class DefenseScene extends Phaser.Scene {
   }
 
   private getUnlockedLevel(): number {
-    // TEST PREVIEW ONLY : accès direct aux grosses vagues pour mesurer le rendu.
-    // Ce déblocage doit être retiré avant toute fusion vers main.
-    return LEVELS.length - 1;
+    try {
+      return Phaser.Math.Clamp(Number(localStorage.getItem("chelie-unlocked-level") ?? 0), 0, LEVELS.length - 1);
+    } catch {
+      return 0;
+    }
   }
 
   private getLastPlayedSelectionPage(): number {
