@@ -145,11 +145,11 @@ const LEVELS: LevelDefinition[] = [
   { name: "Tourbière noire", code: "BIOME 04", waves: 25, healthMultiplier: 2.05, speedMultiplier: 1.25, swarmBonus: 8 },
   { name: "Jardin primordial", code: "BIOME 05", waves: 30, healthMultiplier: 2.25, speedMultiplier: 1.28, swarmBonus: 9 },
   { name: "Fosse des spores", code: "BIOME 06", waves: 35, healthMultiplier: 2.9, speedMultiplier: 1.38, swarmBonus: 12 },
-  { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.4, speedMultiplier: 1.44, swarmBonus: 14 },
-  { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 4, speedMultiplier: 1.5, swarmBonus: 16 },
-  { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.7, speedMultiplier: 1.57, swarmBonus: 18 },
-  { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 5.5, speedMultiplier: 1.64, swarmBonus: 20 },
-  { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 6.4, speedMultiplier: 1.72, swarmBonus: 23 },
+  { name: "Delta vorace", code: "BIOME 07", waves: 40, healthMultiplier: 3.2, speedMultiplier: 1.42, swarmBonus: 13 },
+  { name: "Crypte chlorophylle", code: "BIOME 08", waves: 45, healthMultiplier: 3.7, speedMultiplier: 1.46, swarmBonus: 15 },
+  { name: "Cime parasitaire", code: "BIOME 09", waves: 50, healthMultiplier: 4.3, speedMultiplier: 1.51, swarmBonus: 17 },
+  { name: "Nécropole florale", code: "BIOME 10", waves: 55, healthMultiplier: 5, speedMultiplier: 1.56, swarmBonus: 19 },
+  { name: "Tourbière souveraine", code: "BIOME 11", waves: 60, healthMultiplier: 5.8, speedMultiplier: 1.61, swarmBonus: 21 },
   { name: "Floraison éternelle", code: "MODE INFINI", waves: null, healthMultiplier: 7.2, speedMultiplier: 1.8, swarmBonus: 26 },
 ];
 
@@ -1690,14 +1690,26 @@ class DefenseScene extends Phaser.Scene {
   private getActiveLevel(): LevelDefinition {
     const level = LEVELS[this.levelIndex];
     if (this.levelIndex !== LEVELS.length - 1) return level;
-    const bestWorld = Phaser.Math.Clamp(this.getUnlockedLevel(), 6, LEVELS.length - 2);
-    const reference = LEVELS[bestWorld];
-    const nightmareMultiplier = this.infiniteNightmare ? 1.55 : 1.08;
+    if (this.infiniteNightmare) {
+      const bestWorld = Phaser.Math.Clamp(this.getUnlockedLevel(), 6, LEVELS.length - 2);
+      const reference = LEVELS[bestWorld];
+      return {
+        ...level,
+        healthMultiplier: reference.healthMultiplier * 1.55,
+        speedMultiplier: reference.speedMultiplier * 1.16,
+        swarmBonus: reference.swarmBonus + 9,
+      };
+    }
+    const lastCompletedWorld = Phaser.Math.Clamp(this.getUnlockedLevel() - 1, 5, LEVELS.length - 2);
+    const reference = LEVELS[lastCompletedWorld];
+    const waveHealthBase = 56 + this.wave * 16;
+    const levelIndexCompensation = (waveHealthBase + lastCompletedWorld * 10)
+      / (waveHealthBase + this.levelIndex * 10);
     return {
       ...level,
-      healthMultiplier: reference.healthMultiplier * nightmareMultiplier,
-      speedMultiplier: reference.speedMultiplier * (this.infiniteNightmare ? 1.16 : 1.04),
-      swarmBonus: reference.swarmBonus + (this.infiniteNightmare ? 9 : 3),
+      healthMultiplier: reference.healthMultiplier * 1.03 * levelIndexCompensation,
+      speedMultiplier: reference.speedMultiplier * 1.01,
+      swarmBonus: reference.swarmBonus + 1,
     };
   }
 
