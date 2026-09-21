@@ -22,6 +22,8 @@ const TOP_EXIT_ROW = Math.floor((GRID_ROWS - 1) / 2);
 const BOTTOM_EXIT_COL = Math.floor((GRID_COLS - 1) / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 const GATE_OUTSET = 18;
+const ENEMY_SPATIAL_CELL_SIZE = 128;
+const ENEMY_SPATIAL_QUERY_PADDING = 32;
 
 type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
@@ -59,6 +61,9 @@ type Enemy = {
   energyReward: number;
   slowedUntil: number;
   slowMultiplier: number;
+  slowIndicator: Phaser.GameObjects.Arc;
+  slowVisualActive: boolean;
+  slowReservedUntil: number;
   swiftSuppressedUntil: number;
   exitCol: number;
   exitRow: number;
@@ -155,6 +160,8 @@ const LEVELS: LevelDefinition[] = [
 
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
+  private enemySpatialBuckets = new Map<string, Enemy[]>();
+  private enemySpatialOrder = new Map<Enemy, number>();
   private towers: Tower[] = [];
   private fertileZones: FertileZone[] = [];
   private terrainFeatures: TerrainFeature[] = [];
@@ -267,6 +274,7 @@ class DefenseScene extends Phaser.Scene {
     this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
+    this.rebuildEnemySpatialIndex();
     this.fireTowers(time);
     this.updateTowerUpgrades(time);
     if (this.selectedTower !== null) this.enablePlacementEnemyMarkers();
@@ -310,6 +318,8 @@ class DefenseScene extends Phaser.Scene {
 
   private resetState(): void {
     this.enemies = [];
+    this.enemySpatialBuckets.clear();
+    this.enemySpatialOrder.clear();
     this.towers = [];
     this.fertileZones = [];
     this.terrainFeatures = [];
@@ -1974,7 +1984,7 @@ class DefenseScene extends Phaser.Scene {
     for (const enemy of this.enemies) {
       if (!enemy.body.active) continue;
       enemy.body.setVisible(false);
-      const color = enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
+      const color = enemy.slowVisualActive ? 0x67d8e8 : enemy.isBoss ? 0xc94c43 : enemy.kind === "air" ? 0x73d5e3 : 0x8a6538;
       const radius = enemy.isBoss ? 10 : 7;
       markers.fillStyle(color, 0.94);
       markers.fillCircle(enemy.body.x, enemy.body.y, radius);
@@ -2618,6 +2628,10 @@ class DefenseScene extends Phaser.Scene {
     container.add([...insectParts, healthBg, healthBar, ...(bossLabel ? [bossLabel] : []), ...(traitLabel ? [traitLabel] : [])]);
 
     const level = this.getActiveLevel();
+    const slowIndicator = this.add.circle(0, 0, isBoss ? 47 : 31, 0x67d8e8, 0.06)
+      .setStrokeStyle(isBoss ? 4 : 3, 0x8deaff, 0.95)
+      .setVisible(false);
+    container.add(slowIndicator);
     const traitHealthMultiplier = trait === "swift" ? 0.78 : trait === "armored" ? 1.28 : 1;
     const hp = Math.round((56 + this.wave * 16 + this.levelIndex * 10) * level.healthMultiplier * (isBoss ? 10 : 1) * traitHealthMultiplier);
     this.enemies.push({
@@ -2642,6 +2656,9 @@ class DefenseScene extends Phaser.Scene {
       energyReward: this.getEnemyEnergyReward(isBoss),
       slowedUntil: 0,
       slowMultiplier: 1,
+      slowIndicator,
+      slowVisualActive: false,
+      slowReservedUntil: 0,
       swiftSuppressedUntil: 0,
       exitCol,
       exitRow,
@@ -2714,6 +2731,7 @@ class DefenseScene extends Phaser.Scene {
       const exitX = enemy.exitX;
       const exitY = enemy.exitY;
       const slowFactor = time < enemy.slowedUntil ? enemy.slowMultiplier : 1;
+      if (enemy.slowVisualActive && time >= enemy.slowedUntil) this.setEnemySlowVisual(enemy, false);
       const swiftFactor = enemy.trait === "swift" && time < enemy.swiftSuppressedUntil ? 1 / 1.42 : 1;
       const speed = enemy.speed * slowFactor * swiftFactor * this.getTerrainSpeedFactor(enemy);
       if (enemy.regeneration > 0 && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
@@ -2738,6 +2756,38 @@ class DefenseScene extends Phaser.Scene {
     }
   }
 
+  private rebuildEnemySpatialIndex(): void {
+    this.enemySpatialBuckets.clear();
+    this.enemySpatialOrder.clear();
+    this.enemies.forEach((enemy, index) => {
+      if (!enemy.body.active) return;
+      this.enemySpatialOrder.set(enemy, index);
+      const cellX = Math.floor(enemy.body.x / ENEMY_SPATIAL_CELL_SIZE);
+      const cellY = Math.floor(enemy.body.y / ENEMY_SPATIAL_CELL_SIZE);
+      const key = `${cellX}:${cellY}`;
+      const bucket = this.enemySpatialBuckets.get(key);
+      if (bucket) bucket.push(enemy);
+      else this.enemySpatialBuckets.set(key, [enemy]);
+    });
+  }
+
+  private getEnemiesNear(x: number, y: number, radius: number): Enemy[] {
+    const queryRadius = radius + ENEMY_SPATIAL_QUERY_PADDING;
+    const minCellX = Math.floor((x - queryRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const maxCellX = Math.floor((x + queryRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const minCellY = Math.floor((y - queryRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const maxCellY = Math.floor((y + queryRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const nearby: Enemy[] = [];
+    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+        const bucket = this.enemySpatialBuckets.get(`${cellX}:${cellY}`);
+        if (bucket) nearby.push(...bucket);
+      }
+    }
+    return nearby.sort((left, right) =>
+      (this.enemySpatialOrder.get(left) ?? 0) - (this.enemySpatialOrder.get(right) ?? 0));
+  }
+
   private fireTowers(time: number): void {
     for (const tower of this.towers) {
       if (tower.isUpgrading) continue;
@@ -2746,6 +2796,7 @@ class DefenseScene extends Phaser.Scene {
       if (!target) continue;
 
       tower.lastShot = time;
+      if (tower.kind === "cryo") target.slowReservedUntil = Math.max(target.slowReservedUntil, time + 220);
       this.playTowerShotSound(tower.kind);
       const definition = TOWERS[tower.kind];
       if (this.selectedTower !== null) {
@@ -2783,8 +2834,11 @@ class DefenseScene extends Phaser.Scene {
     const definition = TOWERS[tower.kind];
     const rangeSquared = tower.range * tower.range;
     let bestTarget: Enemy | undefined;
+    let fallbackTarget: Enemy | undefined;
     let bestScore = tower.priority === "strong" ? -Infinity : Infinity;
-    for (const enemy of this.enemies) {
+    let fallbackScore = bestScore;
+    for (const enemy of this.getEnemiesNear(tower.body.x, tower.body.y, tower.range)) {
+      if (!enemy.body.active) continue;
       if (definition.target !== "all" && definition.target !== enemy.kind) continue;
       const deltaX = tower.body.x - enemy.body.x;
       const deltaY = tower.body.y - enemy.body.y;
@@ -2794,12 +2848,20 @@ class DefenseScene extends Phaser.Scene {
         : tower.priority === "weak"
           ? enemy.hp
           : enemy.path.length - enemy.pathIndex;
+      if (tower.kind === "cryo" && (this.time.now < enemy.slowedUntil || this.time.now < enemy.slowReservedUntil)) {
+        const isBetterFallback = tower.priority === "strong" ? score > fallbackScore : score < fallbackScore;
+        if (isBetterFallback) {
+          fallbackScore = score;
+          fallbackTarget = enemy;
+        }
+        continue;
+      }
       const isBetter = tower.priority === "strong" ? score > bestScore : score < bestScore;
       if (!isBetter) continue;
       bestScore = score;
       bestTarget = enemy;
     }
-    return bestTarget;
+    return bestTarget ?? fallbackTarget;
   }
 
   private applyTowerHit(tower: Tower, target: Enemy, definition: TowerDefinition): void {
@@ -2810,10 +2872,11 @@ class DefenseScene extends Phaser.Scene {
       this.applyNepenthesSlow(tower, target, impactX, impactY);
     }
     if (definition.effect === "splash" || (tower.level >= 5 && (tower.kind === "flak" || tower.kind === "pulse"))) {
-      const victims = this.enemies.filter((enemy) =>
+      const victims = this.getEnemiesNear(impactX, impactY, 90).filter((enemy) =>
         enemy !== target
+        && enemy.body.active
         && (definition.target === "all" || definition.target === enemy.kind)
-        && Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= 90,
+        && Phaser.Math.Distance.Squared(impactX, impactY, enemy.body.x, enemy.body.y) <= 90 * 90,
       );
       victims.forEach((enemy) => this.damageEnemy(enemy, Math.round(tower.damage * 0.55), definition.color));
     }
@@ -2843,9 +2906,9 @@ class DefenseScene extends Phaser.Scene {
         onComplete: () => stickyZone.destroy(),
       });
     }
-    this.enemies
+    this.getEnemiesNear(impactX, impactY, stickyRadius)
       .filter((enemy) => enemy !== target && enemy.body.active)
-      .filter((enemy) => Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadius)
+      .filter((enemy) => Phaser.Math.Distance.Squared(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadius * stickyRadius)
       .forEach((enemy) => {
         const areaMultiplier = mastery >= 3 && enemy.trait === "swift" ? 0.56 : 0.7;
         this.applySlowEffect(enemy, Math.round(duration * 0.65), areaMultiplier, mastery >= 5);
@@ -2856,9 +2919,17 @@ class DefenseScene extends Phaser.Scene {
     if (this.time.now >= enemy.slowedUntil) enemy.slowMultiplier = multiplier;
     else enemy.slowMultiplier = Math.min(enemy.slowMultiplier, multiplier);
     enemy.slowedUntil = Math.max(enemy.slowedUntil, this.time.now + duration);
+    enemy.slowReservedUntil = 0;
+    this.setEnemySlowVisual(enemy, true);
     if (suppressSwift && enemy.trait === "swift") {
       enemy.swiftSuppressedUntil = Math.max(enemy.swiftSuppressedUntil, this.time.now + duration);
     }
+  }
+
+  private setEnemySlowVisual(enemy: Enemy, active: boolean): void {
+    if (enemy.slowVisualActive === active) return;
+    enemy.slowVisualActive = active;
+    enemy.slowIndicator.setVisible(active);
   }
 
   private damageEnemy(enemy: Enemy, damage: number, color: number, ignoresArmor = false): void {
