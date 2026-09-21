@@ -22,6 +22,8 @@ const TOP_EXIT_ROW = Math.floor((GRID_ROWS - 1) / 2);
 const BOTTOM_EXIT_COL = Math.floor((GRID_COLS - 1) / 2);
 const BOTTOM_EXIT_ROW = GRID_ROWS - 1;
 const GATE_OUTSET = 18;
+const ENEMY_SPATIAL_CELL_SIZE = 128;
+const ENEMY_SPATIAL_QUERY_PADDING = 32;
 
 type EnemyKind = "air" | "sea";
 type EnemyTrait = "normal" | "armored" | "swift" | "regenerator";
@@ -159,6 +161,8 @@ const LEVELS: LevelDefinition[] = [
 
 class DefenseScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
+  private enemySpatialBuckets = new Map<string, Enemy[]>();
+  private enemySpatialOrder = new Map<Enemy, number>();
   private towers: Tower[] = [];
   private fertileZones: FertileZone[] = [];
   private terrainFeatures: TerrainFeature[] = [];
@@ -280,6 +284,7 @@ class DefenseScene extends Phaser.Scene {
     this.updateAutoWave(time);
     this.spawnWaveEnemies(time);
     this.moveEnemies(time, delta);
+    this.rebuildEnemySpatialIndex();
     this.fireTowers(time);
     this.updateTowerUpgrades(time);
     if (this.selectedTower !== null) this.enablePlacementEnemyMarkers();
@@ -323,6 +328,8 @@ class DefenseScene extends Phaser.Scene {
 
   private resetState(): void {
     this.enemies = [];
+    this.enemySpatialBuckets.clear();
+    this.enemySpatialOrder.clear();
     this.towers = [];
     this.fertileZones = [];
     this.terrainFeatures = [];
@@ -2682,6 +2689,44 @@ class DefenseScene extends Phaser.Scene {
     }
   }
 
+  private rebuildEnemySpatialIndex(): void {
+    this.enemySpatialBuckets.clear();
+    this.enemySpatialOrder.clear();
+    this.enemies.forEach((enemy, index) => {
+      if (!enemy.body.active) return;
+      const col = Math.floor(enemy.body.x / ENEMY_SPATIAL_CELL_SIZE);
+      const row = Math.floor(enemy.body.y / ENEMY_SPATIAL_CELL_SIZE);
+      const key = `${col},${row}`;
+      const bucket = this.enemySpatialBuckets.get(key);
+      if (bucket) bucket.push(enemy);
+      else this.enemySpatialBuckets.set(key, [enemy]);
+      this.enemySpatialOrder.set(enemy, index);
+    });
+  }
+
+  private getEnemiesNear(x: number, y: number, radius: number): Enemy[] {
+    // La marge couvre le léger déplacement possible entre la reconstruction de
+    // l'index et l'arrivée d'un projectile. La distance exacte reste contrôlée
+    // par l'appelant, donc elle ne modifie jamais la portée réelle.
+    const indexedRadius = radius + ENEMY_SPATIAL_QUERY_PADDING;
+    const minCol = Math.floor((x - indexedRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const maxCol = Math.floor((x + indexedRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const minRow = Math.floor((y - indexedRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const maxRow = Math.floor((y + indexedRadius) / ENEMY_SPATIAL_CELL_SIZE);
+    const nearby: Enemy[] = [];
+    for (let row = minRow; row <= maxRow; row += 1) {
+      for (let col = minCol; col <= maxCol; col += 1) {
+        const bucket = this.enemySpatialBuckets.get(`${col},${row}`);
+        if (bucket) nearby.push(...bucket);
+      }
+    }
+    // Préserve l'ordre historique de this.enemies pour que les égalités de
+    // priorité choisissent exactement la même cible qu'avant l'optimisation.
+    nearby.sort((left, right) =>
+      (this.enemySpatialOrder.get(left) ?? 0) - (this.enemySpatialOrder.get(right) ?? 0));
+    return nearby;
+  }
+
   private fireTowers(time: number): void {
     for (const tower of this.towers) {
       if (tower.isUpgrading) continue;
@@ -2735,7 +2780,8 @@ class DefenseScene extends Phaser.Scene {
     let bestScore = tower.priority === "strong" ? -Infinity : Infinity;
     let bestAlreadySlowed: Enemy | undefined;
     let bestAlreadySlowedScore = bestScore;
-    for (const enemy of this.enemies) {
+    for (const enemy of this.getEnemiesNear(tower.body.x, tower.body.y, tower.range)) {
+      if (!enemy.body.active) continue;
       if (definition.target !== "all" && definition.target !== enemy.kind) continue;
       const deltaX = tower.body.x - enemy.body.x;
       const deltaY = tower.body.y - enemy.body.y;
@@ -2771,10 +2817,13 @@ class DefenseScene extends Phaser.Scene {
       this.applyNepenthesSlow(tower, target, impactX, impactY);
     }
     if (definition.effect === "splash" || (tower.level >= 5 && (tower.kind === "flak" || tower.kind === "pulse"))) {
-      const victims = this.enemies.filter((enemy) =>
+      const splashRadius = 90;
+      const splashRadiusSquared = splashRadius * splashRadius;
+      const victims = this.getEnemiesNear(impactX, impactY, splashRadius).filter((enemy) =>
         enemy !== target
+        && enemy.body.active
         && (definition.target === "all" || definition.target === enemy.kind)
-        && Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= 90,
+        && Phaser.Math.Distance.Squared(impactX, impactY, enemy.body.x, enemy.body.y) <= splashRadiusSquared,
       );
       victims.forEach((enemy) => this.damageEnemy(enemy, Math.round(tower.damage * 0.55), definition.color));
     }
@@ -2804,9 +2853,10 @@ class DefenseScene extends Phaser.Scene {
         onComplete: () => stickyZone.destroy(),
       });
     }
-    this.enemies
+    const stickyRadiusSquared = stickyRadius * stickyRadius;
+    this.getEnemiesNear(impactX, impactY, stickyRadius)
       .filter((enemy) => enemy !== target && enemy.body.active)
-      .filter((enemy) => Phaser.Math.Distance.Between(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadius)
+      .filter((enemy) => Phaser.Math.Distance.Squared(impactX, impactY, enemy.body.x, enemy.body.y) <= stickyRadiusSquared)
       .forEach((enemy) => {
         const areaMultiplier = mastery >= 3 && enemy.trait === "swift" ? 0.56 : 0.7;
         this.applySlowEffect(enemy, Math.round(duration * 0.65), areaMultiplier, mastery >= 5);
