@@ -286,10 +286,12 @@ class DefenseScene extends Phaser.Scene {
       let dropReward = 0;
       let rewardLabel = "";
       if (level.waves === null) {
-        if (this.wave % 5 === 0) {
-          dropReward = 1;
-          rewardLabel = "PALIER INFINI";
-        }
+        const achievedTier = perfectWave ? 2 : 1;
+        const recordKey = `infinite:v1:${level.code}:${this.wave}`;
+        const previousTier = this.waveDropRecords[recordKey] ?? 0;
+        dropReward = Math.max(0, achievedTier - previousTier);
+        if (achievedTier > previousTier) this.waveDropRecords[recordKey] = achievedTier;
+        rewardLabel = perfectWave ? "RECORD INFINI PARFAIT" : "NOUVELLE VAGUE INFINIE";
       } else {
         const achievedTier = perfectWave ? (this.isBossWave() ? 3 : 2) : 1;
         // Utilise l'identité stable du biome plutôt que sa position dans la
@@ -1629,7 +1631,7 @@ class DefenseScene extends Phaser.Scene {
         wordWrap: { width: 590 },
       }).setOrigin(0.5);
     const rewards = this.add.text(guideCenterX, 350,
-      "COMMENT EN GAGNER\n\n• Première réussite : 1 goutte\n• Résultat parfait : jusqu’à 2 gouttes au total\n• Boss parfait : jusqu’à 3 gouttes au total\n• Rejouer verse seulement le bonus encore manquant\n• Mode infini : 1 goutte tous les 5 paliers", {
+      "COMMENT EN GAGNER\n\n• Première réussite : 1 goutte\n• Résultat parfait : jusqu’à 2 gouttes au total\n• Boss parfait : jusqu’à 3 gouttes au total\n• Rejouer verse seulement le bonus encore manquant\n• Mode infini : mêmes gains, une fois par vague", {
         fontFamily: "Arial",
         fontSize: "20px",
         color: "#d9f4f2",
