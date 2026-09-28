@@ -25,7 +25,7 @@ export function wateringGuideMastery(): Plugin {
       if (localStorage.getItem(reserveRecoveryMarker) !== "done") {
         if (this.wateringCans === 0 && masteryIsReset) {
           const recoveredDrops = Object.entries(this.waveDropRecords).reduce((sum, [key, value]) => {
-            if (!key.startsWith("v2:") && !key.startsWith("alpha:v1:")) return sum;
+            if (!key.startsWith("v2:") && !key.startsWith("infinite:v1:") && !key.startsWith("alpha:v1:")) return sum;
             return sum + Math.max(0, Number(value) || 0);
           }, 0);
           if (recoveredDrops > 0) {
@@ -38,7 +38,7 @@ export function wateringGuideMastery(): Plugin {
       const reserveReconciliationMarker = "chelie-drop-reserve-reconciliation-v2";
       if (localStorage.getItem(reserveReconciliationMarker) !== "done") {
         const recordedDrops = Object.entries(this.waveDropRecords).reduce((sum, [key, value]) => {
-          if (!key.startsWith("v2:") && !key.startsWith("alpha:v1:")) return sum;
+          if (!key.startsWith("v2:") && !key.startsWith("infinite:v1:") && !key.startsWith("alpha:v1:")) return sum;
           return sum + Math.max(0, Number(value) || 0);
         }, 0);
         const investedDrops = (Object.keys(TOWERS) as TowerKind[]).reduce((total, kind) => {
