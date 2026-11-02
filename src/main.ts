@@ -229,10 +229,13 @@ class DefenseScene extends Phaser.Scene {
     super("defense");
   }
 
-  init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; infiniteNightmare?: boolean } = {}): void {
+  init(data: { levelIndex?: number; home?: boolean; selectionPage?: number; manualSelectionPage?: boolean; infiniteNightmare?: boolean } = {}): void {
     this.requestedLevelIndex = data.home ? null : data.levelIndex ?? null;
     const lastSelectionPage = Math.max(0, Math.ceil(LEVELS.length / 6) - 1);
-    this.selectionPage = Phaser.Math.Clamp(data.selectionPage ?? this.getLastPlayedSelectionPage(), 0, lastSelectionPage);
+    const selectionPage = data.manualSelectionPage
+      ? data.selectionPage ?? this.getLastPlayedSelectionPage()
+      : this.getLastPlayedSelectionPage();
+    this.selectionPage = Phaser.Math.Clamp(selectionPage, 0, lastSelectionPage);
     this.infiniteNightmare = data.infiniteNightmare ?? false;
   }
 
@@ -1425,10 +1428,10 @@ class DefenseScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(32);
 
     const firstPage = this.makeButton(homeCenterX - 110, 306, 200, 46, "MONDES 1–6", this.selectionPage === 0 ? 0x4d8f82 : 0x294f58, () => {
-      this.scene.restart({ home: true, selectionPage: 0 });
+      this.scene.restart({ home: true, selectionPage: 0, manualSelectionPage: true });
     }).setDepth(32);
     const secondPage = this.makeButton(homeCenterX + 110, 306, 200, 46, "MONDES 7–12", this.selectionPage === 1 ? 0x4d8f82 : 0x294f58, () => {
-      this.scene.restart({ home: true, selectionPage: 1 });
+      this.scene.restart({ home: true, selectionPage: 1, manualSelectionPage: true });
     }).setDepth(32);
     if (unlocked < 6) secondPage.setAlpha(0.62);
 
